@@ -37,3 +37,5 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = ["integration: calls the real SEC EDGAR API (run with `uv run pytest -m integration`)"]

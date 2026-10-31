@@ -3,7 +3,7 @@
 import re
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Deliberately loose: we only need to confirm a contact email is present, not validate it fully.
@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     # e.g. "FinScope Jane Doe jane@example.com".
     sec_user_agent: str
     log_level: str = "INFO"
+    # SEC's fair-access limit is 10 requests/second; staying a bit under leaves headroom.
+    sec_max_requests_per_second: float = Field(default=8.0, gt=0, le=10)
 
     @field_validator("sec_user_agent")
     @classmethod
