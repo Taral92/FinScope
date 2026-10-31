@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from datetime import date
+from pathlib import Path
 
 import httpx
 import pytest
@@ -32,13 +33,25 @@ FAKE_SUBMISSIONS = {
     },
 }
 
+TSLA_10Q = Filing(
+    cik="0001318605",
+    accession_number="0001628280-25-045968",
+    form="10-Q",
+    filing_date=date(2025, 10, 23),
+    report_date=date(2025, 9, 30),
+    primary_document="tsla-20250930.htm",
+)
+FAKE_FILING_HTML = "<html><body><p>Tesla quarterly report</p></body></html>"
+
 
 def fake_sec(request: httpx.Request) -> httpx.Response:
-    """Stand-in for SEC's servers: answers the two endpoints we use, 404 for anything else."""
+    """Stand-in for SEC's servers: answers the endpoints we use, 404 for anything else."""
     if request.url == "https://www.sec.gov/files/company_tickers.json":
         return httpx.Response(200, json=FAKE_TICKERS)
     if request.url == "https://data.sec.gov/submissions/CIK0001318605.json":
         return httpx.Response(200, json=FAKE_SUBMISSIONS)
+    if request.url == TSLA_10Q.url:
+        return httpx.Response(200, text=FAKE_FILING_HTML)
     return httpx.Response(404)
 
 
@@ -48,12 +61,17 @@ def requests() -> list[httpx.Request]:
 
 
 @pytest.fixture
-def sec(requests: list[httpx.Request]) -> Iterator[SecClient]:
+def sec(requests: list[httpx.Request], tmp_path: Path) -> Iterator[SecClient]:
     def record_and_answer(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         return fake_sec(request)
 
-    settings = Settings(_env_file=None, sec_user_agent=USER_AGENT, sec_max_requests_per_second=10)
+    settings = Settings(
+        _env_file=None,
+        sec_user_agent=USER_AGENT,
+        sec_max_requests_per_second=10,
+        data_dir=tmp_path,  # a fresh, empty cache for every test
+    )
     with SecClient(settings=settings, transport=httpx.MockTransport(record_and_answer)) as client:
         yield client
 
@@ -115,16 +133,7 @@ def test_limit_keeps_newest(sec: SecClient) -> None:
 
 
 def test_url_is_built_from_cik_accession_and_document() -> None:
-    filing = Filing(
-        cik="0001318605",
-        accession_number="0001628280-25-045968",
-        form="10-Q",
-        filing_date=date(2025, 10, 23),
-        report_date=date(2025, 9, 30),
-        primary_document="tsla-20250930.htm",
-    )
-
-    assert filing.url == (
+    assert TSLA_10Q.url == (
         "https://www.sec.gov/Archives/edgar/data/1318605/000162828025045968/tsla-20250930.htm"
     )
 
@@ -138,6 +147,19 @@ def test_user_agent_header_is_sent(sec: SecClient, requests: list[httpx.Request]
 def test_http_errors_raise(sec: SecClient) -> None:
     with pytest.raises(httpx.HTTPStatusError):
         sec.get_recent_filings("0000000001")  # fake_sec answers 404
+
+
+def test_filing_html_is_downloaded_once_then_served_from_cache(
+    sec: SecClient, requests: list[httpx.Request], tmp_path: Path
+) -> None:
+    cache_file = tmp_path / "filings" / "0001318605" / "0001628280-25-045968.html"
+
+    assert sec.get_filing_html(TSLA_10Q) == FAKE_FILING_HTML
+    assert len(requests) == 1
+    assert cache_file.read_text(encoding="utf-8") == FAKE_FILING_HTML
+
+    assert sec.get_filing_html(TSLA_10Q) == FAKE_FILING_HTML
+    assert len(requests) == 1  # second call never touched the network
 
 
 @pytest.mark.integration

@@ -2,6 +2,7 @@
 
 import re
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     # SEC's fair-access limit is 10 requests/second; staying a bit under leaves headroom.
     sec_max_requests_per_second: float = Field(default=8.0, gt=0, le=10)
+    # Where downloaded filings and derived files are cached (relative to the working directory).
+    data_dir: Path = Path("data")
 
     @field_validator("sec_user_agent")
     @classmethod

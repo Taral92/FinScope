@@ -1,7 +1,8 @@
-"""A small client for SEC EDGAR's public JSON endpoints."""
+"""A small client for SEC EDGAR: company lookups, filing lists, and filing downloads."""
 
 import time
 from datetime import date
+from pathlib import Path
 from types import TracebackType
 from typing import Any, Self
 
@@ -45,6 +46,11 @@ class Filing(BaseModel):
         )
 
 
+def filing_path(data_dir: Path, filing: Filing, suffix: str) -> Path:
+    """Where a filing's local files live, e.g. data/filings/0001318605/0001628280-25-045968.html."""
+    return data_dir / "filings" / filing.cik / f"{filing.accession_number}{suffix}"
+
+
 class SecClient:
     """Synchronous EDGAR client that identifies itself and stays under SEC's rate limit."""
 
@@ -56,6 +62,7 @@ class SecClient:
         settings = settings or get_settings()
         self._min_interval = 1.0 / settings.sec_max_requests_per_second
         self._last_request_at: float | None = None
+        self._data_dir = settings.data_dir
         self._client = httpx.Client(
             headers={"User-Agent": settings.sec_user_agent},
             timeout=30.0,
@@ -122,11 +129,32 @@ class SecClient:
         filings.sort(key=lambda filing: filing.filing_date, reverse=True)
         return filings[:limit]
 
+    def get_filing_html(self, filing: Filing) -> str:
+        """Return the filing's primary document, downloading it only on the first call."""
+        # Caching forever is safe: a published filing never changes. Corrections are filed
+        # as new amendments (e.g. 10-Q/A) with their own accession numbers.
+        path = filing_path(self._data_dir, filing, ".html")
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+
+        html = self._get(filing.url).text
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Write to a temp file, then rename: a crash mid-write must not leave a truncated
+        # file that the cache would then serve forever.
+        partial = path.with_suffix(".partial")
+        partial.write_text(html, encoding="utf-8")
+        partial.replace(path)
+        return html
+
     def _get_json(self, url: str) -> Any:
+        return self._get(url).json()
+
+    def _get(self, url: str) -> httpx.Response:
+        """The single place requests are sent: throttled, identified, and checked."""
         self._throttle()
         response = self._client.get(url)
         response.raise_for_status()
-        return response.json()
+        return response
 
     def _throttle(self) -> None:
         """Sleep just long enough to keep requests at least `_min_interval` seconds apart."""

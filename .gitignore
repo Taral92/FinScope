@@ -15,6 +15,9 @@ dist/
 .coverage
 htmlcov/
 
+# Downloaded SEC data (local cache, re-creatable)
+data/
+
 # Secrets: never commit real env files (the example is safe)
 .env
 .env.*
