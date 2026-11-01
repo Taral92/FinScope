@@ -23,6 +23,7 @@ from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
 from finscope.llm import LLMError, OpenAIProvider
 from finscope.sections import Section, split_sections
+from finscope.verify import parse_explanation, sources_for, verify_explanation
 from finscope.xbrl import (
     METRICS,
     MetricValue,
@@ -307,6 +308,8 @@ def _explain(
         cost = f"${explanation.cost_usd:.4f}"
     print(result.text)
     print()
+    _print_fact_check(result.text, sources_for(change), expect_evidence=False)
+    print()
     print(f"model:      {result.model}")
     print(f"tokens:     {result.input_tokens:,} input, {result.output_tokens:,} output")
     print(f"cost:       {cost}")
@@ -340,6 +343,9 @@ def _explain_with_agent(
     print()
     print(run.text)
     print()
+    sources = sources_for(context.change, run.tool_outputs)
+    _print_fact_check(run.text, sources, expect_evidence=True)
+    print()
     cost = "unknown (no prices configured)"
     if explanation.cost_usd is not None:
         cost = f"${explanation.cost_usd:.4f}"
@@ -347,6 +353,16 @@ def _explain_with_agent(
     print(f"tokens: {run.input_tokens:,} input, {run.output_tokens:,} output")
     print(f"cost:   {cost}")
     return 0
+
+
+def _print_fact_check(answer: str, sources: list[str], *, expect_evidence: bool) -> None:
+    """Check the answer's quotes and numbers against what the model saw. Shown, never fatal."""
+    check = verify_explanation(parse_explanation(answer, expect_evidence=expect_evidence), sources)
+    quotes = f"{check.quotes_checked} quote{'' if check.quotes_checked == 1 else 's'}"
+    numbers = f"{check.numbers_checked} number{'' if check.numbers_checked == 1 else 's'}"
+    print(f"FACT-CHECK: {'PASSED' if check.passed else 'FAILED'} ({quotes}, {numbers} checked)")
+    for issue in check.issues:
+        print(f"  {issue.kind}: {issue.message}")
 
 
 def _print_trace(trace: tuple[TraceStep, ...]) -> None:

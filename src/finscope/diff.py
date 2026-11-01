@@ -9,22 +9,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from finscope.sections import Section
+from finscope.text import unify_typography
 
 # Below this word-level similarity, two paragraphs count as unrelated (removed + added).
 MODIFIED_THRESHOLD = 0.6
 
-# Typographic variants that shouldn't count as edits: curly quotes, en/em dashes, minus.
-_UNIFY = str.maketrans(
-    {
-        "\u2018": "'",
-        "\u2019": "'",
-        "\u201c": '"',
-        "\u201d": '"',
-        "\u2013": "-",
-        "\u2014": "-",
-        "\u2212": "-",
-    }
-)
 # A paragraph is a run of non-blank lines.
 _PARAGRAPH = re.compile(r"\S.*(?:\n.*\S.*)*")
 # Page furniture repeated at every page break: page numbers and the "back to contents" link.
@@ -179,7 +168,7 @@ def _paragraphs(section: Section) -> list[_Paragraph]:
 
 
 def _normalize(text: str) -> str:
-    return text.translate(_UNIFY)
+    return unify_typography(text)
 
 
 def _without(paragraphs: list[_Paragraph], shared: Counter[str]) -> list[_Paragraph]:

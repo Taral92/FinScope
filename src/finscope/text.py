@@ -12,6 +12,18 @@ _HIDDEN_STYLE = re.compile(r"display\s*:\s*none", re.IGNORECASE)
 # \s also matches non-breaking spaces (\xa0, from &nbsp;), which SEC filings use heavily.
 _WHITESPACE = re.compile(r"\s+")
 _EXTRA_BLANK_LINES = re.compile(r"\n{3,}")
+# Typographic variants that mean the same thing: curly quotes, en/em dashes, minus sign.
+_TYPOGRAPHY = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2212": "-",
+    }
+)
 
 
 def html_to_text(html: str) -> str:
@@ -53,3 +65,8 @@ def html_to_text(html: str) -> str:
     # 4. Tidy lines: trim each one and allow at most one blank line in a row.
     lines = (_WHITESPACE.sub(" ", line).strip() for line in soup.get_text().split("\n"))
     return _EXTRA_BLANK_LINES.sub("\n\n", "\n".join(lines)).strip()
+
+
+def unify_typography(text: str) -> str:
+    """Map curly quotes, en/em dashes and the minus sign to plain ASCII, for comparisons."""
+    return text.translate(_TYPOGRAPHY)

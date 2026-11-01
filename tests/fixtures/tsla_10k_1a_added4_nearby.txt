@@ -1,0 +1,11 @@
+Before the changed paragraph (offset 74,544):
+
+<filing_text source="this filing" offset="74,108">
+We also face competition in our energy generation and storage business from other manufacturers, developers, installers and service providers of competing energy technologies, as well as from large utilities. In addition, decreases in the retail or wholesale prices of electricity from utilities or other renewable energy sources could make our products less attractive to customers and lead to an increased rate of customer defaults.
+</filing_text>
+
+After the changed paragraph:
+
+<filing_text source="this filing" offset="74,749">
+We currently are developing Bots, including Optimus, and intend for these products, as well as accompanying services, to be an important part of our business going forward. While this development requires significant cash investments and management resources, there is no guarantee this business will be successful. We have yet to commercialize Bots and cannot predict how demand for Bots will develop, either from commercial or consumer applications. We also face significant competition from other companies that are designing, developing and building robotics applications. Our success will depend on various factors, including our ability to successfully apply our artificial neural network training experience to autonomous robots, to either source or custom develop the necessary technology and components, and the product’s cost-effectiveness, utility and competitive positioning relative to market alternatives. If our Bots program fails to develop as we expect, or progresses more slowly than expected, our business, prospects, financial condition and operating results may be harmed.
+</filing_text>

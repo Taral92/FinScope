@@ -25,6 +25,7 @@ class TraceCall(BaseModel):
 
     name: str
     arguments: str  # the raw JSON the model sent
+    output: str  # exactly what was sent back to the model (after truncation)
     result_chars: int
     is_error: bool
     error: str | None = None
@@ -58,6 +59,11 @@ class AgentRun(BaseModel):
     @property
     def output_tokens(self) -> int:
         return sum(step.output_tokens for step in self.trace)
+
+    @property
+    def tool_outputs(self) -> list[str]:
+        """Every successful tool result, as the model saw it (error messages excluded)."""
+        return [call.output for step in self.trace for call in step.tool_calls if not call.is_error]
 
 
 class AgentError(Exception):
@@ -119,7 +125,11 @@ def _run_tool(
         output = f"{output[:max_chars]}\n[truncated {len(output) - max_chars} chars]"
     result = ToolResult(call_id=call.id, output=output)
     return result, TraceCall(
-        name=call.name, arguments=call.raw_arguments, result_chars=len(output), is_error=False
+        name=call.name,
+        arguments=call.raw_arguments,
+        output=output,
+        result_chars=len(output),
+        is_error=False,
     )
 
 
@@ -128,6 +138,7 @@ def _error(call: ToolCall, message: str) -> tuple[ToolResult, TraceCall]:
     trace_call = TraceCall(
         name=call.name,
         arguments=call.raw_arguments,
+        output=message,
         result_chars=len(message),
         is_error=True,
         error=message,
