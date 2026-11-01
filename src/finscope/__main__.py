@@ -6,6 +6,7 @@ python -m finscope sections TSLA [--form F]         list the latest filing's Ite
 python -m finscope sections TSLA --item 1A [--part I]   print one Item's text
 python -m finscope facts TSLA [--form F]            key financial numbers from XBRL
 python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with the previous filing
+python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 """
 
 import argparse
@@ -13,9 +14,12 @@ import os
 import sys
 from decimal import Decimal
 
+from finscope.config import get_settings
 from finscope.diff import ParagraphChange, SectionDiff, diff_sections, word_diff
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
+from finscope.explain import explain_change
 from finscope.filings import load_filing_text
+from finscope.llm import LLMError, OpenAIProvider
 from finscope.sections import Section, split_sections
 from finscope.xbrl import METRICS, MetricValue, key_metrics, parse_facts
 
@@ -52,6 +56,14 @@ def main(argv: list[str] | None = None) -> int:
     diff_parser.add_argument("--item", help="show paragraph changes for this Item, e.g. 1A")
     diff_parser.add_argument("--part", help="with --item: which Part, e.g. I")
 
+    explain_parser = commands.add_parser("explain", help="AI explanation of one diff change")
+    explain_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    explain_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    explain_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    explain_parser.add_argument("--part", help="which Part, if the Item exists in several")
+    explain_parser.add_argument("--kind", required=True, choices=["added", "removed", "modified"])
+    explain_parser.add_argument("--n", type=int, required=True, help="change number from `diff`")
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -68,11 +80,14 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command == "diff":
+        if args.command in ("diff", "explain"):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
-            return _show_diff(sec, old=filings[1], new=filings[0], item=args.item, part=args.part)
+            old, new = filings[1], filings[0]
+            if args.command == "explain":
+                return _explain(sec, args.ticker, old, new, args.item, args.part, args.kind, args.n)
+            return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
         if args.command == "facts":
@@ -195,21 +210,16 @@ def _format_amount(value: Decimal, unit: str) -> str:
 def _show_diff(
     sec: SecClient, *, old: Filing, new: Filing, item: str | None, part: str | None
 ) -> int:
-    old_sections = split_sections(load_filing_text(sec, old))
-    new_sections = split_sections(load_filing_text(sec, new))
-
-    print(f"{new.form}  new: {new.filing_date.isoformat()} ({new.accession_number})")
-    print(f"{' ' * len(new.form)}  old: {old.filing_date.isoformat()} ({old.accession_number})")
-    print()
-
+    _print_filing_pair(old, new)
     if item is not None:
-        old_section = _pick_section(old_sections, item, part)
-        new_section = _pick_section(new_sections, item, part)
-        if old_section is None or new_section is None:
+        diff = _section_diff(sec, old, new, item, part)
+        if diff is None:
             return 1
-        _print_section_changes(diff_sections(old_section, new_section))
+        _print_section_changes(diff)
         return 0
 
+    old_sections = split_sections(load_filing_text(sec, old))
+    new_sections = split_sections(load_filing_text(sec, new))
     old_by_key = {(s.part, s.item): s for s in old_sections}
     new_by_key = {(s.part, s.item): s for s in new_sections}
     print(
@@ -234,36 +244,128 @@ def _show_diff(
     return 0
 
 
+def _explain(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    kind: str,
+    number: int,
+) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings)  # fails fast without an API key
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    diff = _section_diff(sec, old, new, item, part)
+    if diff is None:
+        return 1
+    changes = _numbered(diff)[kind]
+    if not 1 <= number <= len(changes):
+        print(
+            f"error: --n {number} is out of range; {_diff_label(diff)} has "
+            f"{len(changes)} {kind} change(s)",
+            file=sys.stderr,
+        )
+        return 1
+    change = changes[number - 1]
+    print(f"{_diff_label(diff)}, {kind} #{number}:")
+    print(_snippet(_change_text(change)))
+    print()
+
+    try:
+        explanation = explain_change(
+            change,
+            company=ticker.upper(),
+            form=new.form,
+            section_title=_diff_label(diff),
+            provider=provider,
+            settings=settings,
+        )
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    result = explanation.result
+    cost = "unknown (no prices configured)"
+    if explanation.cost_usd is not None:
+        cost = f"${explanation.cost_usd:.4f}"
+    print(result.text)
+    print()
+    print(f"model:      {result.model}")
+    print(f"tokens:     {result.input_tokens:,} input, {result.output_tokens:,} output")
+    print(f"cost:       {cost}")
+    print(f"request id: {result.request_id or '-'}")
+    return 0
+
+
+def _print_filing_pair(old: Filing, new: Filing) -> None:
+    print(f"{new.form}  new: {new.filing_date.isoformat()} ({new.accession_number})")
+    print(f"{' ' * len(new.form)}  old: {old.filing_date.isoformat()} ({old.accession_number})")
+    print()
+
+
+def _section_diff(
+    sec: SecClient, old: Filing, new: Filing, item: str, part: str | None
+) -> SectionDiff | None:
+    old_section = _pick_section(split_sections(load_filing_text(sec, old)), item, part)
+    new_section = _pick_section(split_sections(load_filing_text(sec, new)), item, part)
+    if old_section is None or new_section is None:
+        return None
+    return diff_sections(old_section, new_section)
+
+
+def _numbered(diff: SectionDiff) -> dict[str, list[ParagraphChange]]:
+    """Changes per kind in display order; `explain --n` counts in this same order."""
+    return {
+        "added": diff.of_kind("added"),
+        "removed": diff.of_kind("removed"),
+        "modified": sorted(diff.of_kind("modified"), key=lambda change: change.similarity or 0),
+    }
+
+
 def _print_section_changes(diff: SectionDiff) -> None:
-    added, removed = diff.of_kind("added"), diff.of_kind("removed")
-    modified = sorted(diff.of_kind("modified"), key=lambda change: change.similarity or 0)
-    label = f"Part {diff.part} Item {diff.item}" if diff.part else f"Item {diff.item}"
+    numbered = _numbered(diff)
+    added, removed, modified = numbered["added"], numbered["removed"], numbered["modified"]
     print(
-        f"{label}. {diff.title}: {diff.unchanged} unchanged, {len(modified)} modified, "
+        f"{_diff_label(diff)}: {diff.unchanged} unchanged, {len(modified)} modified, "
         f"{len(added)} added, {len(removed)} removed"
     )
 
     print(f"\n=== ADDED ({len(added)}) ===")
-    for change in added:
-        print(f"\n[+] new @ {change.new_start:,}")
-        print(_snippet(change.new_text or ""))
+    for n, change in enumerate(added, start=1):
+        print(f"\n[+{n}] new @ {change.new_start:,}")
+        print(_snippet(_change_text(change)))
 
     print(f"\n=== REMOVED ({len(removed)}) ===")
-    for change in removed:
-        print(f"\n[-] old @ {change.old_start:,}")
-        print(_snippet(change.old_text or ""))
+    for n, change in enumerate(removed, start=1):
+        print(f"\n[-{n}] old @ {change.old_start:,}")
+        print(_snippet(_change_text(change)))
 
     print(f"\n=== MODIFIED ({len(modified)}), least similar first ===")
-    for change in modified:
+    for n, change in enumerate(modified, start=1):
         print(
-            f"\n[~] {change.similarity or 0:.2f} similar  "
+            f"\n[~{n}] {change.similarity or 0:.2f} similar  "
             f"old @ {change.old_start:,}  new @ {change.new_start:,}"
         )
-        print(_snippet(_modified_text(change)))
+        print(_snippet(_change_text(change)))
 
 
-def _modified_text(change: ParagraphChange) -> str:
-    return word_diff(change.old_text or "", change.new_text or "")
+def _diff_label(diff: SectionDiff) -> str:
+    label = f"Part {diff.part} Item {diff.item}" if diff.part else f"Item {diff.item}"
+    return f"{label}. {diff.title}"
+
+
+def _change_text(change: ParagraphChange) -> str:
+    """What to show for a change: the paragraph, or the word diff for a modified one."""
+    if change.kind == "modified":
+        return word_diff(change.old_text or "", change.new_text or "")
+    return change.new_text or change.old_text or ""
 
 
 def _snippet(text: str) -> str:
