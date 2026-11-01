@@ -7,21 +7,30 @@ python -m finscope sections TSLA --item 1A [--part I]   print one Item's text
 python -m finscope facts TSLA [--form F]            key financial numbers from XBRL
 python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with the previous filing
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
+python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 """
 
 import argparse
 import os
 import sys
-from decimal import Decimal
 
+from finscope.agent import AgentError, TraceStep
+from finscope.agent_tools import ExplainContext
 from finscope.config import get_settings
 from finscope.diff import ParagraphChange, SectionDiff, diff_sections, word_diff
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
-from finscope.explain import explain_change
+from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
 from finscope.llm import LLMError, OpenAIProvider
 from finscope.sections import Section, split_sections
-from finscope.xbrl import METRICS, MetricValue, key_metrics, parse_facts
+from finscope.xbrl import (
+    METRICS,
+    MetricValue,
+    format_amount,
+    format_period,
+    key_metrics,
+    parse_facts,
+)
 
 LISTED_FORMS = {"10-K", "10-Q", "8-K"}
 PREVIEW_LINES = 40
@@ -63,6 +72,9 @@ def main(argv: list[str] | None = None) -> int:
     explain_parser.add_argument("--part", help="which Part, if the Item exists in several")
     explain_parser.add_argument("--kind", required=True, choices=["added", "removed", "modified"])
     explain_parser.add_argument("--n", type=int, required=True, help="change number from `diff`")
+    explain_parser.add_argument(
+        "--agent", action="store_true", help="let the model gather context with tools first"
+    )
 
     args = parser.parse_args(argv)
 
@@ -86,7 +98,9 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             old, new = filings[1], filings[0]
             if args.command == "explain":
-                return _explain(sec, args.ticker, old, new, args.item, args.part, args.kind, args.n)
+                return _explain(
+                    sec, args.ticker, old, new, args.item, args.part, args.kind, args.n, args.agent
+                )
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
@@ -161,10 +175,7 @@ def _pick_section(sections: list[Section], item: str, part: str | None) -> Secti
 
 
 def _show_facts(sec: SecClient, filing: Filing) -> int:
-    concepts = {concept for metric in METRICS for concept in metric.concepts}
-    facts = parse_facts(sec.get_company_facts(filing.cik), concepts)
-    metrics = key_metrics(facts, filing.accession_number, filing.form)
-    found = {value.name: value for value in metrics}
+    found = {value.name: value for value in _load_metrics(sec, filing)}
 
     print(f"{filing.form} filed {filing.filing_date.isoformat()}  ({filing.accession_number})")
     if not found:
@@ -178,33 +189,20 @@ def _show_facts(sec: SecClient, filing: Filing) -> int:
         if value is None:
             print(f"{metric.name:<16}  not reported")
             continue
-        prior = _format_amount(value.prior.value, value.unit) if value.prior else "-"
+        prior = format_amount(value.prior.value, value.unit) if value.prior else "-"
         change = f"{value.change_pct:+.1f}%" if value.change_pct is not None else "-"
         print(
-            f"{metric.name:<16}  {_format_period(value):<24}  "
-            f"{_format_amount(value.current.value, value.unit):>10}  {prior:>10}  {change:>7}  "
+            f"{metric.name:<16}  {format_period(value):<24}  "
+            f"{format_amount(value.current.value, value.unit):>10}  {prior:>10}  {change:>7}  "
             f"{value.concept}"
         )
     return 0
 
 
-def _format_period(value: MetricValue) -> str:
-    current, prior = value.current, value.prior
-    if current.start is not None:
-        return f"{current.start.isoformat()} to {current.end.isoformat()}"
-    # Instants: show the comparison date, since it isn't always exactly a year earlier.
-    if prior is not None:
-        return f"{current.end.isoformat()} vs {prior.end.isoformat()}"
-    return f"at {current.end.isoformat()}"
-
-
-def _format_amount(value: Decimal, unit: str) -> str:
-    sign = "-" if value < 0 else ""
-    if unit == "USD":
-        return f"{sign}${abs(value) / 1_000_000:,.0f}M"
-    if unit == "USD/shares":
-        return f"{sign}${abs(value):,.2f}"
-    return f"{value:,} {unit}"
+def _load_metrics(sec: SecClient, filing: Filing) -> list[MetricValue]:
+    concepts = {concept for metric in METRICS for concept in metric.concepts}
+    facts = parse_facts(sec.get_company_facts(filing.cik), concepts)
+    return key_metrics(facts, filing.accession_number, filing.form)
 
 
 def _show_diff(
@@ -253,6 +251,7 @@ def _explain(
     part: str | None,
     kind: str,
     number: int,
+    agent: bool,
 ) -> int:
     settings = get_settings()
     try:
@@ -262,9 +261,11 @@ def _explain(
         return 1
 
     _print_filing_pair(old, new)
-    diff = _section_diff(sec, old, new, item, part)
-    if diff is None:
+    sections = _section_pair(sec, old, new, item, part)
+    if sections is None:
         return 1
+    old_section, new_section = sections
+    diff = diff_sections(old_section, new_section)
     changes = _numbered(diff)[kind]
     if not 1 <= number <= len(changes):
         print(
@@ -277,6 +278,15 @@ def _explain(
     print(f"{_diff_label(diff)}, {kind} #{number}:")
     print(_snippet(_change_text(change)))
     print()
+
+    if agent:
+        context = ExplainContext(
+            change=change,
+            old_section=old_section,
+            new_section=new_section,
+            metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+        )
+        return _explain_with_agent(context, ticker, new, _diff_label(diff), provider)
 
     try:
         explanation = explain_change(
@@ -304,6 +314,53 @@ def _explain(
     return 0
 
 
+def _explain_with_agent(
+    context: ExplainContext, ticker: str, filing: Filing, section: str, provider: OpenAIProvider
+) -> int:
+    settings = get_settings()
+    try:
+        explanation = explain_change_with_agent(
+            context,
+            company=ticker.upper(),
+            form=filing.form,
+            section_title=section,
+            provider=provider,
+            settings=settings,
+        )
+    except AgentError as error:
+        _print_trace(error.trace)
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    run = explanation.run
+    _print_trace(run.trace)
+    print()
+    print(run.text)
+    print()
+    cost = "unknown (no prices configured)"
+    if explanation.cost_usd is not None:
+        cost = f"${explanation.cost_usd:.4f}"
+    print(f"steps:  {len(run.trace)}")
+    print(f"tokens: {run.input_tokens:,} input, {run.output_tokens:,} output")
+    print(f"cost:   {cost}")
+    return 0
+
+
+def _print_trace(trace: tuple[TraceStep, ...]) -> None:
+    print("TRACE")
+    for step in trace:
+        calls = "; ".join(
+            f"{call.name} {call.arguments} -> "
+            + (f"ERROR: {call.error}" if call.is_error else f"{call.result_chars:,} chars")
+            for call in step.tool_calls
+        )
+        action = calls if step.tool_calls else "answer"
+        print(f"  {step.number}  {action}  ({step.input_tokens:,} in / {step.output_tokens:,} out)")
+
+
 def _print_filing_pair(old: Filing, new: Filing) -> None:
     print(f"{new.form}  new: {new.filing_date.isoformat()} ({new.accession_number})")
     print(f"{' ' * len(new.form)}  old: {old.filing_date.isoformat()} ({old.accession_number})")
@@ -313,11 +370,19 @@ def _print_filing_pair(old: Filing, new: Filing) -> None:
 def _section_diff(
     sec: SecClient, old: Filing, new: Filing, item: str, part: str | None
 ) -> SectionDiff | None:
+    sections = _section_pair(sec, old, new, item, part)
+    return None if sections is None else diff_sections(*sections)
+
+
+def _section_pair(
+    sec: SecClient, old: Filing, new: Filing, item: str, part: str | None
+) -> tuple[Section, Section] | None:
+    """The same Item in the old and the new filing (errors are printed by _pick_section)."""
     old_section = _pick_section(split_sections(load_filing_text(sec, old)), item, part)
     new_section = _pick_section(split_sections(load_filing_text(sec, new)), item, part)
     if old_section is None or new_section is None:
         return None
-    return diff_sections(old_section, new_section)
+    return old_section, new_section
 
 
 def _numbered(diff: SectionDiff) -> dict[str, list[ParagraphChange]]:

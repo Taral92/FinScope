@@ -122,6 +122,11 @@ def diff_sections(old: Section, new: Section) -> SectionDiff:
     )
 
 
+def section_paragraphs(section: Section) -> list[tuple[int, str]]:
+    """(offset, text) of each paragraph: exactly the paragraphs diff_sections compares."""
+    return [(paragraph.start, paragraph.text) for paragraph in _paragraphs(section)]
+
+
 def word_diff(old: str, new: str) -> str:
     """Inline word diff in git's style: [-removed words-]{+added words+}."""
     old_words, new_words = old.split(), new.split()

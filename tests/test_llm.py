@@ -1,19 +1,21 @@
 from typing import Any, cast
 
 import pytest
-from openai import OpenAI
+from openai import OpenAI, omit
 from openai.types.responses import (
     Response,
+    ResponseFunctionToolCall,
     ResponseOutputMessage,
     ResponseOutputRefusal,
     ResponseOutputText,
+    ResponseReasoningItem,
     ResponseUsage,
 )
 from openai.types.responses.response import IncompleteDetails
 from openai.types.responses.response_usage import InputTokensDetails, OutputTokensDetails
 
 from finscope.config import Settings
-from finscope.llm import LLMError, OpenAIProvider
+from finscope.llm import LLMError, OpenAIProvider, ToolCall, ToolResult, ToolSpec
 
 SETTINGS = Settings(_env_file=None, sec_user_agent="FinScope Test test@example.com")
 
@@ -23,8 +25,12 @@ def make_response(
     *,
     status: str = "completed",
     incomplete_reason: str | None = None,
+    output: list[Any] | None = None,
 ) -> Response:
-    """A real SDK Response object, built offline without validation."""
+    """A real SDK Response object, built offline without validation.
+
+    `content` fills one assistant message; pass `output` instead for other output items.
+    """
     message = ResponseOutputMessage.model_construct(
         id="msg_1", type="message", role="assistant", status="completed", content=content
     )
@@ -39,7 +45,7 @@ def make_response(
         id="resp_1",
         model="gpt-6.1-terra",
         status=status,
-        output=[message],
+        output=output if output is not None else [message],
         incomplete_details=(
             IncompleteDetails.model_construct(reason=incomplete_reason)
             if incomplete_reason
@@ -57,24 +63,31 @@ def text(value: str) -> ResponseOutputText:
 
 
 class FakeResponses:
-    def __init__(self, response: Response) -> None:
-        self.response = response
+    """Returns the given responses in order and records every create() call."""
+
+    def __init__(self, responses: list[Response]) -> None:
+        self.responses = list(responses)
         self.calls: list[dict[str, Any]] = []
 
     def create(self, **kwargs: Any) -> Response:
-        self.calls.append(kwargs)
-        return self.response
+        # Snapshot the input list: the provider builds a new one each turn, but be safe.
+        self.calls.append({**kwargs, "input": _copy(kwargs.get("input"))})
+        return self.responses.pop(0)
+
+
+def _copy(value: Any) -> Any:
+    return list(value) if isinstance(value, list) else value
 
 
 class FakeClient:
     """Stands in for openai.OpenAI: only `client.responses.create` is used."""
 
-    def __init__(self, response: Response) -> None:
-        self.responses = FakeResponses(response)
+    def __init__(self, *responses: Response) -> None:
+        self.responses = FakeResponses(list(responses))
 
 
-def provider_returning(response: Response) -> tuple[OpenAIProvider, FakeClient]:
-    client = FakeClient(response)
+def provider_returning(*responses: Response) -> tuple[OpenAIProvider, FakeClient]:
+    client = FakeClient(*responses)
     return OpenAIProvider(SETTINGS, client=cast(OpenAI, client)), client
 
 
@@ -90,6 +103,7 @@ def test_text_usage_and_request_id_are_extracted() -> None:
     [call] = client.responses.calls
     assert (call["instructions"], call["input"]) == ("system rules", "user question")
     assert call["model"] == SETTINGS.llm_model
+    assert call["tools"] is omit  # complete() sends no tools, exactly as before
 
 
 def test_refusal_raises() -> None:
@@ -123,3 +137,94 @@ def test_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(LLMError, match="OPENAI_API_KEY is not set"):
         OpenAIProvider(settings)
+
+
+# --- Tool calling ---------------------------------------------------------------------------
+
+METRICS_TOOL = ToolSpec(
+    name="get_key_metrics",
+    description="Key XBRL metrics.",
+    parameters={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+)
+REASONING = ResponseReasoningItem.model_construct(id="rs_1", type="reasoning", summary=[])
+
+
+def function_call(arguments: str = "{}") -> ResponseFunctionToolCall:
+    return ResponseFunctionToolCall.model_construct(
+        type="function_call",
+        id="fc_1",
+        call_id="call_1",
+        name="get_key_metrics",
+        arguments=arguments,
+        status="completed",
+    )
+
+
+def test_function_call_is_parsed_into_a_tool_call() -> None:
+    provider, client = provider_returning(make_response([], output=[REASONING, function_call()]))
+
+    step, _ = provider.start("system rules", "user question", [METRICS_TOOL])
+
+    assert step.text is None
+    assert step.tool_calls == (
+        ToolCall(id="call_1", name="get_key_metrics", arguments={}, raw_arguments="{}"),
+    )
+    [call] = client.responses.calls
+    assert call["tools"] == [
+        {
+            "type": "function",
+            "name": "get_key_metrics",
+            "description": "Key XBRL metrics.",
+            "parameters": METRICS_TOOL.parameters,
+            "strict": True,
+        }
+    ]
+
+
+def test_tool_results_go_back_in_the_documented_shape() -> None:
+    call_turn = make_response([], output=[REASONING, function_call()])
+    provider, client = provider_returning(call_turn, make_response([text("ANSWER")]))
+
+    _, state = provider.start("system rules", "user question", [METRICS_TOOL])
+    step, _ = provider.resume(state, [ToolResult(call_id="call_1", output="Revenue | $28,046M")])
+
+    assert step.text == "ANSWER"
+    second = client.responses.calls[1]
+    # Instructions and tools are re-sent: they only apply to a single request.
+    assert second["instructions"] == "system rules"
+    assert second["tools"] == client.responses.calls[0]["tools"]
+    # The history: our message, everything the model returned (reasoning item included),
+    # then our function_call_output answering the call_id.
+    assert second["input"] == [
+        {"role": "user", "content": "user question"},
+        REASONING,
+        function_call(),
+        {"type": "function_call_output", "call_id": "call_1", "output": "Revenue | $28,046M"},
+    ]
+
+
+def test_error_results_are_marked_in_the_output_text() -> None:
+    call_turn = make_response([], output=[function_call()])
+    provider, client = provider_returning(call_turn, make_response([text("ANSWER")]))
+
+    _, state = provider.start("system", "user", [METRICS_TOOL])
+    provider.resume(state, [ToolResult(call_id="call_1", output="unknown tool", is_error=True)])
+
+    assert client.responses.calls[1]["input"][-1]["output"] == "ERROR: unknown tool"
+
+
+def test_invalid_json_arguments_are_flagged_not_raised() -> None:
+    provider, _ = provider_returning(make_response([], output=[function_call('{"count": ')]))
+
+    step, _ = provider.start("system", "user", [METRICS_TOOL])
+
+    [tool_call] = step.tool_calls
+    assert tool_call.invalid_json
+    assert (tool_call.arguments, tool_call.raw_arguments) == ({}, '{"count": ')
+
+
+def test_turn_with_neither_text_nor_tool_calls_raises() -> None:
+    provider, _ = provider_returning(make_response([], output=[REASONING]))
+
+    with pytest.raises(LLMError, match="neither an answer nor tool calls"):
+        provider.start("system", "user", [METRICS_TOOL])

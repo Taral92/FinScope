@@ -179,3 +179,24 @@ def _change_pct(current: Fact, prior: Fact | None) -> Decimal | None:
     # abs() keeps the sign meaningful when the prior value is negative: a loss of 500
     # turning into a profit of 1,000 is +300%, not -300%.
     return (current.value - prior.value) / abs(prior.value) * 100
+
+
+def format_period(value: MetricValue) -> str:
+    """'2026-07-01 to 2026-09-30' for durations; 'end vs prior end' for instants."""
+    current, prior = value.current, value.prior
+    if current.start is not None:
+        return f"{current.start.isoformat()} to {current.end.isoformat()}"
+    # Instants: show the comparison date, since it isn't always exactly a year earlier.
+    if prior is not None:
+        return f"{current.end.isoformat()} vs {prior.end.isoformat()}"
+    return f"at {current.end.isoformat()}"
+
+
+def format_amount(value: Decimal, unit: str) -> str:
+    """USD as readable millions ('$28,046M'), EPS with 2 decimals ('$0.22')."""
+    sign = "-" if value < 0 else ""
+    if unit == "USD":
+        return f"{sign}${abs(value) / 1_000_000:,.0f}M"
+    if unit == "USD/shares":
+        return f"{sign}${abs(value):,.2f}"
+    return f"{value:,} {unit}"
