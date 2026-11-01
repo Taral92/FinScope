@@ -4,17 +4,20 @@ python -m finscope filings TSLA                     list recent 10-K, 10-Q and 8
 python -m finscope read TSLA [--form F]             download the latest filing as plain text
 python -m finscope sections TSLA [--form F]         list the latest filing's Items
 python -m finscope sections TSLA --item 1A [--part I]   print one Item's text
+python -m finscope facts TSLA [--form F]            key financial numbers from XBRL
 """
 
 import argparse
 import os
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 from finscope.config import get_settings
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
 from finscope.sections import Section, split_sections
 from finscope.text import html_to_text
+from finscope.xbrl import METRICS, MetricValue, key_metrics, parse_facts
 
 LISTED_FORMS = {"10-K", "10-Q", "8-K"}
 PREVIEW_LINES = 40
@@ -38,6 +41,10 @@ def main(argv: list[str] | None = None) -> int:
     sections_parser.add_argument("--item", help="print this Item's full text, e.g. 1A")
     sections_parser.add_argument("--part", help="with --item: which Part, e.g. II")
 
+    facts_parser = commands.add_parser("facts", help="key financial numbers from XBRL data")
+    facts_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    facts_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -55,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if args.command == "read":
             return _read_filing(sec, filings[0])
+        if args.command == "facts":
+            return _show_facts(sec, filings[0])
         return _show_sections(sec, filings[0], args.item, args.part)
 
 
@@ -113,6 +122,53 @@ def _show_sections(sec: SecClient, filing: Filing, item: str | None, part: str |
         return 1
     print(matches[0].text)
     return 0
+
+
+def _show_facts(sec: SecClient, filing: Filing) -> int:
+    concepts = {concept for metric in METRICS for concept in metric.concepts}
+    facts = parse_facts(sec.get_company_facts(filing.cik), concepts)
+    metrics = key_metrics(facts, filing.accession_number, filing.form)
+    found = {value.name: value for value in metrics}
+
+    print(f"{filing.form} filed {filing.filing_date.isoformat()}  ({filing.accession_number})")
+    if not found:
+        # SEC usually updates companyfacts within minutes of a filing, but not instantly.
+        print("No XBRL facts for this filing yet.")
+        return 0
+    print()
+    print(f"{'METRIC':<16}  {'PERIOD':<24}  {'VALUE':>10}  {'PRIOR':>10}  {'CHANGE':>7}  CONCEPT")
+    for metric in METRICS:
+        value = found.get(metric.name)
+        if value is None:
+            print(f"{metric.name:<16}  not reported")
+            continue
+        prior = _format_amount(value.prior.value, value.unit) if value.prior else "-"
+        change = f"{value.change_pct:+.1f}%" if value.change_pct is not None else "-"
+        print(
+            f"{metric.name:<16}  {_format_period(value):<24}  "
+            f"{_format_amount(value.current.value, value.unit):>10}  {prior:>10}  {change:>7}  "
+            f"{value.concept}"
+        )
+    return 0
+
+
+def _format_period(value: MetricValue) -> str:
+    current, prior = value.current, value.prior
+    if current.start is not None:
+        return f"{current.start.isoformat()} to {current.end.isoformat()}"
+    # Instants: show the comparison date, since it isn't always exactly a year earlier.
+    if prior is not None:
+        return f"{current.end.isoformat()} vs {prior.end.isoformat()}"
+    return f"at {current.end.isoformat()}"
+
+
+def _format_amount(value: Decimal, unit: str) -> str:
+    sign = "-" if value < 0 else ""
+    if unit == "USD":
+        return f"{sign}${abs(value) / 1_000_000:,.0f}M"
+    if unit == "USD/shares":
+        return f"{sign}${abs(value):,.2f}"
+    return f"{value:,} {unit}"
 
 
 def _filing_text(sec: SecClient, filing: Filing, *, reuse_saved: bool) -> tuple[str, Path]:

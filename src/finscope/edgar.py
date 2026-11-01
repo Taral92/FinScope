@@ -13,6 +13,7 @@ from finscope.config import Settings, get_settings
 
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
+COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession}/{document}"
 
 
@@ -128,6 +129,12 @@ class SecClient:
         ]
         filings.sort(key=lambda filing: filing.filing_date, reverse=True)
         return filings[:limit]
+
+    def get_company_facts(self, cik: str) -> dict[str, Any]:
+        """Every XBRL fact the company has ever reported, across all its filings."""
+        # Not cached on disk: unlike a single filing, this file grows with every new filing.
+        facts: dict[str, Any] = self._get_json(COMPANY_FACTS_URL.format(cik=cik.zfill(10)))
+        return facts
 
     def get_filing_html(self, filing: Filing) -> str:
         """Return the filing's primary document, downloading it only on the first call."""
