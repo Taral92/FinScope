@@ -83,11 +83,74 @@ def test_typography_differences_are_not_changes() -> None:
 def test_offsets_point_at_the_paragraph_in_the_full_text() -> None:
     diff = diff_sections(OLD, NEW)
 
+    # None of these paragraphs is split by a page break, so start..end is exactly the text.
+    # (For rejoined paragraphs see test_rejoined_paragraph_spans_first_to_last_piece.)
     assert diff.changes
     for change in diff.changes:
         if change.old_text is not None:
-            assert change.old_start is not None
-            assert OLD_TEXT[change.old_start :].startswith(change.old_text)
+            assert change.old_start is not None and change.old_end is not None
+            assert OLD_TEXT[change.old_start : change.old_end] == change.old_text
         if change.new_text is not None:
-            assert change.new_start is not None
-            assert NEW_TEXT[change.new_start :].startswith(change.new_text)
+            assert change.new_start is not None and change.new_end is not None
+            assert NEW_TEXT[change.new_start : change.new_end] == change.new_text
+
+
+# A sentence split across page breaks, as html_to_text renders a printed filing.
+PIECE_1 = "Our factories may be damaged by earthquakes, floods or other"
+PIECE_2 = "climate-related events, and our suppliers may be unable to"
+PIECE_3 = "deliver components, which could halt production."
+WHOLE = f"{PIECE_1} {PIECE_2} {PIECE_3}"
+_, EMPTY = filing([], "COVER")  # a section with no paragraphs: everything is added
+
+
+def test_paragraph_split_by_a_page_break_is_unchanged() -> None:
+    _, old = filing([f"{PIECE_1} {PIECE_2}", "23", "Table of Contents", PIECE_3], "COVER")
+    _, new = filing([WHOLE], "COVER")
+
+    diff = diff_sections(old, new)
+
+    assert (diff.unchanged, diff.changes) == (1, ())
+
+
+def test_three_pieces_merge_into_one_paragraph() -> None:
+    _, new = filing([PIECE_1, "23", "Table of Contents", PIECE_2, "24", PIECE_3], "COVER")
+
+    [added] = diff_sections(EMPTY, new).changes
+
+    assert added.new_text == WHOLE
+
+
+def test_rejoined_paragraph_spans_first_to_last_piece() -> None:
+    text, new = filing([PIECE_1, "23", "Table of Contents", PIECE_2, "24", PIECE_3], "COVER")
+
+    [added] = diff_sections(EMPTY, new).changes
+
+    assert added.new_start == text.index(PIECE_1)
+    assert added.new_end == text.index(PIECE_3) + len(PIECE_3)
+
+
+def test_complete_paragraphs_are_not_merged() -> None:
+    paragraphs = [
+        "Risks Related to Our Business",  # heading: no period, but the next starts uppercase
+        "We may be unable to grow.",
+        "Competition may increase.",
+    ]
+    _, new = filing(paragraphs, "COVER")
+
+    added = [change.new_text for change in diff_sections(EMPTY, new).changes]
+
+    assert added == paragraphs
+
+
+def test_list_items_ending_with_semicolons_are_not_merged() -> None:
+    paragraphs = [
+        "We depend on:",
+        "suppliers of battery cells;",
+        "suppliers of semiconductors;",
+        "logistics providers.",
+    ]
+    _, new = filing(paragraphs, "COVER")
+
+    added = [change.new_text for change in diff_sections(EMPTY, new).changes]
+
+    assert added == paragraphs

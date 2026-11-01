@@ -30,6 +30,9 @@ _PARAGRAPH = re.compile(r"\S.*(?:\n.*\S.*)*")
 # Page furniture repeated at every page break: page numbers and the "back to contents" link.
 # Page numbers shift whenever earlier pages grow, which would show up as fake changes.
 _PAGE_FURNITURE = re.compile(r"\d{1,3}|Table of Contents", re.IGNORECASE)
+# Sentence punctuation at the end of a paragraph, optionally followed by closing quotes or
+# brackets. Checked on normalized text, so curly quotes are already straight.
+_SENTENCE_END = re.compile(r"[.!?:;][\"')\]]*$")
 
 
 class ParagraphChange(BaseModel):
@@ -40,8 +43,12 @@ class ParagraphChange(BaseModel):
     kind: Literal["added", "removed", "modified"]
     old_text: str | None
     new_text: str | None
-    old_start: int | None  # offset into the old filing's full text
-    new_start: int | None  # offset into the new filing's full text
+    # Offsets into each filing's full text. For a paragraph rejoined across a page break,
+    # start..end also spans the page furniture between its pieces.
+    old_start: int | None
+    old_end: int | None
+    new_start: int | None
+    new_end: int | None
     similarity: float | None  # 0-1, only for "modified"
 
 
@@ -62,8 +69,9 @@ class SectionDiff(BaseModel):
 
 @dataclass(frozen=True)
 class _Paragraph:
-    text: str  # exactly as in the filing
-    start: int  # absolute offset into the filing's full text
+    text: str  # as in the filing; pieces split by a page break are joined with one space
+    start: int  # absolute offsets into the filing's full text
+    end: int
     words: tuple[str, ...]  # normalized, for comparison only
 
     @property
@@ -136,15 +144,33 @@ def _paragraphs(section: Section) -> list[_Paragraph]:
     heading_end = section.text.find("\n")
     if heading_end == -1:
         return []  # heading only, no body
-    return [
+    pieces = [
         _Paragraph(
             text=match.group(),
             start=section.start + match.start(),  # match.start() already counts from 0
+            end=section.start + match.end(),
             words=tuple(_normalize(match.group()).split()),
         )
         for match in _PARAGRAPH.finditer(section.text, heading_end)
         if not _PAGE_FURNITURE.fullmatch(match.group().strip())
     ]
+
+    # A page break splits a paragraph mid-sentence: the first piece stops without sentence
+    # punctuation and the next piece continues in lowercase. Rejoin those pieces (any number
+    # in a row) so where the page break happens to fall doesn't show up as a change.
+    paragraphs: list[_Paragraph] = []
+    for piece in pieces:
+        previous = paragraphs[-1] if paragraphs else None
+        if previous and piece.text[:1].islower() and not _SENTENCE_END.search(previous.key):
+            paragraphs[-1] = _Paragraph(
+                text=f"{previous.text} {piece.text}",
+                start=previous.start,
+                end=piece.end,
+                words=previous.words + piece.words,
+            )
+        else:
+            paragraphs.append(piece)
+    return paragraphs
 
 
 def _normalize(text: str) -> str:
@@ -184,6 +210,8 @@ def _change(
         old_text=old.text if old else None,
         new_text=new.text if new else None,
         old_start=old.start if old else None,
+        old_end=old.end if old else None,
         new_start=new.start if new else None,
+        new_end=new.end if new else None,
         similarity=similarity,
     )
