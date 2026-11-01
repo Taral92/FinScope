@@ -84,6 +84,11 @@ class SecClient:
     def close(self) -> None:
         self._client.close()
 
+    @property
+    def data_dir(self) -> Path:
+        """Root of the local cache for downloaded and derived files."""
+        return self._data_dir
+
     def get_cik(self, ticker: str) -> str:
         """Look up a ticker's CIK, zero-padded to 10 digits."""
         # Shape: {"0": {"cik_str": 1318605, "ticker": "TSLA", "title": "Tesla, Inc."}, ...}
@@ -148,7 +153,7 @@ class SecClient:
         path.parent.mkdir(parents=True, exist_ok=True)
         # Write to a temp file, then rename: a crash mid-write must not leave a truncated
         # file that the cache would then serve forever.
-        partial = path.with_suffix(".partial")
+        partial = path.with_name(path.name + ".partial")
         partial.write_text(html, encoding="utf-8")
         partial.replace(path)
         return html

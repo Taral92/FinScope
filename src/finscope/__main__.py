@@ -5,23 +5,24 @@ python -m finscope read TSLA [--form F]             download the latest filing a
 python -m finscope sections TSLA [--form F]         list the latest filing's Items
 python -m finscope sections TSLA --item 1A [--part I]   print one Item's text
 python -m finscope facts TSLA [--form F]            key financial numbers from XBRL
+python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with the previous filing
 """
 
 import argparse
 import os
 import sys
 from decimal import Decimal
-from pathlib import Path
 
-from finscope.config import get_settings
+from finscope.diff import ParagraphChange, SectionDiff, diff_sections, word_diff
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
+from finscope.filings import load_filing_text
 from finscope.sections import Section, split_sections
-from finscope.text import html_to_text
 from finscope.xbrl import METRICS, MetricValue, key_metrics, parse_facts
 
 LISTED_FORMS = {"10-K", "10-Q", "8-K"}
 PREVIEW_LINES = 40
 TITLE_WIDTH = 60
+SNIPPET_CHARS = 600
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,6 +46,12 @@ def main(argv: list[str] | None = None) -> int:
     facts_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
     facts_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
 
+    diff_parser = commands.add_parser("diff", help="compare with the previous filing")
+    diff_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    diff_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    diff_parser.add_argument("--item", help="show paragraph changes for this Item, e.g. 1A")
+    diff_parser.add_argument("--part", help="with --item: which Part, e.g. I")
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -56,10 +63,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "filings":
             return _list_filings(sec, cik)
 
-        filings = sec.get_recent_filings(cik, forms={args.form}, limit=1)
+        # The form filter is an exact match, so amendments (e.g. 10-K/A) are excluded.
+        filings = sec.get_recent_filings(cik, forms={args.form}, limit=2)
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
+        if args.command == "diff":
+            if len(filings) < 2:
+                print(f"error: need two {args.form} filings to compare", file=sys.stderr)
+                return 1
+            return _show_diff(sec, old=filings[1], new=filings[0], item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
         if args.command == "facts":
@@ -80,7 +93,8 @@ def _list_filings(sec: SecClient, cik: str) -> int:
 
 def _read_filing(sec: SecClient, filing: Filing) -> int:
     # Always re-convert, so `read` also refreshes the saved text after html_to_text changes.
-    text, path = _filing_text(sec, filing, reuse_saved=False)
+    text = load_filing_text(sec, filing, refresh=True)
+    path = filing_path(sec.data_dir, filing, ".txt")
 
     lines = text.splitlines()
     print(f"{filing.form} filed {filing.filing_date.isoformat()}  ({filing.accession_number})")
@@ -93,8 +107,7 @@ def _read_filing(sec: SecClient, filing: Filing) -> int:
 
 
 def _show_sections(sec: SecClient, filing: Filing, item: str | None, part: str | None) -> int:
-    text, _ = _filing_text(sec, filing, reuse_saved=True)
-    sections = split_sections(text)
+    sections = split_sections(load_filing_text(sec, filing))
 
     if item is None:
         print(f"{filing.form} filed {filing.filing_date.isoformat()}  ({filing.accession_number})")
@@ -107,6 +120,15 @@ def _show_sections(sec: SecClient, filing: Filing, item: str | None, part: str |
             )
         return 0
 
+    chosen = _pick_section(sections, item, part)
+    if chosen is None:
+        return 1
+    print(chosen.text)
+    return 0
+
+
+def _pick_section(sections: list[Section], item: str, part: str | None) -> Section | None:
+    """The one section matching item (and part); prints why and returns None otherwise."""
     matches = [
         section
         for section in sections
@@ -115,13 +137,12 @@ def _show_sections(sec: SecClient, filing: Filing, item: str | None, part: str |
     if not matches:
         available = ", ".join(_label(section) for section in sections)
         print(f"error: Item {item} not found. Available: {available}", file=sys.stderr)
-        return 1
+        return None
     if len(matches) > 1:
         options = " or ".join(f"--part {section.part}" for section in matches)
         print(f"error: Item {item} appears in more than one Part; add {options}", file=sys.stderr)
-        return 1
-    print(matches[0].text)
-    return 0
+        return None
+    return matches[0]
 
 
 def _show_facts(sec: SecClient, filing: Filing) -> int:
@@ -171,14 +192,82 @@ def _format_amount(value: Decimal, unit: str) -> str:
     return f"{value:,} {unit}"
 
 
-def _filing_text(sec: SecClient, filing: Filing, *, reuse_saved: bool) -> tuple[str, Path]:
-    """The filing as plain text, from the saved .txt when allowed, else converted and saved."""
-    path = filing_path(get_settings().data_dir, filing, ".txt")
-    if reuse_saved and path.exists():
-        return path.read_text(encoding="utf-8"), path
-    text = html_to_text(sec.get_filing_html(filing))
-    path.write_text(text, encoding="utf-8")
-    return text, path
+def _show_diff(
+    sec: SecClient, *, old: Filing, new: Filing, item: str | None, part: str | None
+) -> int:
+    old_sections = split_sections(load_filing_text(sec, old))
+    new_sections = split_sections(load_filing_text(sec, new))
+
+    print(f"{new.form}  new: {new.filing_date.isoformat()} ({new.accession_number})")
+    print(f"{' ' * len(new.form)}  old: {old.filing_date.isoformat()} ({old.accession_number})")
+    print()
+
+    if item is not None:
+        old_section = _pick_section(old_sections, item, part)
+        new_section = _pick_section(new_sections, item, part)
+        if old_section is None or new_section is None:
+            return 1
+        _print_section_changes(diff_sections(old_section, new_section))
+        return 0
+
+    old_by_key = {(s.part, s.item): s for s in old_sections}
+    new_by_key = {(s.part, s.item): s for s in new_sections}
+    print(
+        f"{'PART':<4}  {'ITEM':<5}  {'TITLE':<40}  "
+        f"{'UNCHANGED':>9}  {'MODIFIED':>8}  {'ADDED':>5}  {'REMOVED':>7}"
+    )
+    for key, new_section in new_by_key.items():
+        if key not in old_by_key:
+            continue
+        diff = diff_sections(old_by_key[key], new_section)
+        print(
+            f"{diff.part or '-':<4}  {diff.item:<5}  {_shorten(diff.title, 40):<40}  "
+            f"{diff.unchanged:>9}  {len(diff.of_kind('modified')):>8}  "
+            f"{len(diff.of_kind('added')):>5}  {len(diff.of_kind('removed')):>7}"
+        )
+    only_new = [_label(s) for key, s in new_by_key.items() if key not in old_by_key]
+    only_old = [_label(s) for key, s in old_by_key.items() if key not in new_by_key]
+    if only_new or only_old:
+        print()
+        print(f"Only in the new filing: {', '.join(only_new) or '-'}")
+        print(f"Only in the old filing: {', '.join(only_old) or '-'}")
+    return 0
+
+
+def _print_section_changes(diff: SectionDiff) -> None:
+    added, removed = diff.of_kind("added"), diff.of_kind("removed")
+    modified = sorted(diff.of_kind("modified"), key=lambda change: change.similarity or 0)
+    label = f"Part {diff.part} Item {diff.item}" if diff.part else f"Item {diff.item}"
+    print(
+        f"{label}. {diff.title}: {diff.unchanged} unchanged, {len(modified)} modified, "
+        f"{len(added)} added, {len(removed)} removed"
+    )
+
+    print(f"\n=== ADDED ({len(added)}) ===")
+    for change in added:
+        print(f"\n[+] new @ {change.new_start:,}")
+        print(_snippet(change.new_text or ""))
+
+    print(f"\n=== REMOVED ({len(removed)}) ===")
+    for change in removed:
+        print(f"\n[-] old @ {change.old_start:,}")
+        print(_snippet(change.old_text or ""))
+
+    print(f"\n=== MODIFIED ({len(modified)}), least similar first ===")
+    for change in modified:
+        print(
+            f"\n[~] {change.similarity or 0:.2f} similar  "
+            f"old @ {change.old_start:,}  new @ {change.new_start:,}"
+        )
+        print(_snippet(_modified_text(change)))
+
+
+def _modified_text(change: ParagraphChange) -> str:
+    return word_diff(change.old_text or "", change.new_text or "")
+
+
+def _snippet(text: str) -> str:
+    return text if len(text) <= SNIPPET_CHARS else text[:SNIPPET_CHARS] + " …"
 
 
 def _label(section: Section) -> str:
@@ -191,9 +280,11 @@ def _shorten(title: str, width: int) -> str:
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        exit_code = main()
+        sys.stdout.flush()  # surface a closed pipe here, not during interpreter shutdown
     except BrokenPipeError:
         # The reader stopped early (e.g. `| head`). Point stdout at devnull so the flush at
         # exit doesn't raise again; recipe from the Python docs (signal module, SIGPIPE).
         os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
-        raise SystemExit(1) from None
+        exit_code = 1
+    raise SystemExit(exit_code)
