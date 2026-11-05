@@ -11,11 +11,19 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from finscope.config import Settings
-from finscope.diff import SectionDiff, change_text, changes_by_id
+from finscope.diff import (
+    ParagraphChange,
+    SectionDiff,
+    change_text,
+    changes_by_id,
+    compact_word_diff,
+)
 from finscope.llm import LLMProvider, cost_for_tokens, parse_json
 from finscope.prompting import filing_text_block
 
-MAX_BLOCK_CHARS = 1_500  # per change, so one huge paragraph can't crowd out the others
+# Per change, so one huge paragraph can't crowd out the others. Modified changes are sent as
+# a compact word diff, so this is only a safety net for them (e.g. a rewrite of every line).
+MAX_BLOCK_CHARS = 1_500
 TRUNCATION_MARK = " [... truncated]"
 
 Importance = Literal["low", "medium", "high"]
@@ -132,7 +140,7 @@ def triage_section(
 
 def build_user_message(diff: SectionDiff, company: str, form: str, section: str) -> str:
     blocks = [
-        filing_text_block(_truncate(change_text(change)), id=change_id, kind=change.kind)
+        filing_text_block(_truncate(_block_text(change)), id=change_id, kind=change.kind)
         for change_id, change in changes_by_id(diff).items()
     ]
     return (
@@ -141,6 +149,14 @@ def build_user_message(diff: SectionDiff, company: str, form: str, section: str)
         f"Section: {section}\n"
         f"Changes: {len(blocks)}\n\n" + "\n\n".join(blocks)
     )
+
+
+def _block_text(change: ParagraphChange) -> str:
+    """A modified change as its edits plus nearby context, so an edit late in a long
+    paragraph isn't lost to truncation; other changes as their paragraph."""
+    if change.kind == "modified":
+        return compact_word_diff(change.old_text or "", change.new_text or "")
+    return change_text(change)
 
 
 def _truncate(text: str) -> str:

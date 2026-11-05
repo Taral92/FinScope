@@ -418,8 +418,11 @@ def _print_triage(report: TriageReport, changes: dict[str, ParagraphChange]) -> 
             paragraph = " ".join((change.new_text or change.old_text or "").split())
             print(f"\n[{item.id}] {item.reason}")
             print(f"     {_shorten(paragraph, TRIAGE_PREVIEW_CHARS)}")
-    low = sum(1 for item in report.items if item.importance == "low")
-    print(f"\n=== LOW ({low}) === not shown")
+    # LOW is shown too, one line each, so a change the model under-rated is still visible.
+    low = [item for item in report.items if item.importance == "low"]
+    print(f"\n=== LOW ({len(low)}) ===")
+    for item in low:
+        print(f"[{item.id}] {item.reason}")
 
     cost = "unknown (no prices configured)"
     if report.cost_usd is not None:

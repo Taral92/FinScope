@@ -1,4 +1,4 @@
-from finscope.diff import diff_sections, word_diff
+from finscope.diff import compact_word_diff, diff_sections, word_diff
 from finscope.sections import Section, split_sections
 
 UNCHANGED = "We design, develop, manufacture and sell electric vehicles."
@@ -154,3 +154,62 @@ def test_list_items_ending_with_semicolons_are_not_merged() -> None:
     added = [change.new_text for change in diff_sections(EMPTY, new).changes]
 
     assert added == paragraphs
+
+
+def numbered_words(count: int) -> list[str]:
+    """w0 w1 w2 ...: every word distinct, so the diff can't match words to the wrong place."""
+    return [f"w{i}" for i in range(count)]
+
+
+def edited(words: list[str], edits: dict[int, str]) -> str:
+    return " ".join(edits.get(i, word) for i, word in enumerate(words))
+
+
+def test_compact_diff_keeps_every_edit() -> None:
+    words = numbered_words(200)
+    edits = {5: "five", 80: "eighty", 150: "one-fifty", 199: "last"}
+
+    compact = compact_word_diff(" ".join(words), edited(words, edits))
+
+    for i, new_word in edits.items():
+        assert f"[-w{i}-]{{+{new_word}+}}" in compact
+    assert compact.count("[-") == len(edits)  # nothing else was marked as edited
+
+
+def test_edit_late_in_a_long_paragraph_survives() -> None:
+    words = numbered_words(400)  # about 2,300 characters
+    new = edited(words, {350: "materially"})
+    assert new.index("materially") > 1_550  # past where triage used to cut
+
+    compact = compact_word_diff(" ".join(words), new)
+
+    assert "[-w350-]{+materially+}" in compact
+    assert len(compact) < 200
+
+
+def test_nearby_edits_merge_without_repeating_words() -> None:
+    old = "a b c d e f g h i j"
+    new = "a b C d e F g h i j"
+
+    # Only 2 unchanged words (d e) between the edits: shown once, no gap.
+    assert compact_word_diff(old, new, context_words=2) == "a b [-c-]{+C+} d e [-f-]{+F+} g h …"
+
+
+def test_unchanged_text_far_from_edits_is_dropped() -> None:
+    words = numbered_words(100)
+
+    compact = compact_word_diff(" ".join(words), edited(words, {50: "X"}))
+
+    before = " ".join(words[38:50])  # the 12 words just before the edit
+    after = " ".join(words[51:63])  # and the 12 just after
+    assert compact == f"… {before} [-w50-]{{+X+}} {after} …"
+
+
+def test_edits_at_both_ends_of_a_paragraph() -> None:
+    words = numbered_words(100)
+
+    compact = compact_word_diff(" ".join(words), edited(words, {0: "A", 99: "Z"}))
+
+    start = " ".join(words[1:13])
+    end = " ".join(words[87:99])
+    assert compact == f"[-w0-]{{+A+}} {start} … {end} [-w99-]{{+Z+}}"

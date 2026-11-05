@@ -23,6 +23,8 @@ _PAGE_FURNITURE = re.compile(r"\d{1,3}|Table of Contents", re.IGNORECASE)
 # brackets. Checked on normalized text, so curly quotes are already straight.
 _SENTENCE_END = re.compile(r"[.!?:;][\"')\]]*$")
 _ID_PREFIXES = {"added": "+", "removed": "-", "modified": "~"}
+# Stands in for unchanged words left out of a compact word diff.
+_GAP = "…"
 
 
 class ParagraphChange(BaseModel):
@@ -149,18 +151,33 @@ def section_paragraphs(section: Section) -> list[tuple[int, str]]:
 
 def word_diff(old: str, new: str) -> str:
     """Inline word diff in git's style: [-removed words-]{+added words+}."""
-    old_words, new_words = old.split(), new.split()
-    matcher = SequenceMatcher(
-        None, [_normalize(w) for w in old_words], [_normalize(w) for w in new_words], autojunk=False
-    )
-    out = []
-    for op, old_lo, old_hi, new_lo, new_hi in matcher.get_opcodes():
-        if op == "equal":
-            out.append(" ".join(new_words[new_lo:new_hi]))
+    return " ".join(word for _, words in _diff_runs(old, new) for word in words)
+
+
+def compact_word_diff(old: str, new: str, context_words: int = 12) -> str:
+    """word_diff with only the edits, each with up to `context_words` unchanged words around it.
+
+    Unchanged text further away is replaced by " … ". Edits closer together than twice the
+    context share the unchanged words between them, so no word is shown twice.
+    """
+    runs = _diff_runs(old, new)
+    if not any(edited for edited, _ in runs):
+        return " ".join(new.split())  # no edits at all: nothing to compact
+    out: list[str] = []
+    last = len(runs) - 1
+    for index, (edited, words) in enumerate(runs):
+        if edited:
+            out += words
             continue
-        removed = " ".join(old_words[old_lo:old_hi])  # empty for "insert"
-        added = " ".join(new_words[new_lo:new_hi])  # empty for "delete"
-        out.append((f"[-{removed}-]" if removed else "") + (f"{{+{added}+}}" if added else ""))
+        # Runs alternate, so an unchanged run has an edit before it unless it comes first,
+        # and an edit after it unless it comes last.
+        keep_after_edit = context_words if index > 0 else 0
+        keep_before_edit = context_words if index < last else 0
+        if len(words) <= keep_after_edit + keep_before_edit:
+            out += words  # short enough to show whole: merges two nearby edits
+        else:
+            tail = words[len(words) - keep_before_edit :]
+            out += [*words[:keep_after_edit], _GAP, *tail]
     return " ".join(out)
 
 
@@ -196,6 +213,24 @@ def _paragraphs(section: Section) -> list[_Paragraph]:
         else:
             paragraphs.append(piece)
     return paragraphs
+
+
+def _diff_runs(old: str, new: str) -> list[tuple[bool, list[str]]]:
+    """The word diff as alternating runs: (False, unchanged words) and (True, [marked edit])."""
+    old_words, new_words = old.split(), new.split()
+    matcher = SequenceMatcher(
+        None, [_normalize(w) for w in old_words], [_normalize(w) for w in new_words], autojunk=False
+    )
+    runs: list[tuple[bool, list[str]]] = []
+    for op, old_lo, old_hi, new_lo, new_hi in matcher.get_opcodes():
+        if op == "equal":
+            runs.append((False, new_words[new_lo:new_hi]))
+            continue
+        removed = " ".join(old_words[old_lo:old_hi])  # empty for "insert"
+        added = " ".join(new_words[new_lo:new_hi])  # empty for "delete"
+        marked = (f"[-{removed}-]" if removed else "") + (f"{{+{added}+}}" if added else "")
+        runs.append((True, [marked]))
+    return runs
 
 
 def _normalize(text: str) -> str:
