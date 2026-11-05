@@ -104,6 +104,7 @@ def test_text_usage_and_request_id_are_extracted() -> None:
     assert (call["instructions"], call["input"]) == ("system rules", "user question")
     assert call["model"] == SETTINGS.llm_model
     assert call["tools"] is omit  # complete() sends no tools, exactly as before
+    assert call["text"] is omit  # ...and no output format: plain text
 
 
 def test_refusal_raises() -> None:
@@ -129,6 +130,52 @@ def test_empty_answer_raises() -> None:
 
     with pytest.raises(LLMError, match="empty answer"):
         provider.complete("system", "user")
+
+
+# --- Structured output --------------------------------------------------------------------------
+
+LEVEL_SCHEMA = {
+    "type": "object",
+    "properties": {"level": {"type": "string", "enum": ["low", "high"]}},
+    "required": ["level"],
+    "additionalProperties": False,
+}
+
+
+def test_complete_json_sends_the_schema_in_the_documented_shape() -> None:
+    provider, client = provider_returning(make_response([text('{"level": "high"}')]))
+
+    result = provider.complete_json("system rules", "user question", "rating", LEVEL_SCHEMA)
+
+    assert result.text == '{"level": "high"}'  # the raw JSON; callers parse it
+    assert (result.input_tokens, result.output_tokens) == (1_200, 150)
+    [call] = client.responses.calls
+    assert (call["instructions"], call["input"]) == ("system rules", "user question")
+    # Responses API Structured Outputs: text.format with type json_schema and strict mode.
+    assert call["text"] == {
+        "format": {"type": "json_schema", "name": "rating", "schema": LEVEL_SCHEMA, "strict": True}
+    }
+    assert call["tools"] is omit
+
+
+def test_complete_json_refusal_raises() -> None:
+    # A refusal doesn't follow the schema: it is a separate content type.
+    refusal = ResponseOutputRefusal.model_construct(type="refusal", refusal="I can't help.")
+    provider, _ = provider_returning(make_response([refusal]))
+
+    with pytest.raises(LLMError, match="refused: I can't help"):
+        provider.complete_json("system", "user", "rating", LEVEL_SCHEMA)
+
+
+def test_complete_json_truncated_answer_raises() -> None:
+    # Cut off by max_output_tokens: the JSON would be incomplete, so it is never returned.
+    response = make_response(
+        [text('{"level": ')], status="incomplete", incomplete_reason="max_output_tokens"
+    )
+    provider, _ = provider_returning(response)
+
+    with pytest.raises(LLMError, match="incomplete: max_output_tokens"):
+        provider.complete_json("system", "user", "rating", LEVEL_SCHEMA)
 
 
 def test_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:

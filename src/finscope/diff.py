@@ -22,6 +22,7 @@ _PAGE_FURNITURE = re.compile(r"\d{1,3}|Table of Contents", re.IGNORECASE)
 # Sentence punctuation at the end of a paragraph, optionally followed by closing quotes or
 # brackets. Checked on normalized text, so curly quotes are already straight.
 _SENTENCE_END = re.compile(r"[.!?:;][\"')\]]*$")
+_ID_PREFIXES = {"added": "+", "removed": "-", "modified": "~"}
 
 
 class ParagraphChange(BaseModel):
@@ -109,6 +110,36 @@ def diff_sections(old: Section, new: Section) -> SectionDiff:
         unchanged=sum(shared.values()),
         changes=tuple(changes),
     )
+
+
+def numbered_changes(diff: SectionDiff) -> dict[str, list[ParagraphChange]]:
+    """Changes per kind in display order; change numbers (`explain --n`, IDs) count in it."""
+    return {
+        "added": diff.of_kind("added"),
+        "removed": diff.of_kind("removed"),
+        "modified": sorted(diff.of_kind("modified"), key=lambda change: change.similarity or 0),
+    }
+
+
+def change_id(kind: str, number: int) -> str:
+    """The ID `diff` prints for a change: +1 for the first added, -1 removed, ~1 modified."""
+    return f"{_ID_PREFIXES[kind]}{number}"
+
+
+def changes_by_id(diff: SectionDiff) -> dict[str, ParagraphChange]:
+    """Every change keyed by its ID, in display order: added, removed, then modified."""
+    return {
+        change_id(kind, number): change
+        for kind, changes in numbered_changes(diff).items()
+        for number, change in enumerate(changes, start=1)
+    }
+
+
+def change_text(change: ParagraphChange) -> str:
+    """What to show for a change: the paragraph, or the word diff for a modified one."""
+    if change.kind == "modified":
+        return word_diff(change.old_text or "", change.new_text or "")
+    return change.new_text or change.old_text or ""
 
 
 def section_paragraphs(section: Section) -> list[tuple[int, str]]:

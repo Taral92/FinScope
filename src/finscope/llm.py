@@ -6,15 +6,16 @@ from decimal import Decimal
 from typing import Any, Protocol, cast
 
 import openai
-from openai import OpenAI, omit
+from openai import Omit, OpenAI, omit
 from openai.types.responses import (
     FunctionToolParam,
     Response,
     ResponseFunctionToolCall,
     ResponseInputParam,
+    ResponseTextConfigParam,
 )
 from openai.types.shared_params import ReasoningEffort
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from finscope.config import Settings
 
@@ -96,6 +97,12 @@ class LLMProvider(Protocol):
 
     def complete(self, system: str, user: str) -> LLMResult: ...
 
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        """Like complete, but the answer is JSON matching `schema`; result.text is the raw JSON."""
+        ...
+
     def start(
         self, system: str, user: str, tools: list[ToolSpec]
     ) -> tuple[AgentStep, ConversationState]: ...
@@ -141,6 +148,17 @@ class OpenAIProvider:
     def complete(self, system: str, user: str) -> LLMResult:
         return _to_result(self._create(system, user))
 
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        # Structured Outputs: with strict mode the API constrains generation to the schema,
+        # so the answer is valid JSON in that shape. It still comes back as output_text, and a
+        # refusal or truncated (incomplete) answer is reported the same way as for complete().
+        text_format: ResponseTextConfigParam = {
+            "format": {"type": "json_schema", "name": schema_name, "schema": schema, "strict": True}
+        }
+        return _to_result(self._create(system, user, text=text_format))
+
     def start(
         self, system: str, user: str, tools: list[ToolSpec]
     ) -> tuple[AgentStep, ConversationState]:
@@ -179,6 +197,7 @@ class OpenAIProvider:
         system: str,
         input: str | ResponseInputParam,
         tools: list[FunctionToolParam] | None = None,
+        text: ResponseTextConfigParam | Omit = omit,
     ) -> Response:
         try:
             return self._client.responses.create(
@@ -186,6 +205,7 @@ class OpenAIProvider:
                 instructions=system,  # developer-level instructions, ranked above user input
                 input=input,
                 tools=tools if tools else omit,
+                text=text,
                 reasoning={"effort": self._reasoning_effort},
                 max_output_tokens=self._max_output_tokens,
             )
@@ -273,6 +293,22 @@ def _tool_call(item: ResponseFunctionToolCall) -> ToolCall:
     return ToolCall(
         id=item.call_id, name=item.name, arguments=arguments, raw_arguments=item.arguments
     )
+
+
+def parse_json[T: BaseModel](result: LLMResult, model: type[T]) -> T:
+    """Parse a complete_json answer into `model`; invalid JSON or the wrong shape is an LLMError.
+
+    Strict mode should make this impossible, but the answer is outside data: check it anyway.
+    """
+    try:
+        return model.model_validate_json(result.text)
+    except ValidationError as error:
+        first = error.errors()[0]
+        where = ".".join(str(part) for part in first["loc"]) or "answer"
+        raise LLMError(
+            f"model returned JSON that doesn't fit {model.__name__} "
+            f"({error.error_count()} problem(s), first: {where}: {first['msg']})"
+        ) from None
 
 
 def _usage(response: Response) -> tuple[int, int]:

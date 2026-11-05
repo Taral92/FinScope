@@ -8,6 +8,7 @@ python -m finscope facts TSLA [--form F]            key financial numbers from X
 python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with the previous filing
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
+python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
 """
 
 import argparse
@@ -17,12 +18,21 @@ import sys
 from finscope.agent import AgentError, TraceStep
 from finscope.agent_tools import ExplainContext
 from finscope.config import get_settings
-from finscope.diff import ParagraphChange, SectionDiff, diff_sections, word_diff
+from finscope.diff import (
+    ParagraphChange,
+    SectionDiff,
+    change_id,
+    change_text,
+    changes_by_id,
+    diff_sections,
+    numbered_changes,
+)
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
 from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
 from finscope.llm import LLMError, OpenAIProvider
 from finscope.sections import Section, split_sections
+from finscope.triage import TriageError, TriageReport, triage_section
 from finscope.verify import parse_explanation, sources_for, verify_explanation
 from finscope.xbrl import (
     METRICS,
@@ -37,6 +47,10 @@ LISTED_FORMS = {"10-K", "10-Q", "8-K"}
 PREVIEW_LINES = 40
 TITLE_WIDTH = 60
 SNIPPET_CHARS = 600
+TRIAGE_PREVIEW_CHARS = 100
+# Triage answers for a whole section in one call: a long section needs more room than one
+# explanation. This is only a ceiling (reasoning tokens included); you pay for what is used.
+TRIAGE_MAX_OUTPUT_TOKENS = 16_000
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -77,6 +91,12 @@ def main(argv: list[str] | None = None) -> int:
         "--agent", action="store_true", help="let the model gather context with tools first"
     )
 
+    triage_parser = commands.add_parser("triage", help="AI rates every change in a section")
+    triage_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    triage_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    triage_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    triage_parser.add_argument("--part", help="which Part, if the Item exists in several")
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -93,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command in ("diff", "explain"):
+        if args.command in ("diff", "explain", "triage"):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
@@ -102,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
                 return _explain(
                     sec, args.ticker, old, new, args.item, args.part, args.kind, args.n, args.agent
                 )
+            if args.command == "triage":
+                return _triage(sec, args.ticker, old, new, args.item, args.part)
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
@@ -267,7 +289,7 @@ def _explain(
         return 1
     old_section, new_section = sections
     diff = diff_sections(old_section, new_section)
-    changes = _numbered(diff)[kind]
+    changes = numbered_changes(diff)[kind]
     if not 1 <= number <= len(changes):
         print(
             f"error: --n {number} is out of range; {_diff_label(diff)} has "
@@ -277,7 +299,7 @@ def _explain(
         return 1
     change = changes[number - 1]
     print(f"{_diff_label(diff)}, {kind} #{number}:")
-    print(_snippet(_change_text(change)))
+    print(_snippet(change_text(change)))
     print()
 
     if agent:
@@ -355,6 +377,60 @@ def _explain_with_agent(
     return 0
 
 
+def _triage(
+    sec: SecClient, ticker: str, old: Filing, new: Filing, item: str, part: str | None
+) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    diff = _section_diff(sec, old, new, item, part)
+    if diff is None:
+        return 1
+    try:
+        report = triage_section(
+            diff,
+            company=ticker.upper(),
+            form=new.form,
+            section_title=_diff_label(diff),
+            provider=provider,
+            settings=settings,
+        )
+    except (LLMError, TriageError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    print(f"{_diff_label(diff)}: {len(report.items)} change(s) rated")
+    _print_triage(report, changes_by_id(diff))
+    return 0
+
+
+def _print_triage(report: TriageReport, changes: dict[str, ParagraphChange]) -> None:
+    for level in ("high", "medium"):
+        items = [item for item in report.items if item.importance == level]
+        print(f"\n=== {level.upper()} ({len(items)}) ===")
+        for item in items:
+            change = changes[item.id]
+            paragraph = " ".join((change.new_text or change.old_text or "").split())
+            print(f"\n[{item.id}] {item.reason}")
+            print(f"     {_shorten(paragraph, TRIAGE_PREVIEW_CHARS)}")
+    low = sum(1 for item in report.items if item.importance == "low")
+    print(f"\n=== LOW ({low}) === not shown")
+
+    cost = "unknown (no prices configured)"
+    if report.cost_usd is not None:
+        cost = f"${report.cost_usd:.4f}"
+    print()
+    print(f"rated:  {len(report.items)} change(s)")
+    print(f"model:  {report.model or '- (nothing to rate, no call made)'}")
+    print(f"tokens: {report.input_tokens:,} input, {report.output_tokens:,} output")
+    print(f"cost:   {cost}")
+
+
 def _print_fact_check(answer: str, sources: list[str], *, expect_evidence: bool) -> None:
     """Check the answer's quotes and numbers against what the model saw. Shown, never fatal."""
     check = verify_explanation(parse_explanation(answer, expect_evidence=expect_evidence), sources)
@@ -401,17 +477,8 @@ def _section_pair(
     return old_section, new_section
 
 
-def _numbered(diff: SectionDiff) -> dict[str, list[ParagraphChange]]:
-    """Changes per kind in display order; `explain --n` counts in this same order."""
-    return {
-        "added": diff.of_kind("added"),
-        "removed": diff.of_kind("removed"),
-        "modified": sorted(diff.of_kind("modified"), key=lambda change: change.similarity or 0),
-    }
-
-
 def _print_section_changes(diff: SectionDiff) -> None:
-    numbered = _numbered(diff)
+    numbered = numbered_changes(diff)
     added, removed, modified = numbered["added"], numbered["removed"], numbered["modified"]
     print(
         f"{_diff_label(diff)}: {diff.unchanged} unchanged, {len(modified)} modified, "
@@ -420,33 +487,26 @@ def _print_section_changes(diff: SectionDiff) -> None:
 
     print(f"\n=== ADDED ({len(added)}) ===")
     for n, change in enumerate(added, start=1):
-        print(f"\n[+{n}] new @ {change.new_start:,}")
-        print(_snippet(_change_text(change)))
+        print(f"\n[{change_id('added', n)}] new @ {change.new_start:,}")
+        print(_snippet(change_text(change)))
 
     print(f"\n=== REMOVED ({len(removed)}) ===")
     for n, change in enumerate(removed, start=1):
-        print(f"\n[-{n}] old @ {change.old_start:,}")
-        print(_snippet(_change_text(change)))
+        print(f"\n[{change_id('removed', n)}] old @ {change.old_start:,}")
+        print(_snippet(change_text(change)))
 
     print(f"\n=== MODIFIED ({len(modified)}), least similar first ===")
     for n, change in enumerate(modified, start=1):
         print(
-            f"\n[~{n}] {change.similarity or 0:.2f} similar  "
+            f"\n[{change_id('modified', n)}] {change.similarity or 0:.2f} similar  "
             f"old @ {change.old_start:,}  new @ {change.new_start:,}"
         )
-        print(_snippet(_change_text(change)))
+        print(_snippet(change_text(change)))
 
 
 def _diff_label(diff: SectionDiff) -> str:
     label = f"Part {diff.part} Item {diff.item}" if diff.part else f"Item {diff.item}"
     return f"{label}. {diff.title}"
-
-
-def _change_text(change: ParagraphChange) -> str:
-    """What to show for a change: the paragraph, or the word diff for a modified one."""
-    if change.kind == "modified":
-        return word_diff(change.old_text or "", change.new_text or "")
-    return change.new_text or change.old_text or ""
 
 
 def _snippet(text: str) -> str:
