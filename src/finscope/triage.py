@@ -140,7 +140,7 @@ def triage_section(
 
 def build_user_message(diff: SectionDiff, company: str, form: str, section: str) -> str:
     blocks = [
-        filing_text_block(_truncate(_block_text(change)), id=change_id, kind=change.kind)
+        filing_text_block(block_text(change), id=change_id, kind=change.kind)
         for change_id, change in changes_by_id(diff).items()
     ]
     return (
@@ -151,12 +151,15 @@ def build_user_message(diff: SectionDiff, company: str, form: str, section: str)
     )
 
 
-def _block_text(change: ParagraphChange) -> str:
-    """A modified change as its edits plus nearby context, so an edit late in a long
-    paragraph isn't lost to truncation; other changes as their paragraph."""
+def block_text(change: ParagraphChange) -> str:
+    """Exactly the text the model sees for one change (the labeling tool shows it too).
+
+    A modified change is its edits plus nearby context, so an edit late in a long paragraph
+    isn't lost to truncation; added and removed changes are their paragraph.
+    """
     if change.kind == "modified":
-        return compact_word_diff(change.old_text or "", change.new_text or "")
-    return change_text(change)
+        return _truncate(compact_word_diff(change.old_text or "", change.new_text or ""))
+    return _truncate(change_text(change))
 
 
 def _truncate(text: str) -> str:

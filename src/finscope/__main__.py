@@ -9,6 +9,7 @@ python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with th
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
+python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 """
 
 import argparse
@@ -30,6 +31,7 @@ from finscope.diff import (
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
 from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
+from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, OpenAIProvider
 from finscope.sections import Section, split_sections
 from finscope.triage import TriageError, TriageReport, triage_section
@@ -97,6 +99,12 @@ def main(argv: list[str] | None = None) -> int:
     triage_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
     triage_parser.add_argument("--part", help="which Part, if the Item exists in several")
 
+    label_parser = commands.add_parser("label", help="you rate every change (eval labels)")
+    label_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    label_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    label_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    label_parser.add_argument("--part", help="which Part, if the Item exists in several")
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -113,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command in ("diff", "explain", "triage"):
+        if args.command in ("diff", "explain", "triage", "label"):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
@@ -124,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             if args.command == "triage":
                 return _triage(sec, args.ticker, old, new, args.item, args.part)
+            if args.command == "label":
+                return _label_changes(sec, args.ticker, old, new, args.item, args.part)
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
@@ -432,6 +442,38 @@ def _print_triage(report: TriageReport, changes: dict[str, ParagraphChange]) -> 
     print(f"model:  {report.model or '- (nothing to rate, no call made)'}")
     print(f"tokens: {report.input_tokens:,} input, {report.output_tokens:,} output")
     print(f"cost:   {cost}")
+
+
+def _label_changes(
+    sec: SecClient, ticker: str, old: Filing, new: Filing, item: str, part: str | None
+) -> int:
+    _print_filing_pair(old, new)
+    diff = _section_diff(sec, old, new, item, part)
+    if diff is None:
+        return 1
+    labels = SectionLabels(
+        company=ticker.upper(),
+        form=new.form,
+        part=diff.part,
+        item=diff.item,
+        new_accession=new.accession_number,
+        old_accession=old.accession_number,
+        labels=(),
+    )
+    path = LABELS_DIR / labels.file_name
+    if path.exists():
+        try:
+            labels = load_labels(path, diff)
+        except LabelsError as error:
+            print(f"error: {path}: {error}", file=sys.stderr)
+            return 1
+    total = len(changes_by_id(diff))
+    print(f"{_diff_label(diff)}: {total} change(s), {len(labels.labels)} already labeled\n")
+    try:
+        label_changes(diff, labels, LABELS_DIR)
+    except (KeyboardInterrupt, EOFError):  # Ctrl+C or Ctrl+D: every answer is already saved
+        print(f"\nStopped. Every answer so far is saved in {path}")
+    return 0
 
 
 def _print_fact_check(answer: str, sources: list[str], *, expect_evidence: bool) -> None:
