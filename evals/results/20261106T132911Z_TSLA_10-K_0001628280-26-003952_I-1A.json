@@ -1,0 +1,1073 @@
+{
+  "created_at": "2026-11-06T13:29:11.382404Z",
+  "company": "TSLA",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0001628280-26-003952",
+  "old_accession": "0001628280-25-003063",
+  "labels_file": "TSLA_10-K_0001628280-26-003952_I-1A.json",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "3d30ad40231e",
+  "runs": [
+    {
+      "number": 1,
+      "error": null,
+      "model": "gpt-6.1-terra",
+      "items": [
+        {
+          "id": "+1",
+          "importance": "medium",
+          "reason": "The launch and production risk extends to new services and consumer adoption."
+        },
+        {
+          "id": "+2",
+          "importance": "medium",
+          "reason": "The growth risk now includes adoption of autonomous driving solutions."
+        },
+        {
+          "id": "+3",
+          "importance": "high",
+          "reason": "Tesla has entered the autonomous ride-hailing market and faces adoption and competition risks."
+        },
+        {
+          "id": "+4",
+          "importance": "high",
+          "reason": "Growth depends on commercializing Bots in a nascent industry."
+        },
+        {
+          "id": "+5",
+          "importance": "high",
+          "reason": "The developing Bots business requires significant investment and faces substantial commercialization and competition risks."
+        },
+        {
+          "id": "+6",
+          "importance": "high",
+          "reason": "The CEO award could redirect resources toward technologies misaligned with demand and away from valuable opportunities."
+        },
+        {
+          "id": "+7",
+          "importance": "high",
+          "reason": "The CEO award's product goals could drive misaligned investments, underperformance or asset write-downs."
+        },
+        {
+          "id": "-1",
+          "importance": "medium",
+          "reason": "The removed disclosure detailed prior launch delays and risks scaling new manufacturing processes."
+        },
+        {
+          "id": "-2",
+          "importance": "medium",
+          "reason": "The removed disclosure emphasized electric vehicle demand and automotive industry cyclicality."
+        },
+        {
+          "id": "-3",
+          "importance": "medium",
+          "reason": "The removed disclosure identified obligations relating to Gigafactory New York."
+        },
+        {
+          "id": "-4",
+          "importance": "medium",
+          "reason": "The removed disclosure detailed Gigafactory New York spending and employment obligations and potential consequences of noncompliance."
+        },
+        {
+          "id": "-5",
+          "importance": "medium",
+          "reason": "The removed disclosure identified risks from stakeholder scrutiny of ESG practices."
+        },
+        {
+          "id": "-6",
+          "importance": "medium",
+          "reason": "The removed disclosure described potential costs and reputational harm from ESG expectations and legal requirements."
+        },
+        {
+          "id": "-7",
+          "importance": "medium",
+          "reason": "The removed disclosure described tax and indemnification risks from challenges to solar and storage valuations."
+        },
+        {
+          "id": "~1",
+          "importance": "high",
+          "reason": "New trade policy and tariff changes have affected pricing and create uncertainty for demand and costs."
+        },
+        {
+          "id": "~2",
+          "importance": "medium",
+          "reason": "The disclosure adds potential share sales to satisfy tax obligations and makes pledged-loan risk conditional."
+        },
+        {
+          "id": "~3",
+          "importance": "high",
+          "reason": "Regulatory risks now encompass the launched Robotaxi business and its expansion."
+        },
+        {
+          "id": "~4",
+          "importance": "high",
+          "reason": "The production risk expands to Cybercab, autonomous capabilities and future Bots commercialization."
+        },
+        {
+          "id": "~5",
+          "importance": "high",
+          "reason": "Government actions have repealed or restricted incentives and regulatory credit programs tied to Tesla products."
+        },
+        {
+          "id": "~6",
+          "importance": "medium",
+          "reason": "The disruption risk broadens to geopolitical conflicts affecting facilities and supply chains."
+        },
+        {
+          "id": "~7",
+          "importance": "high",
+          "reason": "New legislation could affect battery costs and impose documentation requirements for incentive eligibility."
+        },
+        {
+          "id": "~8",
+          "importance": "medium",
+          "reason": "The competition risk expands to services and competitors' potential cost efficiencies."
+        },
+        {
+          "id": "~9",
+          "importance": "medium",
+          "reason": "Robotaxi and Semi expansion adds service and charging capacity planning risks."
+        },
+        {
+          "id": "~10",
+          "importance": "low",
+          "reason": "The change removes a statement about increased electric vehicle interest and adoption."
+        },
+        {
+          "id": "~11",
+          "importance": "high",
+          "reason": "The disclosure adds Robotaxi collision exposure and a potentially material impact from adverse proceedings."
+        },
+        {
+          "id": "~12",
+          "importance": "medium",
+          "reason": "The risk expands to development issues and delays involving services."
+        },
+        {
+          "id": "~13",
+          "importance": "low",
+          "reason": "The change refreshes the list of Musk's other management roles."
+        },
+        {
+          "id": "~14",
+          "importance": "high",
+          "reason": "Tariffs have affected supply chain costs and AI resource constraints could limit operations."
+        },
+        {
+          "id": "~15",
+          "importance": "medium",
+          "reason": "The capital intensity risk expands to AI infrastructure, company-operated assets and Bots."
+        },
+        {
+          "id": "~16",
+          "importance": "medium",
+          "reason": "The production expansion risk extends to energy products and dependent services such as Robotaxi."
+        },
+        {
+          "id": "~17",
+          "importance": "low",
+          "reason": "The change revises the examples of assumptions underlying guidance."
+        },
+        {
+          "id": "~18",
+          "importance": "medium",
+          "reason": "The demand risk expands to services related to manufactured products."
+        },
+        {
+          "id": "~19",
+          "importance": "high",
+          "reason": "Negative perceptions have prompted protests, including violence targeting operations, products and personnel."
+        },
+        {
+          "id": "~20",
+          "importance": "low",
+          "reason": "The change simplifies the description of programs exposed to customer credit risk."
+        },
+        {
+          "id": "~21",
+          "importance": "medium",
+          "reason": "The obsolescence risk broadens beyond manufacturing equipment."
+        },
+        {
+          "id": "~22",
+          "importance": "medium",
+          "reason": "The disclosure clarifies that defects may emerge over time and could not reasonably have been addressed before sale or installation."
+        },
+        {
+          "id": "~23",
+          "importance": "low",
+          "reason": "The wording changes the description of shares potentially used to secure loans."
+        },
+        {
+          "id": "~24",
+          "importance": "high",
+          "reason": "New state privacy laws impose potentially overlapping and conflicting requirements."
+        },
+        {
+          "id": "~25",
+          "importance": "low",
+          "reason": "The change removes a specific reference to a battery production partner."
+        },
+        {
+          "id": "~26",
+          "importance": "medium",
+          "reason": "The accelerated depreciation risk broadens to other equipment and service production."
+        },
+        {
+          "id": "~27",
+          "importance": "low",
+          "reason": "The indebtedness figure is a routine period update."
+        },
+        {
+          "id": "~28",
+          "importance": "low",
+          "reason": "The change substitutes shareholder terminology."
+        },
+        {
+          "id": "~29",
+          "importance": "medium",
+          "reason": "The disclosure adds sales back to Tesla as a vehicle remarketing channel."
+        },
+        {
+          "id": "~30",
+          "importance": "medium",
+          "reason": "The guarantee risk expands to system availability as well as performance."
+        },
+        {
+          "id": "~31",
+          "importance": "medium",
+          "reason": "The disclosure adds trade policies and refining capacity as factors affecting material supplies."
+        },
+        {
+          "id": "~32",
+          "importance": "medium",
+          "reason": "The data security risk expands to service offerings."
+        },
+        {
+          "id": "~33",
+          "importance": "medium",
+          "reason": "The labor competition risk explicitly includes AI expertise."
+        },
+        {
+          "id": "~34",
+          "importance": "low",
+          "reason": "The change updates terminology for energy generation and storage systems."
+        },
+        {
+          "id": "~35",
+          "importance": "medium",
+          "reason": "The forecasting and warehousing risk expands to production variants."
+        },
+        {
+          "id": "~36",
+          "importance": "low",
+          "reason": "The change removes the assertion that currency effects are currently occurring."
+        },
+        {
+          "id": "~37",
+          "importance": "low",
+          "reason": "The change substitutes shareholder terminology."
+        },
+        {
+          "id": "~38",
+          "importance": "low",
+          "reason": "The trading range figures are a routine period refresh."
+        },
+        {
+          "id": "~39",
+          "importance": "medium",
+          "reason": "The customer financing disclosure expands to energy storage systems."
+        },
+        {
+          "id": "~40",
+          "importance": "medium",
+          "reason": "The environmental compliance risk extends to other infrastructure."
+        },
+        {
+          "id": "~41",
+          "importance": "low",
+          "reason": "The change clarifies the scope of union organizing and removes an abbreviation."
+        },
+        {
+          "id": "~42",
+          "importance": "low",
+          "reason": "The change updates a financial statement note reference."
+        },
+        {
+          "id": "~43",
+          "importance": "low",
+          "reason": "The change is punctuation only."
+        },
+        {
+          "id": "~44",
+          "importance": "low",
+          "reason": "The change revises terminology for safety and compliance matters."
+        },
+        {
+          "id": "~45",
+          "importance": "low",
+          "reason": "The change adds a transitional word."
+        }
+      ],
+      "input_tokens": 7333,
+      "output_tokens": 1483,
+      "cost_usd": "0.014748"
+    },
+    {
+      "number": 2,
+      "error": null,
+      "model": "gpt-6.1-terra",
+      "items": [
+        {
+          "id": "+1",
+          "importance": "medium",
+          "reason": "The risk extends development and launch uncertainty to new services and features."
+        },
+        {
+          "id": "+2",
+          "importance": "medium",
+          "reason": "The growth risk now includes adoption of autonomous driving solutions."
+        },
+        {
+          "id": "+3",
+          "importance": "high",
+          "reason": "Tesla has entered autonomous ride-hailing and faces adoption and expansion risks in the new market."
+        },
+        {
+          "id": "+4",
+          "importance": "high",
+          "reason": "Growth depends on commercializing Bots in a nascent industry."
+        },
+        {
+          "id": "+5",
+          "importance": "high",
+          "reason": "The new Bots business requires significant investment and faces substantial commercialization and competitive risks."
+        },
+        {
+          "id": "+6",
+          "importance": "high",
+          "reason": "The CEO award may direct investment toward technologies misaligned with demand and away from other opportunities."
+        },
+        {
+          "id": "+7",
+          "importance": "high",
+          "reason": "The CEO award's product goals could cause strategic misalignment, underperformance or asset write-downs."
+        },
+        {
+          "id": "-1",
+          "importance": "medium",
+          "reason": "The removed disclosure describes specific past production delays and risks in scaling manufacturing processes."
+        },
+        {
+          "id": "-2",
+          "importance": "medium",
+          "reason": "The removed disclosure emphasizes electric vehicle demand in a competitive, cyclical and volatile industry."
+        },
+        {
+          "id": "-3",
+          "importance": "medium",
+          "reason": "The removed disclosure identifies ongoing obligations related to Gigafactory New York."
+        },
+        {
+          "id": "-4",
+          "importance": "medium",
+          "reason": "The removed disclosure details Gigafactory obligations and potential consequences of noncompliance."
+        },
+        {
+          "id": "-5",
+          "importance": "medium",
+          "reason": "The removed disclosure identifies costs and risks from changing stakeholder expectations about ESG practices."
+        },
+        {
+          "id": "-6",
+          "importance": "medium",
+          "reason": "The removed disclosure describes reputational, demand and operational risks related to ESG expectations and requirements."
+        },
+        {
+          "id": "-7",
+          "importance": "medium",
+          "reason": "The removed disclosure describes potential tax consequences and indemnification payments from disputed system valuations."
+        },
+        {
+          "id": "~1",
+          "importance": "high",
+          "reason": "New trade policy and retaliatory tariffs have affected product pricing and could adversely affect demand."
+        },
+        {
+          "id": "~2",
+          "importance": "medium",
+          "reason": "The disclosure adds potential share sales to satisfy tax obligations and makes pledged-loan risk conditional."
+        },
+        {
+          "id": "~3",
+          "importance": "high",
+          "reason": "Regulatory risks now extend to the launched Robotaxi business and its expansion."
+        },
+        {
+          "id": "~4",
+          "importance": "high",
+          "reason": "The production risk now includes Cybercab, autonomous driving development and future Bots commercialization."
+        },
+        {
+          "id": "~5",
+          "importance": "high",
+          "reason": "Recent actions have repealed or restricted tax credits and credit programs that may affect demand and results."
+        },
+        {
+          "id": "~6",
+          "importance": "medium",
+          "reason": "The disruption risk broadens to geopolitical conflicts affecting facilities and supply chains."
+        },
+        {
+          "id": "~7",
+          "importance": "high",
+          "reason": "New legislation could affect battery costs and impose traceability requirements tied to tax credit eligibility."
+        },
+        {
+          "id": "~8",
+          "importance": "medium",
+          "reason": "The competition risk expands to services and competitors' location-driven cost efficiencies."
+        },
+        {
+          "id": "~9",
+          "importance": "medium",
+          "reason": "The disclosure adds charging and service capacity risks for Robotaxi and Semi expansion."
+        },
+        {
+          "id": "~10",
+          "importance": "low",
+          "reason": "The change removes a general statement about increased electric vehicle interest and adoption."
+        },
+        {
+          "id": "~11",
+          "importance": "high",
+          "reason": "The liability risk now includes Robotaxi collisions and potentially material adverse outcomes from proceedings."
+        },
+        {
+          "id": "~12",
+          "importance": "medium",
+          "reason": "The development and launch risk is broadened to include services and development issues."
+        },
+        {
+          "id": "~13",
+          "importance": "low",
+          "reason": "The change refreshes the list of Musk's other management positions and involvements."
+        },
+        {
+          "id": "~14",
+          "importance": "high",
+          "reason": "Tariffs have increased supply chain costs, while growing AI resource needs may constrain availability or affordability."
+        },
+        {
+          "id": "~15",
+          "importance": "medium",
+          "reason": "The capital-intensive expansion risk now encompasses AI infrastructure, company-operated assets and Bots."
+        },
+        {
+          "id": "~16",
+          "importance": "medium",
+          "reason": "Factory scaling risks now explicitly include energy products and effects on vehicle-dependent services."
+        },
+        {
+          "id": "~17",
+          "importance": "low",
+          "reason": "The change updates the examples of assumptions underlying guidance."
+        },
+        {
+          "id": "~18",
+          "importance": "medium",
+          "reason": "The demand risk is extended to services related to factory production."
+        },
+        {
+          "id": "~19",
+          "importance": "high",
+          "reason": "Negative perceptions have prompted protests, including violence targeting operations, products and personnel."
+        },
+        {
+          "id": "~20",
+          "importance": "low",
+          "reason": "The change simplifies the description of programs exposed to customer credit risk."
+        },
+        {
+          "id": "~21",
+          "importance": "medium",
+          "reason": "The equipment obsolescence risk is broadened beyond manufacturing equipment."
+        },
+        {
+          "id": "~22",
+          "importance": "medium",
+          "reason": "The change clarifies that latent defects may emerge over time despite prior checks."
+        },
+        {
+          "id": "~23",
+          "importance": "medium",
+          "reason": "The disclosure changes the characterization of shares potentially available to pledge against personal loans."
+        },
+        {
+          "id": "~24",
+          "importance": "high",
+          "reason": "The disclosure identifies enacted state privacy laws with potentially conflicting requirements across jurisdictions."
+        },
+        {
+          "id": "~25",
+          "importance": "low",
+          "reason": "The change removes a specific reference to Panasonic's battery production."
+        },
+        {
+          "id": "~26",
+          "importance": "medium",
+          "reason": "The depreciation risk is broadened to other equipment and services."
+        },
+        {
+          "id": "~27",
+          "importance": "low",
+          "reason": "The change is a routine reporting-period update to outstanding indebtedness and the note reference."
+        },
+        {
+          "id": "~28",
+          "importance": "low",
+          "reason": "The change replaces stockholder terminology with shareholder terminology."
+        },
+        {
+          "id": "~29",
+          "importance": "medium",
+          "reason": "The change clarifies that counterparties may resell vehicles back to Tesla."
+        },
+        {
+          "id": "~30",
+          "importance": "medium",
+          "reason": "The disclosure adds availability guarantees to contractual performance risks."
+        },
+        {
+          "id": "~31",
+          "importance": "medium",
+          "reason": "The disclosure adds trade policies and refining capacity as factors affecting material supply."
+        },
+        {
+          "id": "~32",
+          "importance": "medium",
+          "reason": "The data and security risk is broadened to include service offerings."
+        },
+        {
+          "id": "~33",
+          "importance": "low",
+          "reason": "The change adds AI as an example of technology experience in the labor market risk."
+        },
+        {
+          "id": "~34",
+          "importance": "low",
+          "reason": "The change updates terminology for energy generation and storage systems."
+        },
+        {
+          "id": "~35",
+          "importance": "medium",
+          "reason": "The forecasting and warehousing risk now includes growth in production variants."
+        },
+        {
+          "id": "~36",
+          "importance": "low",
+          "reason": "The change removes the assertion that the currency effect is currently occurring."
+        },
+        {
+          "id": "~37",
+          "importance": "low",
+          "reason": "The change replaces stockholder terminology with shareholder terminology."
+        },
+        {
+          "id": "~38",
+          "importance": "low",
+          "reason": "The change routinely updates the trading range and shareholder terminology."
+        },
+        {
+          "id": "~39",
+          "importance": "medium",
+          "reason": "The disclosure expands customer financing arrangements to include energy storage systems."
+        },
+        {
+          "id": "~40",
+          "importance": "medium",
+          "reason": "The environmental compliance risk is broadened to include other infrastructure."
+        },
+        {
+          "id": "~41",
+          "importance": "low",
+          "reason": "The change makes a minor wording clarification and removes an acronym."
+        },
+        {
+          "id": "~42",
+          "importance": "low",
+          "reason": "The change updates a financial statement note reference."
+        },
+        {
+          "id": "~43",
+          "importance": "low",
+          "reason": "The change only adjusts punctuation."
+        },
+        {
+          "id": "~44",
+          "importance": "low",
+          "reason": "The change revises the wording describing safety or non-compliance matters."
+        },
+        {
+          "id": "~45",
+          "importance": "low",
+          "reason": "The change adds a transitional word without altering the stated risk."
+        }
+      ],
+      "input_tokens": 7333,
+      "output_tokens": 1551,
+      "cost_usd": "0.015088"
+    },
+    {
+      "number": 3,
+      "error": null,
+      "model": "gpt-6.1-terra",
+      "items": [
+        {
+          "id": "+1",
+          "importance": "medium",
+          "reason": "The disclosure broadens development and production risks to new services and features."
+        },
+        {
+          "id": "+2",
+          "importance": "medium",
+          "reason": "The growth risk now explicitly includes adoption of autonomous driving solutions."
+        },
+        {
+          "id": "+3",
+          "importance": "high",
+          "reason": "Tesla reports entering autonomous ride-hailing and describes adoption and expansion risks for the new business."
+        },
+        {
+          "id": "+4",
+          "importance": "high",
+          "reason": "The disclosure identifies commercializing Bots as a new growth dependency in a nascent industry."
+        },
+        {
+          "id": "+5",
+          "importance": "high",
+          "reason": "The disclosure describes a prospective Bots business and substantial commercialization, investment and competitive risks."
+        },
+        {
+          "id": "+6",
+          "importance": "high",
+          "reason": "The award may direct investment toward technologies misaligned with demand and away from other opportunities."
+        },
+        {
+          "id": "+7",
+          "importance": "high",
+          "reason": "The disclosure describes potential strategic misalignment, underperformance and asset write-downs associated with the award's product goals."
+        },
+        {
+          "id": "-1",
+          "importance": "medium",
+          "reason": "The removed disclosure details historical production delays and risks in scaling manufacturing processes."
+        },
+        {
+          "id": "-2",
+          "importance": "medium",
+          "reason": "The removed statement emphasizes dependence on vehicle demand in a competitive, cyclical and volatile industry."
+        },
+        {
+          "id": "-3",
+          "importance": "medium",
+          "reason": "The removed statement identifies ongoing obligations tied to Gigafactory New York."
+        },
+        {
+          "id": "-4",
+          "importance": "medium",
+          "reason": "The removed disclosure describes facility spending and employment obligations and potential consequences of noncompliance."
+        },
+        {
+          "id": "-5",
+          "importance": "medium",
+          "reason": "The removed disclosure identifies stakeholder scrutiny of ESG practices as a source of costs and risks."
+        },
+        {
+          "id": "-6",
+          "importance": "medium",
+          "reason": "The removed disclosure details potential reputational, operational and legal consequences of ESG scrutiny."
+        },
+        {
+          "id": "-7",
+          "importance": "medium",
+          "reason": "The removed disclosure describes tax consequences and payment obligations arising from challenges to appraised values."
+        },
+        {
+          "id": "~1",
+          "importance": "high",
+          "reason": "The change describes significant tariff increases, retaliation and trade uncertainty affecting product pricing and demand."
+        },
+        {
+          "id": "~2",
+          "importance": "medium",
+          "reason": "The disclosure clarifies that pledged loans were historical and adds potential share sales to satisfy award-related taxes."
+        },
+        {
+          "id": "~3",
+          "importance": "high",
+          "reason": "The regulatory risk now encompasses autonomous ride-hailing and potential restrictions on Robotaxi expansion."
+        },
+        {
+          "id": "~4",
+          "importance": "high",
+          "reason": "The production risk expands to Cybercab, autonomous driving capabilities and future Bots commercialization."
+        },
+        {
+          "id": "~5",
+          "importance": "high",
+          "reason": "The disclosure reports repealed or restricted tax credits and regulatory credit programs that may harm demand and financial results."
+        },
+        {
+          "id": "~6",
+          "importance": "medium",
+          "reason": "The risk broadens from a specific conflict to geopolitical disruptions affecting facilities and supply chains."
+        },
+        {
+          "id": "~7",
+          "importance": "high",
+          "reason": "The disclosure adds legislative and traceability requirements that may affect costs and tax credit eligibility."
+        },
+        {
+          "id": "~8",
+          "importance": "medium",
+          "reason": "The competition risk expands to services and competitors' potential cost advantages."
+        },
+        {
+          "id": "~9",
+          "importance": "medium",
+          "reason": "The disclosure adds service and charging infrastructure requirements for Robotaxi and Semi expansion."
+        },
+        {
+          "id": "~10",
+          "importance": "low",
+          "reason": "The change removes a statement about increased electric vehicle interest and adoption."
+        },
+        {
+          "id": "~11",
+          "importance": "high",
+          "reason": "The disclosure extends collision and litigation risks to Robotaxi and warns of potentially material adverse outcomes."
+        },
+        {
+          "id": "~12",
+          "importance": "medium",
+          "reason": "The risk is broadened to development issues and service launches."
+        },
+        {
+          "id": "~13",
+          "importance": "low",
+          "reason": "The change updates the list of Musk's other positions and activities."
+        },
+        {
+          "id": "~14",
+          "importance": "high",
+          "reason": "The disclosure reports tariff-related supply chain costs and adds constraints on resources needed for AI development."
+        },
+        {
+          "id": "~15",
+          "importance": "medium",
+          "reason": "The capital-intensive business risk now explicitly includes AI assets, infrastructure and Bots."
+        },
+        {
+          "id": "~16",
+          "importance": "medium",
+          "reason": "The expansion risk broadens to energy products and potential effects on Robotaxi services."
+        },
+        {
+          "id": "~17",
+          "importance": "low",
+          "reason": "The change refreshes the assumptions underlying guidance."
+        },
+        {
+          "id": "~18",
+          "importance": "medium",
+          "reason": "The demand risk is extended to related services."
+        },
+        {
+          "id": "~19",
+          "importance": "high",
+          "reason": "The disclosure adds protests, including violence targeting operations, products and personnel."
+        },
+        {
+          "id": "~20",
+          "importance": "low",
+          "reason": "The change consolidates the description of financing and sales programs exposed to credit risk."
+        },
+        {
+          "id": "~21",
+          "importance": "medium",
+          "reason": "The equipment obsolescence risk is broadened beyond manufacturing equipment."
+        },
+        {
+          "id": "~22",
+          "importance": "medium",
+          "reason": "The change clarifies that defects may emerge over time and could not reasonably have been addressed before sale or installation."
+        },
+        {
+          "id": "~23",
+          "importance": "medium",
+          "reason": "The change clarifies that potential forced sales may involve shares available to pledge rather than already pledged shares."
+        },
+        {
+          "id": "~24",
+          "importance": "high",
+          "reason": "The disclosure adds enacted state privacy laws with overlapping and potentially conflicting requirements."
+        },
+        {
+          "id": "~25",
+          "importance": "low",
+          "reason": "The change removes a specific reference to Panasonic's battery production."
+        },
+        {
+          "id": "~26",
+          "importance": "medium",
+          "reason": "The depreciation risk is broadened to other equipment and services."
+        },
+        {
+          "id": "~27",
+          "importance": "low",
+          "reason": "The change is a routine annual debt balance and note reference update."
+        },
+        {
+          "id": "~28",
+          "importance": "low",
+          "reason": "The change substitutes shareholder terminology."
+        },
+        {
+          "id": "~29",
+          "importance": "medium",
+          "reason": "The change clarifies that counterparties may sell vehicles back to Tesla."
+        },
+        {
+          "id": "~30",
+          "importance": "medium",
+          "reason": "The disclosure adds availability guarantees alongside existing performance guarantees."
+        },
+        {
+          "id": "~31",
+          "importance": "medium",
+          "reason": "The disclosure adds trade policies and refining capacity as factors affecting raw material supply and pricing."
+        },
+        {
+          "id": "~32",
+          "importance": "medium",
+          "reason": "The data and security risk is broadened to service offerings."
+        },
+        {
+          "id": "~33",
+          "importance": "medium",
+          "reason": "The disclosure adds AI expertise to the competitive labor market risk."
+        },
+        {
+          "id": "~34",
+          "importance": "low",
+          "reason": "The change updates terminology for energy generation and storage systems."
+        },
+        {
+          "id": "~35",
+          "importance": "medium",
+          "reason": "The disclosure broadens production planning risk to include increased product variants."
+        },
+        {
+          "id": "~36",
+          "importance": "low",
+          "reason": "The change removes a statement that currency-related revenue effects are currently occurring."
+        },
+        {
+          "id": "~37",
+          "importance": "low",
+          "reason": "The change substitutes shareholder terminology."
+        },
+        {
+          "id": "~38",
+          "importance": "low",
+          "reason": "The change routinely updates the trading range and shareholder terminology."
+        },
+        {
+          "id": "~39",
+          "importance": "medium",
+          "reason": "The customer financing and leasing disclosure expands to energy storage systems."
+        },
+        {
+          "id": "~40",
+          "importance": "medium",
+          "reason": "The environmental compliance risk is extended to other infrastructure."
+        },
+        {
+          "id": "~41",
+          "importance": "low",
+          "reason": "The change clarifies wording and removes an unused abbreviation."
+        },
+        {
+          "id": "~42",
+          "importance": "low",
+          "reason": "The change updates a financial statement note reference."
+        },
+        {
+          "id": "~43",
+          "importance": "low",
+          "reason": "The change corrects punctuation."
+        },
+        {
+          "id": "~44",
+          "importance": "medium",
+          "reason": "The change attributes recalls to safety or non-compliance investigations rather than determinations."
+        },
+        {
+          "id": "~45",
+          "importance": "low",
+          "reason": "The change adds a transitional word without changing the risk."
+        }
+      ],
+      "input_tokens": 7333,
+      "output_tokens": 1558,
+      "cost_usd": "0.015123"
+    }
+  ],
+  "score": {
+    "coverage": {
+      "changes": 59,
+      "scored": 30,
+      "unsure": 1,
+      "unlabeled": 28
+    },
+    "runs": [
+      {
+        "agreement": 0.43333333333333335,
+        "high_recall": 0.4666666666666667,
+        "high_precision": 0.5833333333333334,
+        "critical_misses": [],
+        "confusion": {
+          "high": {
+            "high": 7,
+            "medium": 8,
+            "low": 0
+          },
+          "medium": {
+            "high": 2,
+            "medium": 5,
+            "low": 2
+          },
+          "low": {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+          }
+        }
+      },
+      {
+        "agreement": 0.43333333333333335,
+        "high_recall": 0.4666666666666667,
+        "high_precision": 0.5833333333333334,
+        "critical_misses": [],
+        "confusion": {
+          "high": {
+            "high": 7,
+            "medium": 8,
+            "low": 0
+          },
+          "medium": {
+            "high": 2,
+            "medium": 5,
+            "low": 2
+          },
+          "low": {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+          }
+        }
+      },
+      {
+        "agreement": 0.43333333333333335,
+        "high_recall": 0.4666666666666667,
+        "high_precision": 0.5833333333333334,
+        "critical_misses": [],
+        "confusion": {
+          "high": {
+            "high": 7,
+            "medium": 8,
+            "low": 0
+          },
+          "medium": {
+            "high": 2,
+            "medium": 5,
+            "low": 2
+          },
+          "low": {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+          }
+        }
+      }
+    ],
+    "agreement": {
+      "mean": 0.43333333333333335,
+      "min": 0.43333333333333335,
+      "max": 0.43333333333333335
+    },
+    "high_recall": {
+      "mean": 0.4666666666666666,
+      "min": 0.4666666666666667,
+      "max": 0.4666666666666667
+    },
+    "high_precision": {
+      "mean": 0.5833333333333334,
+      "min": 0.5833333333333334,
+      "max": 0.5833333333333334
+    },
+    "confusion": {
+      "high": {
+        "high": 21,
+        "medium": 24,
+        "low": 0
+      },
+      "medium": {
+        "high": 6,
+        "medium": 15,
+        "low": 6
+      },
+      "low": {
+        "high": 9,
+        "medium": 6,
+        "low": 3
+      }
+    },
+    "critical_misses": [],
+    "unstable": [
+      {
+        "id": "~23",
+        "human": null,
+        "ratings": [
+          "low",
+          "medium",
+          "medium"
+        ]
+      },
+      {
+        "id": "~33",
+        "human": null,
+        "ratings": [
+          "medium",
+          "low",
+          "medium"
+        ]
+      },
+      {
+        "id": "~44",
+        "human": null,
+        "ratings": [
+          "low",
+          "low",
+          "medium"
+        ]
+      }
+    ]
+  },
+  "input_tokens": 21999,
+  "output_tokens": 4592,
+  "cost_usd": "0.044959"
+}
