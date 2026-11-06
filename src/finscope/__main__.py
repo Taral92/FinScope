@@ -10,15 +10,19 @@ python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
+python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 """
 
 import argparse
 import os
 import sys
+from datetime import UTC, datetime
+from decimal import Decimal
+from pathlib import Path
 
 from finscope.agent import AgentError, TraceStep
 from finscope.agent_tools import ExplainContext
-from finscope.config import get_settings
+from finscope.config import Settings, get_settings
 from finscope.diff import (
     ParagraphChange,
     SectionDiff,
@@ -29,12 +33,24 @@ from finscope.diff import (
     numbered_changes,
 )
 from finscope.edgar import Filing, SecClient, TickerNotFoundError, filing_path
+from finscope.evals import (
+    LEVELS,
+    RESULTS_DIR,
+    ChangeRatings,
+    EvalResult,
+    RatedChange,
+    RunRecord,
+    coverage_of,
+    prompt_version,
+    save_result,
+    score_triage,
+)
 from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
-from finscope.llm import LLMError, OpenAIProvider
+from finscope.llm import LLMError, LLMProvider, OpenAIProvider
 from finscope.sections import Section, split_sections
-from finscope.triage import TriageError, TriageReport, triage_section
+from finscope.triage import SCHEMA, SYSTEM_PROMPT, TriageError, TriageReport, triage_section
 from finscope.verify import parse_explanation, sources_for, verify_explanation
 from finscope.xbrl import (
     METRICS,
@@ -105,6 +121,15 @@ def main(argv: list[str] | None = None) -> int:
     label_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
     label_parser.add_argument("--part", help="which Part, if the Item exists in several")
 
+    eval_parser = commands.add_parser("eval-triage", help="score AI triage against your labels")
+    eval_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    eval_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    eval_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    eval_parser.add_argument("--part", help="which Part, if the Item exists in several")
+    eval_parser.add_argument(
+        "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
+    )
+
     args = parser.parse_args(argv)
 
     with SecClient() as sec:
@@ -121,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command in ("diff", "explain", "triage", "label"):
+        if args.command in ("diff", "explain", "triage", "label", "eval-triage"):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
@@ -134,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
                 return _triage(sec, args.ticker, old, new, args.item, args.part)
             if args.command == "label":
                 return _label_changes(sec, args.ticker, old, new, args.item, args.part)
+            if args.command == "eval-triage":
+                return _eval_triage(sec, args.ticker, old, new, args.item, args.part, args.runs)
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
@@ -451,15 +478,7 @@ def _label_changes(
     diff = _section_diff(sec, old, new, item, part)
     if diff is None:
         return 1
-    labels = SectionLabels(
-        company=ticker.upper(),
-        form=new.form,
-        part=diff.part,
-        item=diff.item,
-        new_accession=new.accession_number,
-        old_accession=old.accession_number,
-        labels=(),
-    )
+    labels = _no_labels(ticker, old, new, diff)
     path = LABELS_DIR / labels.file_name
     if path.exists():
         try:
@@ -474,6 +493,210 @@ def _label_changes(
     except (KeyboardInterrupt, EOFError):  # Ctrl+C or Ctrl+D: every answer is already saved
         print(f"\nStopped. Every answer so far is saved in {path}")
     return 0
+
+
+def _no_labels(ticker: str, old: Filing, new: Filing, diff: SectionDiff) -> SectionLabels:
+    """An empty label set for this section; its file_name says where its labels are saved."""
+    return SectionLabels(
+        company=ticker.upper(),
+        form=new.form,
+        part=diff.part,
+        item=diff.item,
+        new_accession=new.accession_number,
+        old_accession=old.accession_number,
+        labels=(),
+    )
+
+
+def _eval_triage(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    runs: int,
+) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    diff = _section_diff(sec, old, new, item, part)
+    if diff is None:
+        return 1
+    path = LABELS_DIR / _no_labels(ticker, old, new, diff).file_name
+    if not path.exists():
+        print(f"error: no labels at {path}; run `label` first", file=sys.stderr)
+        return 1
+    try:
+        labels = load_labels(path, diff)
+    except LabelsError as error:
+        print(f"error: {path}: {error}", file=sys.stderr)
+        return 1
+    return _run_triage_eval(
+        diff, labels, path, provider=provider, settings=settings, runs=runs, results_dir=RESULTS_DIR
+    )
+
+
+def _run_triage_eval(
+    diff: SectionDiff,
+    labels: SectionLabels,
+    labels_path: Path,
+    *,
+    provider: LLMProvider,
+    settings: Settings,
+    runs: int,
+    results_dir: Path,
+) -> int:
+    """Run triage `runs` times, score each run against the labels, print and save the result."""
+    change_ids = list(changes_by_id(diff))
+    human = {label.id: label.label for label in labels.labels}
+    coverage = coverage_of(change_ids, human)
+    print(f"{_diff_label(diff)}: {coverage.describe()}")
+    if coverage.scored == 0:
+        print("error: nothing to score yet; label some changes h/m/l first", file=sys.stderr)
+        return 1
+    print(f"Running triage {runs} time(s): {runs} API call(s).\n")
+
+    records = []
+    for number in range(1, runs + 1):
+        try:
+            report = triage_section(
+                diff,
+                company=labels.company,
+                form=labels.form,
+                section_title=_diff_label(diff),
+                provider=provider,
+                settings=settings,
+            )
+        except (LLMError, TriageError) as error:
+            # Recorded, not fatal: a failed run says something about the model too.
+            print(f"run {number}/{runs}: FAILED: {error}")
+            records.append(
+                RunRecord(
+                    number=number,
+                    error=str(error),
+                    model=None,
+                    items=(),
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_usd=None,
+                )
+            )
+            continue
+        print(f"run {number}/{runs}: done")
+        records.append(
+            RunRecord(
+                number=number,
+                error=None,
+                model=report.model,
+                items=tuple(
+                    RatedChange(id=item.id, importance=item.importance, reason=item.reason)
+                    for item in report.items
+                ),
+                input_tokens=report.input_tokens,
+                output_tokens=report.output_tokens,
+                cost_usd=report.cost_usd,
+            )
+        )
+
+    succeeded = [record for record in records if record.error is None]
+    costs = [record.cost_usd for record in succeeded]
+    result = EvalResult(
+        created_at=datetime.now(UTC),
+        company=labels.company,
+        form=labels.form,
+        part=labels.part,
+        item=labels.item,
+        new_accession=labels.new_accession,
+        old_accession=labels.old_accession,
+        labels_file=labels_path.name,
+        model=settings.llm_model,
+        prompt_version=prompt_version(SYSTEM_PROMPT, SCHEMA),
+        runs=tuple(records),
+        score=score_triage(
+            change_ids,
+            human,
+            [record.ratings if record.error is None else None for record in records],
+        ),
+        input_tokens=sum(record.input_tokens for record in succeeded),
+        output_tokens=sum(record.output_tokens for record in succeeded),
+        cost_usd=None if None in costs else sum((c for c in costs if c is not None), Decimal(0)),
+    )
+    saved = save_result(result, results_dir, labels_path.stem)
+    _print_eval(result)
+    print(f"saved:  {saved}")
+    return 0 if succeeded else 1
+
+
+def _print_eval(result: EvalResult) -> None:
+    score = result.score
+    print(f"\nmodel {result.model}, prompt version {result.prompt_version}")
+    print(f"coverage: {score.coverage.describe()}")
+
+    print("\n=== RUNS ===")
+    for record, run in zip(result.runs, score.runs, strict=True):
+        if run is None:
+            print(f"run {record.number}: FAILED  {record.error}")
+        else:
+            print(
+                f"run {record.number}: agreement {_pct(run.agreement)}  "
+                f"high recall {_pct(run.high_recall)}  high precision {_pct(run.high_precision)}"
+            )
+    metrics = {
+        "agreement": score.agreement,
+        "high recall": score.high_recall,
+        "high precision": score.high_precision,
+    }
+    print(
+        "mean:  "
+        + "  ".join(
+            f"{name} {_pct(spread.mean)} ({_pct(spread.min)}-{_pct(spread.max)})"
+            for name, spread in metrics.items()
+        )
+    )
+
+    succeeded = sum(1 for run in score.runs if run is not None)
+    print(f"\n=== CONFUSION: human rows, model columns, {succeeded} run(s) summed ===")
+    print(f"{'human/model':<12}" + "".join(f"{level:>8}" for level in LEVELS))
+    for row in LEVELS:
+        print(f"{row:<12}" + "".join(f"{score.confusion[row][col]:>8}" for col in LEVELS))
+
+    print(f"\n=== CRITICAL MISSES: human high, model low ({len(score.critical_misses)}) ===")
+    for change in score.critical_misses:
+        print(_ratings_line(change))
+    print(f"\n=== UNSTABLE: runs disagree ({len(score.unstable)}) ===")
+    for change in score.unstable:
+        print(_ratings_line(change))
+
+    cost = "unknown (no prices configured)"
+    if result.cost_usd is not None:
+        cost = f"${result.cost_usd:.4f}"
+    print()
+    print(f"tokens: {result.input_tokens:,} input, {result.output_tokens:,} output")
+    print(f"cost:   {cost}")
+    if succeeded < len(score.runs):
+        print("        (failed runs aren't included: their token usage isn't known)")
+
+
+def _ratings_line(change: ChangeRatings) -> str:
+    ratings = ", ".join(rating or "failed" for rating in change.ratings)
+    return f"[{change.id}] {ratings}   (human: {change.human or 'unlabeled'})"
+
+
+def _pct(share: float | None) -> str:
+    return "n/a" if share is None else f"{share:.0%}"
+
+
+def _positive_int(text: str) -> int:
+    number = int(text)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return number
 
 
 def _print_fact_check(answer: str, sources: list[str], *, expect_evidence: bool) -> None:
