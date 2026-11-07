@@ -13,20 +13,38 @@ python -m finscope report TSLA --item 1A [--max-explain 20]  triage, explain, fa
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
+python -m finscope check [--dry-run] [--include-unseen]  report on newly filed watched sections
 """
 
 import argparse
 import os
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
+from functools import cache
 from pathlib import Path
 
 from finscope.agent import AgentError, TraceStep
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings, get_settings
 from finscope.decide import Decision, Tier, decide
+from finscope.detect import (
+    WATCHLIST_PATH,
+    CheckError,
+    CheckResult,
+    SeenFiling,
+    StateError,
+    WatchEntry,
+    WatchlistError,
+    load_state,
+    load_watchlist,
+    plan_entry,
+    reports_dir,
+    save_check_result,
+    save_state,
+    state_path,
+)
 from finscope.diff import (
     ParagraphChange,
     SectionDiff,
@@ -167,11 +185,36 @@ def main(argv: list[str] | None = None) -> int:
         "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
     )
 
+    check_parser = commands.add_parser(
+        "check", help="run the report on every watched section that has a new filing"
+    )
+    check_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="only say what would happen: no AI calls, no state changes, no files written",
+    )
+    check_parser.add_argument(
+        "--include-unseen",
+        action="store_true",
+        help="on first sight of an entry, run the report instead of only remembering the start",
+    )
+    check_parser.add_argument(
+        "--max-explain",
+        type=_non_negative_int,
+        default=20,
+        help="per section: explain at most this many high changes (default 20)",
+    )
+
     args = parser.parse_args(argv)
 
     # Needs no ticker and no SEC data: the cases are made up and stored in the repo.
     if args.command == "eval-known":
         return _eval_known(args.runs)
+    # Takes its tickers from the watchlist, not the command line.
+    if args.command == "check":
+        return _check(
+            dry_run=args.dry_run, include_unseen=args.include_unseen, max_explain=args.max_explain
+        )
 
     with SecClient() as sec:
         try:
@@ -525,28 +568,20 @@ def _report(
 ) -> int:
     settings = get_settings()
     try:
-        # The same providers triage and explain --agent use (each fails fast without a key).
-        triage_provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
-        agent_provider = OpenAIProvider(settings)
+        triage_provider, agent_provider = _report_providers(settings)
     except LLMError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 
     _print_filing_pair(old, new)
-    sections = _section_pair(sec, old, new, item, part)
-    if sections is None:
-        return 1
-    old_section, new_section = sections
-    diff = diff_sections(old_section, new_section)
     try:
-        report = build_section_report(
-            diff,
-            old_section=old_section,
-            new_section=new_section,
-            metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
-            company=ticker.upper(),
-            form=new.form,
-            section_title=_diff_label(diff),
+        built = _build_report(
+            sec,
+            ticker,
+            old,
+            new,
+            item,
+            part,
             triage_provider=triage_provider,
             agent_provider=agent_provider,
             settings=settings,
@@ -555,8 +590,59 @@ def _report(
     except (LLMError, TriageError) as error:
         print(f"error: triage failed, nothing to report: {error}", file=sys.stderr)
         return 1
+    if built is None:
+        return 1
+    report, _ = built
     _print_report(report)
     return 0
+
+
+def _report_providers(settings: Settings) -> tuple[LLMProvider, LLMProvider]:
+    """Triage and agent providers: the ones triage and explain --agent use.
+
+    Each fails fast (LLMError) without an API key.
+    """
+    triage_provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
+    return triage_provider, OpenAIProvider(settings)
+
+
+def _build_report(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    *,
+    triage_provider: LLMProvider,
+    agent_provider: LLMProvider,
+    settings: Settings,
+    max_explain: int,
+) -> tuple[SectionReport, Decision] | None:
+    """The report for one section and what to do with it; shared by `report` and `check`.
+
+    None when the Item isn't found (the error is already printed). A failed triage raises
+    LLMError or TriageError, as build_section_report does.
+    """
+    sections = _section_pair(sec, old, new, item, part)
+    if sections is None:
+        return None
+    old_section, new_section = sections
+    diff = diff_sections(old_section, new_section)
+    report = build_section_report(
+        diff,
+        old_section=old_section,
+        new_section=new_section,
+        metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+        company=ticker.upper(),
+        form=new.form,
+        section_title=_diff_label(diff),
+        triage_provider=triage_provider,
+        agent_provider=agent_provider,
+        settings=settings,
+        max_explain=max_explain,
+    )
+    return report, decide(report)
 
 
 def _print_report(report: SectionReport) -> None:
@@ -631,6 +717,178 @@ def _print_decision(decision: Decision) -> None:
 
 def _count(number: int, noun: str) -> str:
     return f"{number} {noun}{'' if number == 1 else 's'}"
+
+
+def _check(*, dry_run: bool, include_unseen: bool, max_explain: int) -> int:
+    try:
+        entries = load_watchlist(WATCHLIST_PATH)
+    except WatchlistError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    settings = get_settings()
+    with SecClient(settings) as sec:
+        return _run_check(
+            entries,
+            sec=sec,
+            settings=settings,
+            make_providers=lambda: _report_providers(settings),
+            include_unseen=include_unseen,
+            dry_run=dry_run,
+            max_explain=max_explain,
+        )
+
+
+def _run_check(
+    entries: Sequence[WatchEntry],
+    *,
+    sec: SecClient,
+    settings: Settings,
+    make_providers: Callable[[], tuple[LLMProvider, LLMProvider]],
+    include_unseen: bool,
+    dry_run: bool,
+    max_explain: int,
+) -> int:
+    """Check every entry; one failing entry doesn't stop the others. 1 if any failed."""
+    path = state_path(sec.data_dir)
+    try:
+        state = load_state(path)
+    except StateError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    # Made on the first report only: a check with nothing new needs no API key.
+    providers = cache(make_providers)
+
+    failed = []
+    for entry in entries:
+        print(f"\n=== {entry.label} ===")
+        try:
+            seen = _check_entry(
+                entry,
+                state.get(entry.key),
+                sec=sec,
+                settings=settings,
+                providers=providers,
+                include_unseen=include_unseen,
+                dry_run=dry_run,
+                max_explain=max_explain,
+            )
+            if seen is not None:
+                # A new dict, saved before it's kept: if the save fails, a later entry's save
+                # must not write this entry's update after all.
+                updated = {**state, entry.key: seen}
+                save_state(updated, path)
+                state = updated
+        except Exception as error:  # any failure: report it, keep the old state, go on
+            failed.append(entry.label)
+            print(f"error: {entry.label}: {type(error).__name__}: {error}", file=sys.stderr)
+
+    print(f"\nchecked {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}", end="")
+    print(f", {len(failed)} failed: {', '.join(failed)}" if failed else ", none failed")
+    if dry_run:
+        print("(dry run: no AI calls, no state changes, no files written)")
+    return 1 if failed else 0
+
+
+def _check_entry(
+    entry: WatchEntry,
+    seen: SeenFiling | None,
+    *,
+    sec: SecClient,
+    settings: Settings,
+    providers: Callable[[], tuple[LLMProvider, LLMProvider]],
+    include_unseen: bool,
+    dry_run: bool,
+    max_explain: int,
+) -> SeenFiling | None:
+    """Check one entry. Returns what to remember now, or None to leave its state as it is."""
+    cik = sec.get_cik(entry.ticker)
+    # The form filter is an exact match, so amendments (e.g. 10-K/A) are excluded.
+    filings = sec.get_recent_filings(cik, forms={entry.form}, limit=2)
+    plan = plan_entry(filings, seen, include_unseen=include_unseen)
+    new = plan.new
+    if plan.action == "unchanged":
+        print(f"no new filing (newest is still {_filing_label(new)})")
+        return None
+    if plan.action == "start":
+        if dry_run:
+            print(f"would start watching from {_filing_label(new)}; no AI calls")
+            return None
+        print(f"now watching, starting from {_filing_label(new)}")
+        return _seen(new)
+
+    old = plan.old
+    if old is None:  # a compare plan always has both filings
+        raise CheckError("nothing to compare the new filing with")
+    if plan.skipped and seen is not None:
+        print(
+            f"note: more than one new {entry.form} since {seen.filing_date.isoformat()} "
+            f"({seen.accession_number}); only the newest two are compared"
+        )
+    if dry_run:
+        print(
+            f"would compare {_filing_label(new)} with {_filing_label(old)}: "
+            f"triage + up to {max_explain} agent run(s)"
+        )
+        return None
+
+    triage_provider, agent_provider = providers()
+    _print_filing_pair(old, new)
+    built = _build_report(
+        sec,
+        entry.ticker,
+        old,
+        new,
+        entry.item,
+        entry.part,
+        triage_provider=triage_provider,
+        agent_provider=agent_provider,
+        settings=settings,
+        max_explain=max_explain,
+    )
+    if built is None:
+        raise CheckError("section not found (see the error above)")
+    report, decision = built
+    result = CheckResult(
+        checked_at=datetime.now(UTC),
+        entry=entry,
+        old_filing=old,
+        new_filing=new,
+        report=report,
+        decision=decision,
+    )
+    saved = save_check_result(result, reports_dir(sec.data_dir))
+    _print_check_summary(report, decision, saved)
+    # Remembered only now, after the report is saved: a failure above means a retry next time.
+    return _seen(new)
+
+
+def _seen(filing: Filing) -> SeenFiling:
+    return SeenFiling(
+        accession_number=filing.accession_number,
+        filing_date=filing.filing_date,
+        processed_at=datetime.now(UTC),
+    )
+
+
+def _print_check_summary(report: SectionReport, decision: Decision, saved: Path) -> None:
+    print(
+        f"{report.change_count} change(s): {report.high_count} high, "
+        f"{report.medium_count} medium, {report.low_count} low"
+    )
+    alerts = decision.tier("alert")
+    print(f"ALERT ({len(alerts)})")
+    for entry in alerts:
+        print(f"  [{entry.id}] {entry.what_changed}")
+    print(f"DIGEST ({len(decision.tier('digest'))}), REVIEW ({len(decision.tier('review'))})")
+    cost = "unknown (no prices configured)"
+    if report.cost_usd is not None:
+        cost = f"${report.cost_usd:.4f}"
+    print(f"cost:  {cost}")
+    print(f"saved: {saved}")
+
+
+def _filing_label(filing: Filing) -> str:
+    return f"{filing.filing_date.isoformat()} ({filing.accession_number})"
 
 
 def _label_changes(
