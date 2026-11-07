@@ -168,6 +168,7 @@ def test_high_changes_are_explained_and_verified() -> None:
         assert item.verification is not None
         assert item.verification.passed
         assert item.verification.quotes_checked == 1
+        assert item.parsed is not None and item.parsed.importance == "high"
     assert result.not_explained == ()
     assert [(m.id, m.triage_reason) for m in result.medium] == [("+2", "reason +2")]
 
@@ -180,7 +181,10 @@ def test_cap_is_respected_and_skipped_ids_are_listed() -> None:
 
     assert len(agent.users) == 2
     assert [item.id for item in result.high] == ["+1", "+2"]
-    assert result.not_explained == ("+3", "+4")
+    assert [(item.id, item.triage_reason) for item in result.not_explained] == [
+        ("+3", "reason +3"),
+        ("+4", "reason +4"),
+    ]
     assert result.high_count == 4
 
 
@@ -194,7 +198,7 @@ def test_one_agent_failure_does_not_stop_the_others() -> None:
     assert failed_call.error == "model call failed: server error"
     assert failed_call.explanation is None and failed_call.verification is None
     assert no_text.error == "agent failed: model returned no answer"
-    assert no_text.verification is None
+    assert no_text.verification is None and no_text.parsed is None
     assert answered.error is None
     assert answered.verification is not None and answered.verification.passed
 

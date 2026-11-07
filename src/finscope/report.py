@@ -17,7 +17,13 @@ from finscope.explain import explain_change_with_agent
 from finscope.llm import LLMError, LLMProvider, cost_for_tokens
 from finscope.sections import Section
 from finscope.triage import triage_section
-from finscope.verify import Verification, parse_explanation, sources_for, verify_explanation
+from finscope.verify import (
+    ParsedExplanation,
+    Verification,
+    parse_explanation,
+    sources_for,
+    verify_explanation,
+)
 from finscope.xbrl import MetricValue
 
 
@@ -34,13 +40,16 @@ class HighItem(BaseModel):
     triage_reason: str
     explanation: str | None  # None when the agent failed
     error: str | None  # why the agent failed; None when it answered
+    parsed: ParsedExplanation | None  # the answer split into its labeled lines; None on failure
     verification: Verification | None  # None when there is no answer to check
     # Every model call of this run; None when a call failed and its usage isn't known.
     input_tokens: int | None
     output_tokens: int | None
 
 
-class MediumItem(BaseModel):
+class RatedItem(BaseModel):
+    """A change with only its triage rating: a medium one, or a high one over the cap."""
+
     model_config = ConfigDict(frozen=True)
 
     id: str
@@ -58,8 +67,8 @@ class SectionReport(BaseModel):
     medium_count: int
     low_count: int
     high: tuple[HighItem, ...]  # explained (or attempted) high changes, in diff order
-    not_explained: tuple[str, ...]  # IDs of high changes over the max_explain cap
-    medium: tuple[MediumItem, ...]
+    not_explained: tuple[RatedItem, ...]  # high changes over the max_explain cap, in diff order
+    medium: tuple[RatedItem, ...]
     # Totals over every call: triage plus each agent run, failed runs included.
     input_tokens: int
     output_tokens: int
@@ -79,7 +88,7 @@ def build_section_report(
     triage_provider: LLMProvider,
     agent_provider: LLMProvider,
     settings: Settings,
-    max_explain: int = 5,
+    max_explain: int = 20,
 ) -> SectionReport:
     """Triage the section, then explain and fact-check up to `max_explain` high changes.
 
@@ -133,8 +142,10 @@ def build_section_report(
         medium_count=len(medium),
         low_count=low_count,
         high=tuple(explained),
-        not_explained=tuple(item.id for item in high[max_explain:]),
-        medium=tuple(MediumItem(id=item.id, triage_reason=item.reason) for item in medium),
+        not_explained=tuple(
+            RatedItem(id=item.id, triage_reason=item.reason) for item in high[max_explain:]
+        ),
+        medium=tuple(RatedItem(id=item.id, triage_reason=item.reason) for item in medium),
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         # Price is per token, so the cost of the total is the sum of each call's cost.
@@ -170,6 +181,7 @@ def _explain_and_check(
             triage_reason=triage_reason,
             explanation=None,
             error=f"agent failed: {error}",
+            parsed=None,
             verification=None,
             input_tokens=sum(step.input_tokens for step in error.trace),
             output_tokens=sum(step.output_tokens for step in error.trace),
@@ -181,6 +193,7 @@ def _explain_and_check(
             triage_reason=triage_reason,
             explanation=None,
             error=f"model call failed: {error}",
+            parsed=None,
             verification=None,
             input_tokens=None,
             output_tokens=None,
@@ -193,6 +206,7 @@ def _explain_and_check(
         triage_reason=triage_reason,
         explanation=run.text,
         error=None,
+        parsed=parsed,
         verification=verify_explanation(parsed, sources_for(context.change, run.tool_outputs)),
         input_tokens=run.input_tokens,
         output_tokens=run.output_tokens,

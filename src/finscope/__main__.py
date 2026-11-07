@@ -9,7 +9,7 @@ python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with th
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
-python -m finscope report TSLA --item 1A [--max-explain 5]   triage + explain and fact-check highs
+python -m finscope report TSLA --item 1A [--max-explain 20]  triage, explain, fact-check, decide
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
@@ -26,6 +26,7 @@ from pathlib import Path
 from finscope.agent import AgentError, TraceStep
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings, get_settings
+from finscope.decide import Decision, Tier, decide
 from finscope.diff import (
     ParagraphChange,
     SectionDiff,
@@ -140,8 +141,8 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument(
         "--max-explain",
         type=_non_negative_int,
-        default=5,
-        help="explain at most this many high changes, one agent run each (default 5)",
+        default=20,
+        help="explain at most this many high changes, one agent run each (default 20)",
     )
 
     label_parser = commands.add_parser("label", help="you rate every change (eval labels)")
@@ -564,6 +565,7 @@ def _print_report(report: SectionReport) -> None:
         f"{report.change_count} change(s): {report.high_count} high, "
         f"{report.medium_count} medium, {report.low_count} low"
     )
+    _print_decision(decide(report))
 
     print(f"\n=== HIGH ({report.high_count}), {len(report.high)} explained ===")
     for item in report.high:
@@ -586,7 +588,7 @@ def _print_report(report: SectionReport) -> None:
     if report.not_explained:
         print(
             f"\n{len(report.not_explained)} more high change(s) not explained: "
-            f"{', '.join(report.not_explained)} (raise --max-explain)"
+            f"{', '.join(item.id for item in report.not_explained)} (raise --max-explain)"
         )
 
     print(f"\n=== MEDIUM ({report.medium_count}) ===")
@@ -603,6 +605,28 @@ def _print_report(report: SectionReport) -> None:
     print(f"cost:   {cost}")
     if not report.usage_complete:
         print("        (a failed model call isn't included: its token usage isn't known)")
+
+
+def _print_decision(decision: Decision) -> None:
+    alerts = decision.tier("alert")
+    print(f"\n=== ALERT ({len(alerts)}) ===")
+    for entry in alerts:
+        print(f"[{entry.id}] {entry.what_changed}")
+        print(f"{' ' * (len(entry.id) + 3)}WHY IT MATTERS: {entry.why_it_matters}")
+    if not alerts:
+        print("(none)")
+
+    headings: tuple[tuple[Tier, str], ...] = (
+        ("digest", "agent rated lower than triage"),
+        ("review", "read these yourself"),
+    )
+    for tier, heading in headings:
+        entries = decision.tier(tier)
+        print(f"\n=== {tier.upper()} ({len(entries)}): {heading} ===")
+        for entry in entries:
+            print(f"[{entry.id}] {entry.reason} | triage: {entry.triage_reason}")
+        if not entries:
+            print("(none)")
 
 
 def _count(number: int, noun: str) -> str:
