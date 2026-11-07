@@ -11,11 +11,13 @@ python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, mod
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
+python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
 """
 
 import argparse
 import os
 import sys
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -38,6 +40,8 @@ from finscope.evals import (
     RESULTS_DIR,
     ChangeRatings,
     EvalResult,
+    EvalScore,
+    Importance,
     RatedChange,
     RunRecord,
     coverage_of,
@@ -47,6 +51,15 @@ from finscope.evals import (
 )
 from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
+from finscope.known_cases import (
+    COMPANY,
+    FORM,
+    KNOWN_CASES_PATH,
+    KnownCasesError,
+    build_known_diff,
+    case_results,
+    load_known_cases,
+)
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
 from finscope.sections import Section, split_sections
@@ -130,7 +143,18 @@ def main(argv: list[str] | None = None) -> int:
         "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
     )
 
+    known_parser = commands.add_parser(
+        "eval-known", help="score AI triage on made-up changes with obvious answers"
+    )
+    known_parser.add_argument(
+        "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
+    )
+
     args = parser.parse_args(argv)
+
+    # Needs no ticker and no SEC data: the cases are made up and stored in the repo.
+    if args.command == "eval-known":
+        return _eval_known(args.runs)
 
     with SecClient() as sec:
         try:
@@ -562,13 +586,55 @@ def _run_triage_eval(
         return 1
     print(f"Running triage {runs} time(s): {runs} API call(s).\n")
 
+    records = _triage_runs(
+        diff,
+        company=labels.company,
+        form=labels.form,
+        provider=provider,
+        settings=settings,
+        runs=runs,
+    )
+    succeeded = [record for record in records if record.error is None]
+    result = EvalResult(
+        created_at=datetime.now(UTC),
+        company=labels.company,
+        form=labels.form,
+        part=labels.part,
+        item=labels.item,
+        new_accession=labels.new_accession,
+        old_accession=labels.old_accession,
+        labels_file=labels_path.name,
+        model=settings.llm_model,
+        prompt_version=prompt_version(SYSTEM_PROMPT, SCHEMA),
+        runs=tuple(records),
+        score=score_triage(change_ids, human, _run_ratings(records)),
+        input_tokens=sum(record.input_tokens for record in succeeded),
+        output_tokens=sum(record.output_tokens for record in succeeded),
+        cost_usd=_total_cost(succeeded),
+    )
+    saved = save_result(result, results_dir, labels_path.stem)
+    _print_eval(result)
+    print(f"saved:  {saved}")
+    return 0 if succeeded else 1
+
+
+def _triage_runs(
+    diff: SectionDiff,
+    *,
+    company: str,
+    form: str,
+    provider: LLMProvider,
+    settings: Settings,
+    runs: int,
+) -> list[RunRecord]:
+    """Triage the same section `runs` times, one API call each; failed runs are kept."""
     records = []
     for number in range(1, runs + 1):
         try:
             report = triage_section(
                 diff,
-                company=labels.company,
-                form=labels.form,
+                company=company,
+                form=form,
                 section_title=_diff_label(diff),
                 provider=provider,
                 settings=settings,
@@ -603,43 +669,92 @@ def _run_triage_eval(
                 cost_usd=report.cost_usd,
             )
         )
+    return records
+
+
+def _run_ratings(records: list[RunRecord]) -> list[dict[str, Importance] | None]:
+    """What score_triage takes: each run's ratings, None for a failed run."""
+    return [record.ratings if record.error is None else None for record in records]
+
+
+def _total_cost(succeeded: list[RunRecord]) -> Decimal | None:
+    costs = [record.cost_usd for record in succeeded]
+    return None if None in costs else sum((c for c in costs if c is not None), Decimal(0))
+
+
+def _eval_known(runs: int) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    return _run_known_eval(KNOWN_CASES_PATH, provider=provider, settings=settings, runs=runs)
+
+
+def _run_known_eval(
+    cases_path: Path, *, provider: LLMProvider, settings: Settings, runs: int
+) -> int:
+    """Triage the known cases `runs` times and print PASS/FAIL per case plus the score."""
+    try:
+        cases = load_known_cases(cases_path)
+    except KnownCasesError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    known = build_known_diff(cases)
+    print(f"{len(cases)} known case(s) from {cases_path} ({COMPANY}, a made-up company)")
+    print(f"Running triage {runs} time(s): {runs} API call(s).\n")
+
+    records = _triage_runs(
+        known.diff, company=COMPANY, form=FORM, provider=provider, settings=settings, runs=runs
+    )
+    ratings = _run_ratings(records)
+    results = case_results(known, ratings)
+
+    print("\n=== CASES: PASS only if every run gave the expected rating ===")
+    width = max(len(result.name) for result in results)
+    for result in results:
+        got = ", ".join(rating or "failed" for rating in result.ratings)
+        print(
+            f"{'PASS' if result.passed else 'FAIL'} {result.matches}/{len(result.ratings)}  "
+            f"{result.name:<{width}}  expected {result.expected:<4}  got {got}"
+        )
+    passed = sum(result.passed for result in results)
+    print(f"\npassed: {passed}/{len(results)} case(s)")
 
     succeeded = [record for record in records if record.error is None]
-    costs = [record.cost_usd for record in succeeded]
-    result = EvalResult(
-        created_at=datetime.now(UTC),
-        company=labels.company,
-        form=labels.form,
-        part=labels.part,
-        item=labels.item,
-        new_accession=labels.new_accession,
-        old_accession=labels.old_accession,
-        labels_file=labels_path.name,
-        model=settings.llm_model,
-        prompt_version=prompt_version(SYSTEM_PROMPT, SCHEMA),
-        runs=tuple(records),
-        score=score_triage(
-            change_ids,
-            human,
-            [record.ratings if record.error is None else None for record in records],
-        ),
-        input_tokens=sum(record.input_tokens for record in succeeded),
-        output_tokens=sum(record.output_tokens for record in succeeded),
-        cost_usd=None if None in costs else sum((c for c in costs if c is not None), Decimal(0)),
+    print(f"\nmodel {settings.llm_model}, prompt version {prompt_version(SYSTEM_PROMPT, SCHEMA)}")
+    score = score_triage(list(known.names), known.expected, ratings)
+    # Case names instead of bare IDs: "+1" means nothing for a made-up section.
+    _print_score(score, records, names={i: f"{i} {name}" for i, name in known.names.items()})
+    _print_usage(
+        sum(record.input_tokens for record in succeeded),
+        sum(record.output_tokens for record in succeeded),
+        _total_cost(succeeded),
+        all_succeeded=len(succeeded) == len(records),
     )
-    saved = save_result(result, results_dir, labels_path.stem)
-    _print_eval(result)
-    print(f"saved:  {saved}")
     return 0 if succeeded else 1
 
 
 def _print_eval(result: EvalResult) -> None:
-    score = result.score
     print(f"\nmodel {result.model}, prompt version {result.prompt_version}")
+    _print_score(result.score, result.runs)
+    _print_usage(
+        result.input_tokens,
+        result.output_tokens,
+        result.cost_usd,
+        all_succeeded=all(run is not None for run in result.score.runs),
+    )
+
+
+def _print_score(
+    score: EvalScore, records: Sequence[RunRecord], names: Mapping[str, str] | None = None
+) -> None:
+    """The score block shared by eval-triage and eval-known; `names` relabels change IDs."""
     print(f"coverage: {score.coverage.describe()}")
 
     print("\n=== RUNS ===")
-    for record, run in zip(result.runs, score.runs, strict=True):
+    for record, run in zip(records, score.runs, strict=True):
         if run is None:
             print(f"run {record.number}: FAILED  {record.error}")
         else:
@@ -668,24 +783,29 @@ def _print_eval(result: EvalResult) -> None:
 
     print(f"\n=== CRITICAL MISSES: human high, model low ({len(score.critical_misses)}) ===")
     for change in score.critical_misses:
-        print(_ratings_line(change))
+        print(_ratings_line(change, names))
     print(f"\n=== UNSTABLE: runs disagree ({len(score.unstable)}) ===")
     for change in score.unstable:
-        print(_ratings_line(change))
+        print(_ratings_line(change, names))
 
+
+def _print_usage(
+    input_tokens: int, output_tokens: int, cost_usd: Decimal | None, *, all_succeeded: bool
+) -> None:
     cost = "unknown (no prices configured)"
-    if result.cost_usd is not None:
-        cost = f"${result.cost_usd:.4f}"
+    if cost_usd is not None:
+        cost = f"${cost_usd:.4f}"
     print()
-    print(f"tokens: {result.input_tokens:,} input, {result.output_tokens:,} output")
+    print(f"tokens: {input_tokens:,} input, {output_tokens:,} output")
     print(f"cost:   {cost}")
-    if succeeded < len(score.runs):
+    if not all_succeeded:
         print("        (failed runs aren't included: their token usage isn't known)")
 
 
-def _ratings_line(change: ChangeRatings) -> str:
+def _ratings_line(change: ChangeRatings, names: Mapping[str, str] | None = None) -> str:
     ratings = ", ".join(rating or "failed" for rating in change.ratings)
-    return f"[{change.id}] {ratings}   (human: {change.human or 'unlabeled'})"
+    label = names.get(change.id, change.id) if names else change.id
+    return f"[{label}] {ratings}   (human: {change.human or 'unlabeled'})"
 
 
 def _pct(share: float | None) -> str:

@@ -149,6 +149,15 @@ def section_paragraphs(section: Section) -> list[tuple[int, str]]:
     return [(paragraph.start, paragraph.text) for paragraph in _paragraphs(section)]
 
 
+def similarity(old: str, new: str) -> float:
+    """Word-level similarity 0-1 of two paragraphs: the score diff_sections gives a pair.
+
+    diff_sections skips scoring pairs that can't reach MODIFIED_THRESHOLD (they count as 0);
+    this always returns the exact score.
+    """
+    return _word_matcher(_words(old), _words(new)).ratio()
+
+
 def word_diff(old: str, new: str) -> str:
     """Inline word diff in git's style: [-removed words-]{+added words+}."""
     return " ".join(word for _, words in _diff_runs(old, new) for word in words)
@@ -191,7 +200,7 @@ def _paragraphs(section: Section) -> list[_Paragraph]:
             text=match.group(),
             start=section.start + match.start(),  # match.start() already counts from 0
             end=section.start + match.end(),
-            words=tuple(_normalize(match.group()).split()),
+            words=_words(match.group()),
         )
         for match in _PARAGRAPH.finditer(section.text, heading_end)
         if not _PAGE_FURNITURE.fullmatch(match.group().strip())
@@ -237,6 +246,15 @@ def _normalize(text: str) -> str:
     return unify_typography(text)
 
 
+def _words(text: str) -> tuple[str, ...]:
+    """The normalized words paragraphs are compared on."""
+    return tuple(_normalize(text).split())
+
+
+def _word_matcher(old: tuple[str, ...], new: tuple[str, ...]) -> SequenceMatcher[str]:
+    return SequenceMatcher(None, old, new, autojunk=False)
+
+
 def _without(paragraphs: list[_Paragraph], shared: Counter[str]) -> list[_Paragraph]:
     remaining = shared.copy()
     left = []
@@ -249,7 +267,7 @@ def _without(paragraphs: list[_Paragraph], shared: Counter[str]) -> list[_Paragr
 
 
 def _similarity(old: _Paragraph, new: _Paragraph) -> float:
-    matcher = SequenceMatcher(None, old.words, new.words, autojunk=False)
+    matcher = _word_matcher(old.words, new.words)
     # real_quick_ratio and quick_ratio are cheap upper bounds of ratio: if even they are below
     # the threshold, the expensive exact ratio can't reach it, so skip computing it.
     if matcher.real_quick_ratio() < MODIFIED_THRESHOLD:

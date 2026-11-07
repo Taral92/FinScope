@@ -1,0 +1,98 @@
+[
+  {
+    "name": "going-concern",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Our recurring operating losses, negative cash flows from operations and limited available liquidity raise substantial doubt about our ability to continue as a going concern. If we are unable to obtain additional financing on acceptable terms, we may be forced to curtail or cease operations.",
+    "expected": "high",
+    "why": "Substantial doubt about surviving the next year is the most serious warning a filing can contain."
+  },
+  {
+    "name": "tariffs-hit",
+    "kind": "modified",
+    "old_text": "We purchase battery cells and other components from suppliers outside the United States, primarily in Asia and Mexico. We may be subject to tariffs on these imported components, which could increase our costs and reduce our gross margin.",
+    "new_text": "We purchase battery cells and other components from suppliers outside the United States, primarily in Asia and Mexico. Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin, and we expect these effects to continue.",
+    "expected": "high",
+    "why": "A hypothetical risk became a real one that is already hurting margins and is expected to continue."
+  },
+  {
+    "name": "material-weakness",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We have identified a material weakness in our internal control over financial reporting related to the review of inventory valuation. If we fail to remediate this material weakness, we may be unable to report our financial results accurately or on time, which could cause investors to lose confidence in our reported financial information.",
+    "expected": "high",
+    "why": "A material weakness means the reported numbers themselves may not be reliable."
+  },
+  {
+    "name": "sec-subpoena",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We have received a subpoena from the Securities and Exchange Commission and an inquiry from the Department of Justice requesting documents relating to the driving range claims for our vehicles. We are cooperating with these requests, and we cannot predict the outcome or any penalties or other remedies that may result.",
+    "expected": "high",
+    "why": "A new federal investigation is a legal and regulatory change with an unknown outcome."
+  },
+  {
+    "name": "customer-concentration",
+    "kind": "modified",
+    "old_text": "We sell our vehicles to fleet operators, dealers and individual buyers in North America and Europe. No customer accounted for more than 10% of our revenue in any of the periods presented.",
+    "new_text": "We sell our vehicles to fleet operators, dealers and individual buyers in North America and Europe. One fleet customer accounted for 45% of our revenue in the most recent year, and the loss of this customer would materially harm our results of operations.",
+    "expected": "high",
+    "why": "Revenue went from diversified to dependent on a single customer."
+  },
+  {
+    "name": "covenant-breach",
+    "kind": "modified",
+    "old_text": "Our credit agreement contains financial covenants that require us to maintain minimum liquidity and a maximum leverage ratio. As of the end of the year, we were in compliance with all of these covenants.",
+    "new_text": "Our credit agreement contains financial covenants that require us to maintain minimum liquidity and a maximum leverage ratio. As of the end of the year, we did not comply with the maximum leverage ratio covenant, and our lenders could demand immediate repayment of all amounts outstanding.",
+    "expected": "high",
+    "why": "A covenant breach lets lenders call the debt now, a direct threat to liquidity."
+  },
+  {
+    "name": "wording",
+    "kind": "modified",
+    "old_text": "We utilize third-party logistics providers to deliver vehicles to our customers, and any disruption in their services could delay deliveries.",
+    "new_text": "We use third-party logistics providers to deliver vehicles to our customers, and any disruption in their services could delay deliveries.",
+    "expected": "low",
+    "why": "\"utilize\" and \"use\" mean the same thing."
+  },
+  {
+    "name": "typo",
+    "kind": "modified",
+    "old_text": "We depend on our suppliers to recieve components on time, and delays could disrupt our production schedule.",
+    "new_text": "We depend on our suppliers to receive components on time, and delays could disrupt our production schedule.",
+    "expected": "low",
+    "why": "A spelling fix changes nothing about the risk."
+  },
+  {
+    "name": "cross-reference",
+    "kind": "modified",
+    "old_text": "Our operating results may fluctuate significantly from quarter to quarter. For a discussion of factors affecting our results, see Item 7.",
+    "new_text": "Our operating results may fluctuate significantly from quarter to quarter. For a discussion of factors affecting our results, see Part II, Item 7, of this Annual Report on Form 10-K.",
+    "expected": "low",
+    "why": "Only the form of the cross-reference changed; it points to the same place."
+  },
+  {
+    "name": "reordered-list",
+    "kind": "modified",
+    "old_text": "Our factories and offices could be damaged by natural disasters such as fire, flood or earthquake, which could interrupt our production.",
+    "new_text": "Our factories and offices could be damaged by natural disasters such as earthquake, fire or flood, which could interrupt our production.",
+    "expected": "low",
+    "why": "The same three disasters, listed in a different order."
+  },
+  {
+    "name": "defined-term",
+    "kind": "modified",
+    "old_text": "Acme Motors, Inc. relies on a limited number of key employees, and the loss of any of them could harm our business.",
+    "new_text": "The Company relies on a limited number of key employees, and the loss of any of them could harm our business.",
+    "expected": "low",
+    "why": "\"the Company\" is the defined term for Acme Motors, Inc.; the meaning is unchanged."
+  },
+  {
+    "name": "boilerplate",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "The risks described below are not the only risks we face.",
+    "expected": "low",
+    "why": "Standard boilerplate found in almost every 10-K; it adds no new risk."
+  }
+]
