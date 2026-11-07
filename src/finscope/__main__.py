@@ -9,6 +9,7 @@ python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with th
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
+python -m finscope report TSLA --item 1A [--max-explain 5]   triage + explain and fact-check highs
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
@@ -62,6 +63,7 @@ from finscope.known_cases import (
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
+from finscope.report import SectionReport, build_section_report
 from finscope.sections import Section, split_sections
 from finscope.triage import SCHEMA, SYSTEM_PROMPT, TriageError, TriageReport, triage_section
 from finscope.verify import parse_explanation, sources_for, verify_explanation
@@ -128,6 +130,20 @@ def main(argv: list[str] | None = None) -> int:
     triage_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
     triage_parser.add_argument("--part", help="which Part, if the Item exists in several")
 
+    report_parser = commands.add_parser(
+        "report", help="triage a section, then explain and fact-check its high changes"
+    )
+    report_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    report_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    report_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    report_parser.add_argument("--part", help="which Part, if the Item exists in several")
+    report_parser.add_argument(
+        "--max-explain",
+        type=_non_negative_int,
+        default=5,
+        help="explain at most this many high changes, one agent run each (default 5)",
+    )
+
     label_parser = commands.add_parser("label", help="you rate every change (eval labels)")
     label_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
     label_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
@@ -170,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command in ("diff", "explain", "triage", "label", "eval-triage"):
+        if args.command in ("diff", "explain", "triage", "report", "label", "eval-triage"):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
@@ -181,6 +197,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             if args.command == "triage":
                 return _triage(sec, args.ticker, old, new, args.item, args.part)
+            if args.command == "report":
+                return _report(sec, args.ticker, old, new, args.item, args.part, args.max_explain)
             if args.command == "label":
                 return _label_changes(sec, args.ticker, old, new, args.item, args.part)
             if args.command == "eval-triage":
@@ -493,6 +511,102 @@ def _print_triage(report: TriageReport, changes: dict[str, ParagraphChange]) -> 
     print(f"model:  {report.model or '- (nothing to rate, no call made)'}")
     print(f"tokens: {report.input_tokens:,} input, {report.output_tokens:,} output")
     print(f"cost:   {cost}")
+
+
+def _report(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    max_explain: int,
+) -> int:
+    settings = get_settings()
+    try:
+        # The same providers triage and explain --agent use (each fails fast without a key).
+        triage_provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
+        agent_provider = OpenAIProvider(settings)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    sections = _section_pair(sec, old, new, item, part)
+    if sections is None:
+        return 1
+    old_section, new_section = sections
+    diff = diff_sections(old_section, new_section)
+    try:
+        report = build_section_report(
+            diff,
+            old_section=old_section,
+            new_section=new_section,
+            metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+            company=ticker.upper(),
+            form=new.form,
+            section_title=_diff_label(diff),
+            triage_provider=triage_provider,
+            agent_provider=agent_provider,
+            settings=settings,
+            max_explain=max_explain,
+        )
+    except (LLMError, TriageError) as error:
+        print(f"error: triage failed, nothing to report: {error}", file=sys.stderr)
+        return 1
+    _print_report(report)
+    return 0
+
+
+def _print_report(report: SectionReport) -> None:
+    print(f"{report.company} {report.form}, {report.section_title}")
+    print(
+        f"{report.change_count} change(s): {report.high_count} high, "
+        f"{report.medium_count} medium, {report.low_count} low"
+    )
+
+    print(f"\n=== HIGH ({report.high_count}), {len(report.high)} explained ===")
+    for item in report.high:
+        print(f"\n[{item.id}] triage: {item.triage_reason}")
+        if item.explanation is None:
+            print(f"AGENT FAILED: {item.error}")
+            continue
+        print(item.explanation)
+        check = item.verification
+        if check is None:  # an answer is always checked; never let a missing check pass
+            print("FACT-CHECK: FAILED (not run)")
+        elif check.passed:
+            quotes = _count(check.quotes_checked, "quote")
+            numbers = _count(check.numbers_checked, "number")
+            print(f"FACT-CHECK: passed ({quotes}, {numbers})")
+        else:
+            print("FACT-CHECK: FAILED")
+            for issue in check.issues:
+                print(f"  {issue.kind}: {issue.message}")
+    if report.not_explained:
+        print(
+            f"\n{len(report.not_explained)} more high change(s) not explained: "
+            f"{', '.join(report.not_explained)} (raise --max-explain)"
+        )
+
+    print(f"\n=== MEDIUM ({report.medium_count}) ===")
+    for medium in report.medium:
+        print(f"[{medium.id}] {medium.triage_reason}")
+
+    print(f"\n=== LOW ({report.low_count}) ===")
+
+    cost = "unknown (no prices configured)"
+    if report.cost_usd is not None:
+        cost = f"${report.cost_usd:.4f}"
+    print()
+    print(f"tokens: {report.input_tokens:,} input, {report.output_tokens:,} output")
+    print(f"cost:   {cost}")
+    if not report.usage_complete:
+        print("        (a failed model call isn't included: its token usage isn't known)")
+
+
+def _count(number: int, noun: str) -> str:
+    return f"{number} {noun}{'' if number == 1 else 's'}"
 
 
 def _label_changes(
@@ -816,6 +930,13 @@ def _positive_int(text: str) -> int:
     number = int(text)
     if number < 1:
         raise argparse.ArgumentTypeError("must be at least 1")
+    return number
+
+
+def _non_negative_int(text: str) -> int:
+    number = int(text)
+    if number < 0:
+        raise argparse.ArgumentTypeError("must be 0 or more")
     return number
 
 
