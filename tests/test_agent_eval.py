@@ -304,6 +304,11 @@ def test_prompt_version_covers_the_tools_the_agent_really_gets() -> None:
     assert agent_prompt_version() != without_tools
 
 
+def test_importance_rubric_changed_the_agent_prompt_version() -> None:
+    # The version before the rubric: eval results saved under it are from the old prompt.
+    assert agent_prompt_version() != "a2924454daea"
+
+
 # --- CLI end to end, with fake providers --------------------------------------------------------
 
 

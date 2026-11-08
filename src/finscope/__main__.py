@@ -9,13 +9,13 @@ python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with th
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
-python -m finscope report TSLA --item 1A [--max-explain 20] [--triage-runs 3]  triage, explain,
+python -m finscope report TSLA --item 1A [--max-explain 20] [--triage-runs 1]  triage, explain,
                                                     fact-check, decide
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
 python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
-python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 3]  report on newly
+python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 1]  report on newly
                                                     filed watched sections
 """
 
@@ -186,8 +186,8 @@ def main(argv: list[str] | None = None) -> int:
     report_parser.add_argument(
         "--triage-runs",
         type=_positive_int,
-        default=3,
-        help="triage runs, one API call each; high in any run counts as high (default 3)",
+        default=1,
+        help="triage runs, one API call each; high in any run counts as high (default 1)",
     )
 
     label_parser = commands.add_parser("label", help="you rate every change (eval labels)")
@@ -250,8 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument(
         "--triage-runs",
         type=_positive_int,
-        default=3,
-        help="per section: triage runs; high in any run counts as high (default 3)",
+        default=1,
+        help="per section: triage runs; high in any run counts as high (default 1)",
     )
 
     args = parser.parse_args(argv)

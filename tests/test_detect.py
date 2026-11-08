@@ -323,7 +323,7 @@ def test_dry_run_counts_the_triage_runs(
     assert "3 triage run(s) + up to 5 agent run(s)" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize(("flag", "expected"), [([], 3), (["--triage-runs", "2"], 2)])
+@pytest.mark.parametrize(("flag", "expected"), [([], 1), (["--triage-runs", "2"], 2)])
 def test_check_command_passes_triage_runs_through(
     monkeypatch: pytest.MonkeyPatch, flag: list[str], expected: int
 ) -> None:

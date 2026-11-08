@@ -98,7 +98,7 @@ def build_section_report(
     agent_provider: LLMProvider,
     settings: Settings,
     max_explain: int = 20,
-    triage_runs: int = 3,
+    triage_runs: int = 1,
 ) -> SectionReport:
     """Triage the section, then explain and fact-check up to `max_explain` high changes.
 

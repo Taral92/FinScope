@@ -531,7 +531,7 @@ class FakeSec:
         ]
 
 
-@pytest.mark.parametrize(("flag", "expected"), [([], 3), (["--triage-runs", "1"], 1)])
+@pytest.mark.parametrize(("flag", "expected"), [([], 1), (["--triage-runs", "3"], 3)])
 def test_report_command_passes_triage_runs_through(
     monkeypatch: pytest.MonkeyPatch, flag: list[str], expected: int
 ) -> None:

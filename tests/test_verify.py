@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from finscope.diff import ParagraphChange
 from finscope.verify import Issue, parse_explanation, sources_for, verify_explanation
 
@@ -74,6 +76,21 @@ def test_importance_with_an_em_dash_and_capitals() -> None:
     parsed = parse_explanation(GOOD_ANSWER.replace("Medium -", "HIGH \u2014"))
 
     assert (parsed.importance, parsed.issues) == ("high", ())
+
+
+@pytest.mark.parametrize(
+    ("line", "level", "reason"),
+    [
+        ("high - realized: tariffs raised costs", "high", "realized: tariffs raised costs"),
+        ("Medium - potential: new robotaxi risk", "medium", "potential: new robotaxi risk"),
+        ("low \u2013 wording: dates updated", "low", "wording: dates updated"),
+    ],
+)
+def test_importance_with_a_rubric_category(line: str, level: str, reason: str) -> None:
+    old_line = "Medium - a new business line with adoption risk"
+    parsed = parse_explanation(GOOD_ANSWER.replace(old_line, line))
+
+    assert (parsed.importance, parsed.importance_reason, parsed.issues) == (level, reason, ())
 
 
 def test_evidence_line_without_quotes_is_an_issue() -> None:
