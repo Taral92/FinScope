@@ -1,12 +1,15 @@
 import json
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
 import pytest
 
+import finscope.__main__ as cli
 from finscope.__main__ import _print_report
 from finscope.config import Settings
 from finscope.diff import ParagraphChange, SectionDiff
+from finscope.edgar import Filing
 from finscope.llm import (
     AgentStep,
     ConversationState,
@@ -129,7 +132,9 @@ def no_answer(tokens: tuple[int, int] = (120, 30)) -> list[AgentStep]:
     return [AgentStep(text=None, tool_calls=(), input_tokens=tokens[0], output_tokens=tokens[1])]
 
 
-def report(triage: FakeTriage, agent: FakeAgent, max_explain: int = 5) -> SectionReport:
+def report(
+    triage: FakeTriage, agent: FakeAgent, max_explain: int = 5, triage_runs: int = 1
+) -> SectionReport:
     return build_section_report(
         DIFF,
         old_section=SECTION,
@@ -142,6 +147,7 @@ def report(triage: FakeTriage, agent: FakeAgent, max_explain: int = 5) -> Sectio
         agent_provider=agent,
         settings=SETTINGS,
         max_explain=max_explain,
+        triage_runs=triage_runs,
     )
 
 
@@ -216,6 +222,7 @@ def test_a_failed_fact_check_is_reported_as_failed() -> None:
     assert sorted(issue.kind for issue in item.verification.issues) == ["number", "quote"]
 
 
+@pytest.mark.parametrize("triage_runs", [1, 3])
 @pytest.mark.parametrize(
     ("triage", "error"),
     [
@@ -223,11 +230,13 @@ def test_a_failed_fact_check_is_reported_as_failed() -> None:
         (FakeTriage(text="not json"), LLMError),
     ],
 )
-def test_triage_failure_fails_the_report(triage: FakeTriage, error: type[Exception]) -> None:
+def test_triage_failure_fails_the_report(
+    triage: FakeTriage, error: type[Exception], triage_runs: int
+) -> None:
     agent = FakeAgent([])
 
-    with pytest.raises(error):
-        report(triage, agent)
+    with pytest.raises(error):  # every run fails the same way
+        report(triage, agent, triage_runs=triage_runs)
 
     assert agent.users == []
 
@@ -369,3 +378,177 @@ def test_printed_fact_check_pass_counts_quotes_and_numbers(
     _print_report(report(triage, FakeAgent([answer("we entered a new market")])))
 
     assert "FACT-CHECK: passed (1 quote, 0 numbers)" in capsys.readouterr().out
+
+
+class ScriptedTriage:
+    """complete_json: one answer per triage run, in order: levels for +1, +2, ... or an error."""
+
+    def __init__(self, runs: list[dict[str, str] | LLMError]) -> None:
+        self.runs = list(runs)
+        self.calls = 0
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        self.calls += 1
+        run = self.runs.pop(0)
+        if isinstance(run, LLMError):
+            raise run
+        return FakeTriage(run).complete_json(system, user, schema_name, schema)
+
+
+def test_high_in_any_triage_run_reaches_the_agent_with_its_votes() -> None:
+    triage = ScriptedTriage(
+        [
+            ratings("medium", "medium", "high", "low"),
+            ratings("high", "medium", "high", "low"),
+            ratings("medium", "low", "high", "low"),
+        ]
+    )
+    agent = FakeAgent([answer("we entered a new market"), answer("humanoid robot")])
+
+    result = report(triage, agent, triage_runs=3)
+
+    assert triage.calls == 3
+    assert [(item.id, item.triage_votes) for item in result.high] == [
+        ("+1", ("medium", "high", "medium")),  # high in only one run: still explained
+        ("+3", ("high", "high", "high")),
+    ]
+    assert [(item.id, item.triage_votes) for item in result.medium] == [
+        ("+2", ("medium", "medium", "low"))
+    ]
+    assert (result.high_count, result.medium_count, result.low_count) == (2, 1, 1)
+    assert (result.triage_runs, result.triage_succeeded, result.triage_errors) == (3, 3, ())
+
+
+def test_votes_are_kept_on_changes_over_the_cap() -> None:
+    triage = ScriptedTriage([ratings("high", "high", "low", "low")] * 2)
+
+    result = report(
+        triage, FakeAgent([answer("we entered a new market")]), max_explain=1, triage_runs=2
+    )
+
+    assert [(item.id, item.triage_votes) for item in result.not_explained] == [
+        ("+2", ("high", "high"))
+    ]
+
+
+def test_triage_tokens_are_summed_over_the_runs() -> None:
+    triage = ScriptedTriage([ratings("low", "low", "low", "low")] * 3)
+
+    result = report(triage, FakeAgent([]), triage_runs=3)
+
+    assert (result.input_tokens, result.output_tokens) == (3_000, 600)
+    assert result.cost_usd == 3 * Decimal("0.0036")
+    assert result.usage_complete
+
+
+def test_a_failed_triage_run_is_recorded_and_the_others_are_used() -> None:
+    triage = ScriptedTriage(
+        [
+            ratings("high", "low", "low", "low"),
+            LLMError("timeout"),
+            ratings("low", "low", "low", "low"),
+        ]
+    )
+
+    result = report(triage, FakeAgent([answer("we entered a new market")]), triage_runs=3)
+
+    assert [item.id for item in result.high] == ["+1"]
+    assert result.high[0].triage_votes == ("high", "low")
+    assert (result.triage_runs, result.triage_succeeded) == (3, 2)
+    assert result.triage_errors == ("run 2: timeout",)
+    assert not result.usage_complete  # the failed run's tokens aren't known
+
+
+def test_one_triage_run_reports_as_before(capsys: pytest.CaptureFixture[str]) -> None:
+    triage = ScriptedTriage([ratings("high", "medium", "low", "low")])
+
+    result = report(triage, FakeAgent([answer("we entered a new market")]), triage_runs=1)
+    _print_report(result)
+
+    assert triage.calls == 1
+    assert (result.input_tokens, result.output_tokens) == (1_000 + 300, 200 + 50)
+    assert (result.triage_runs, result.triage_succeeded, result.triage_errors) == (1, 1, ())
+    assert result.high[0].triage_votes == ("high",)
+    out = capsys.readouterr().out
+    assert "[+1] triage: reason +1\n" in out
+    assert "runs" not in out
+    assert "borderline" not in out
+
+
+def test_printed_votes_and_borderline_marks(capsys: pytest.CaptureFixture[str]) -> None:
+    triage = ScriptedTriage(
+        [
+            ratings("high", "high", "high", "low"),
+            ratings("medium", "high", "high", "low"),
+            LLMError("timeout"),
+        ]
+    )
+    agent = FakeAgent(
+        [
+            answer("we entered a new market"),  # agent high, passes: alert
+            answer("not in the paragraph"),  # fact-check fails: review
+            answer("humanoid robot"),
+        ]
+    )
+
+    _print_report(report(triage, agent, triage_runs=3))
+
+    out = capsys.readouterr().out
+    assert "triage: 2/3 runs succeeded; a change is high if any run rated it high\n" in out
+    assert "  FAILED run 3: timeout\n" in out
+    assert "[+1] (borderline) A new risk was added.\n" in out
+    assert "[+3] A new risk was added.\n" in out  # unanimous: no mark
+    assert "[+2] fact-check failed: quote not found | triage: reason +2\n" in out
+    assert "[+1] triage: high in 1/2 runs | reason +1\n" in out
+    assert "[+2] triage: high in 2/2 runs | reason +2\n" in out
+
+
+class FakeSec:
+    """Stands in for SecClient in main(): two filings, no network."""
+
+    def __enter__(self) -> "FakeSec":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def get_cik(self, ticker: str) -> str:
+        return "0001318605"
+
+    def get_recent_filings(self, cik: str, forms: set[str], limit: int) -> list[Filing]:
+        return [
+            Filing(
+                cik=cik,
+                accession_number=f"0001628280-2{year}-000001",
+                form="10-K",
+                filing_date=date(2020 + year, 1, 29),
+                report_date=None,
+                primary_document="tsla.htm",
+            )
+            for year in (6, 5)
+        ]
+
+
+@pytest.mark.parametrize(("flag", "expected"), [([], 3), (["--triage-runs", "1"], 1)])
+def test_report_command_passes_triage_runs_through(
+    monkeypatch: pytest.MonkeyPatch, flag: list[str], expected: int
+) -> None:
+    seen: dict[str, Any] = {}
+
+    def fake_report(*args: Any, **kwargs: Any) -> int:
+        seen.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(cli, "SecClient", FakeSec)
+    monkeypatch.setattr(cli, "_report", fake_report)
+
+    assert cli.main(["report", "TSLA", "--form", "10-K", "--item", "1A", *flag]) == 0
+    assert seen == {"max_explain": 20, "triage_runs": expected}
+
+
+@pytest.mark.parametrize("command", [["report", "TSLA", "--item", "1A"], ["check"]])
+def test_zero_triage_runs_is_rejected(command: list[str]) -> None:
+    with pytest.raises(SystemExit):
+        cli.main([*command, "--triage-runs", "0"])

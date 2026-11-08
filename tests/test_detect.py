@@ -187,6 +187,7 @@ def check(
     *,
     include_unseen: bool = False,
     dry_run: bool = False,
+    triage_runs: int = 1,
 ) -> int:
     return _run_check(
         entries,
@@ -196,6 +197,7 @@ def check(
         include_unseen=include_unseen,
         dry_run=dry_run,
         max_explain=5,
+        triage_runs=triage_runs,
     )
 
 
@@ -290,6 +292,51 @@ def test_new_accession_runs_saves_the_report_then_updates_state(
     assert "DIGEST (0), REVIEW (0)" in out
     assert f"saved: {report_path}" in out
     assert "more than one new" not in out
+
+
+def test_triage_runs_are_passed_through_and_votes_saved(
+    sec: SecClient, edgar: FakeEdgar, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar.set_filings("TSLA", NEW, OLD)
+    remember(sec, TSLA, OLD)
+    providers = Providers()
+
+    assert check(sec, providers, triage_runs=3) == 0
+
+    assert (providers.triage.calls, providers.agent.calls) == (3, 1)
+    [path] = saved_reports(sec)
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["report"]["triage_runs"] == 3
+    assert saved["report"]["high"][0]["triage_votes"] == ["high", "high", "high"]
+    assert saved["decision"]["entries"][0]["triage_votes"] == ["high", "high", "high"]
+    assert "triage: 3/3 runs succeeded" in capsys.readouterr().out
+
+
+def test_dry_run_counts_the_triage_runs(
+    sec: SecClient, edgar: FakeEdgar, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar.set_filings("TSLA", NEW, OLD)
+    remember(sec, TSLA, OLD)
+
+    assert check(sec, Providers(), dry_run=True, triage_runs=3) == 0
+
+    assert "3 triage run(s) + up to 5 agent run(s)" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(("flag", "expected"), [([], 3), (["--triage-runs", "2"], 2)])
+def test_check_command_passes_triage_runs_through(
+    monkeypatch: pytest.MonkeyPatch, flag: list[str], expected: int
+) -> None:
+    seen: dict[str, Any] = {}
+
+    def fake_check(**kwargs: Any) -> int:
+        seen.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(cli, "_check", fake_check)
+
+    assert cli.main(["check", *flag]) == 0
+    assert seen["triage_runs"] == expected
 
 
 def test_more_than_one_new_filing_is_noted(

@@ -17,7 +17,10 @@ from finscope.triage import (
     TriageError,
     TriageItem,
     TriageReport,
+    VotedTriageReport,
+    is_borderline,
     triage_section,
+    triage_section_votes,
 )
 
 SETTINGS = Settings(
@@ -248,3 +251,142 @@ def test_cli_lists_low_items_one_line_each(capsys: pytest.CaptureFixture[str]) -
     low_section = out.split("=== LOW (2) ===\n")[1].split("\n\n")[0]
     assert low_section.splitlines() == ["[-1] Reason -1.", "[~1] Reason ~1."]
     assert out.index("=== MEDIUM") < out.index("=== LOW")
+
+
+def rated(levels: dict[str, str], reason: str = "Reason") -> str:
+    """One run's answer: each ID rated as given, with the run's own reason text."""
+    items = [{"id": i, "importance": lvl, "reason": f"{reason} {i}."} for i, lvl in levels.items()]
+    return json.dumps({"items": items})
+
+
+ALL_LOW = {change_id: "low" for change_id in IDS}
+
+
+class ScriptedProvider:
+    """complete_json: one scripted answer per call, in order; an LLMError is raised instead."""
+
+    def __init__(self, answers: list[str | LLMError]) -> None:
+        self.answers = list(answers)
+        self.calls = 0
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        self.calls += 1
+        answer = self.answers.pop(0)
+        if isinstance(answer, LLMError):
+            raise answer
+        return LLMResult(text=answer, model="fake-model", input_tokens=1_000, output_tokens=200)
+
+
+def vote(answers: list[str | LLMError], runs: int) -> tuple[VotedTriageReport, ScriptedProvider]:
+    provider = ScriptedProvider(answers)
+    report = triage_section_votes(
+        DIFF,
+        company="TSLA",
+        form="10-K",
+        section_title="Part I Item 1A. RISK FACTORS",
+        provider=provider,
+        settings=SETTINGS,
+        runs=runs,
+    )
+    return report, provider
+
+
+def test_votes_keep_the_highest_rating_and_every_runs_vote() -> None:
+    report, provider = vote(
+        [
+            rated({**ALL_LOW, "+1": "medium", "~1": "medium"}, "First"),
+            rated({**ALL_LOW, "+1": "high", "~1": "medium"}, "Second"),
+            rated({**ALL_LOW, "+1": "medium", "~1": "low"}, "Third"),
+        ],
+        runs=3,
+    )
+
+    assert provider.calls == 3
+    assert [item.id for item in report.items] == IDS  # diff order kept
+    by_id = {item.id: item for item in report.items}
+    assert by_id["+1"].importance == "high"
+    assert by_id["+1"].votes == ("medium", "high", "medium")
+    assert by_id["+1"].reason == "Second +1."  # from the run that gave the winning rating
+    assert by_id["~1"].importance == "medium"
+    assert by_id["~1"].votes == ("medium", "medium", "low")
+    assert by_id["~1"].reason == "First ~1."  # the first run that gave it
+    assert by_id["-1"].votes == ("low", "low", "low")
+    assert (report.runs, report.succeeded, report.errors) == (3, 3, ())
+
+
+def test_a_failed_run_is_skipped_and_the_others_are_used() -> None:
+    report, _ = vote(
+        [
+            rated({**ALL_LOW, "+1": "high"}),
+            LLMError("timeout"),
+            answer("+1", "+2", "-1", "~1"),  # ~2 not rated: TriageError
+            rated(ALL_LOW),
+        ],
+        runs=4,
+    )
+
+    assert (report.runs, report.succeeded) == (4, 2)
+    assert report.errors[0] == "run 2: timeout"
+    assert report.errors[1].startswith("run 3: triage answer rejected: missing: ~2")
+    by_id = {item.id: item for item in report.items}
+    assert by_id["+1"].importance == "high"
+    assert by_id["+1"].votes == ("high", "low")  # only the runs that succeeded vote
+    assert (report.input_tokens, report.output_tokens) == (2_000, 400)
+
+
+@pytest.mark.parametrize(
+    ("answers", "error"),
+    [
+        ([LLMError("timeout"), "not json", LLMError("down")], LLMError),
+        ([LLMError("timeout"), answer("+1")], TriageError),  # the last error is raised
+    ],
+)
+def test_every_run_failing_raises(answers: list[str | LLMError], error: type[Exception]) -> None:
+    with pytest.raises(error):
+        vote(answers, runs=len(answers))
+
+
+def test_tokens_and_cost_are_summed_over_the_runs() -> None:
+    report, _ = vote([rated(ALL_LOW)] * 3, runs=3)
+
+    assert (report.input_tokens, report.output_tokens) == (3_000, 600)
+    assert report.cost_usd == 3 * Decimal("0.0036")  # each run: 1,000 x $2/1M + 200 x $8/1M
+    assert report.model == "fake-model"
+
+
+def test_one_run_gives_the_same_result_as_triage_section() -> None:
+    text = rated({**ALL_LOW, "+1": "high", "~2": "medium"})
+    single, _ = triage(text)
+
+    voted, provider = vote([text], runs=1)
+
+    assert provider.calls == 1
+    assert [(i.id, i.importance, i.reason) for i in voted.items] == [
+        (i.id, i.importance, i.reason) for i in single.items
+    ]
+    assert all(len(item.votes) == 1 for item in voted.items)
+    assert (voted.input_tokens, voted.output_tokens, voted.cost_usd, voted.model) == (
+        single.input_tokens,
+        single.output_tokens,
+        single.cost_usd,
+        single.model,
+    )
+
+
+def test_one_failing_run_raises_like_triage_section() -> None:
+    with pytest.raises(TriageError, match="missing: ~2"):
+        vote([answer("+1", "+2", "-1", "~1")], runs=1)
+
+
+def test_runs_below_one_are_rejected() -> None:
+    with pytest.raises(ValueError, match="at least 1"):
+        vote([], runs=0)
+
+
+def test_borderline_means_the_votes_disagree() -> None:
+    assert is_borderline(("high", "medium", "high"))
+    assert not is_borderline(("high", "high", "high"))
+    assert not is_borderline(("high",))
+    assert not is_borderline(())
