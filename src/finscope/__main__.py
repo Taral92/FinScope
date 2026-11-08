@@ -9,11 +9,14 @@ python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with th
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
-python -m finscope report TSLA --item 1A [--max-explain 20]  triage, explain, fact-check, decide
+python -m finscope report TSLA --item 1A [--max-explain 20] [--triage-runs 3]  triage, explain,
+                                                    fact-check, decide
 python -m finscope label TSLA --item 1A [--part I]      you rate every change (eval labels)
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
-python -m finscope check [--dry-run] [--include-unseen]  report on newly filed watched sections
+python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
+python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 3]  report on newly
+                                                    filed watched sections
 """
 
 import argparse
@@ -26,9 +29,20 @@ from functools import cache
 from pathlib import Path
 
 from finscope.agent import AgentError, TraceStep
+from finscope.agent_eval import (
+    AgentEvalError,
+    AgentEvalResult,
+    ChangeStability,
+    StabilityRun,
+    agent_prompt_version,
+    run_stability,
+    save_agent_eval,
+    select_changes,
+    summarize,
+)
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings, get_settings
-from finscope.decide import Decision, Tier, decide
+from finscope.decide import Decision, DecisionEntry, Tier, decide
 from finscope.detect import (
     WATCHLIST_PATH,
     CheckError,
@@ -84,7 +98,14 @@ from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_change
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
 from finscope.report import SectionReport, build_section_report
 from finscope.sections import Section, split_sections
-from finscope.triage import SCHEMA, SYSTEM_PROMPT, TriageError, TriageReport, triage_section
+from finscope.triage import (
+    SCHEMA,
+    SYSTEM_PROMPT,
+    TriageError,
+    TriageReport,
+    is_borderline,
+    triage_section,
+)
 from finscope.verify import parse_explanation, sources_for, verify_explanation
 from finscope.xbrl import (
     METRICS,
@@ -162,6 +183,12 @@ def main(argv: list[str] | None = None) -> int:
         default=20,
         help="explain at most this many high changes, one agent run each (default 20)",
     )
+    report_parser.add_argument(
+        "--triage-runs",
+        type=_positive_int,
+        default=3,
+        help="triage runs, one API call each; high in any run counts as high (default 3)",
+    )
 
     label_parser = commands.add_parser("label", help="you rate every change (eval labels)")
     label_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
@@ -176,6 +203,22 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--part", help="which Part, if the Item exists in several")
     eval_parser.add_argument(
         "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
+    )
+
+    agent_eval_parser = commands.add_parser(
+        "eval-agent", help="run the agent several times per change: does its answer hold?"
+    )
+    agent_eval_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    agent_eval_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    agent_eval_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    agent_eval_parser.add_argument("--part", help="which Part, if the Item exists in several")
+    agent_eval_parser.add_argument(
+        "--runs", type=_positive_int, default=3, help="agent runs per change (default 3)"
+    )
+    agent_eval_parser.add_argument(
+        "--ids",
+        type=_change_ids,
+        help="exactly these changes, no triage, e.g. '~4,~11' (quote it: zsh expands ~4)",
     )
 
     known_parser = commands.add_parser(
@@ -204,6 +247,12 @@ def main(argv: list[str] | None = None) -> int:
         default=20,
         help="per section: explain at most this many high changes (default 20)",
     )
+    check_parser.add_argument(
+        "--triage-runs",
+        type=_positive_int,
+        default=3,
+        help="per section: triage runs; high in any run counts as high (default 3)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -213,7 +262,10 @@ def main(argv: list[str] | None = None) -> int:
     # Takes its tickers from the watchlist, not the command line.
     if args.command == "check":
         return _check(
-            dry_run=args.dry_run, include_unseen=args.include_unseen, max_explain=args.max_explain
+            dry_run=args.dry_run,
+            include_unseen=args.include_unseen,
+            max_explain=args.max_explain,
+            triage_runs=args.triage_runs,
         )
 
     with SecClient() as sec:
@@ -230,7 +282,15 @@ def main(argv: list[str] | None = None) -> int:
         if not filings:
             print(f"error: no recent {args.form} filing found", file=sys.stderr)
             return 1
-        if args.command in ("diff", "explain", "triage", "report", "label", "eval-triage"):
+        if args.command in (
+            "diff",
+            "explain",
+            "triage",
+            "report",
+            "label",
+            "eval-triage",
+            "eval-agent",
+        ):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
                 return 1
@@ -242,11 +302,24 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "triage":
                 return _triage(sec, args.ticker, old, new, args.item, args.part)
             if args.command == "report":
-                return _report(sec, args.ticker, old, new, args.item, args.part, args.max_explain)
+                return _report(
+                    sec,
+                    args.ticker,
+                    old,
+                    new,
+                    args.item,
+                    args.part,
+                    max_explain=args.max_explain,
+                    triage_runs=args.triage_runs,
+                )
             if args.command == "label":
                 return _label_changes(sec, args.ticker, old, new, args.item, args.part)
             if args.command == "eval-triage":
                 return _eval_triage(sec, args.ticker, old, new, args.item, args.part, args.runs)
+            if args.command == "eval-agent":
+                return _eval_agent(
+                    sec, args.ticker, old, new, args.item, args.part, args.runs, args.ids
+                )
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
             return _read_filing(sec, filings[0])
@@ -564,7 +637,9 @@ def _report(
     new: Filing,
     item: str,
     part: str | None,
+    *,
     max_explain: int,
+    triage_runs: int,
 ) -> int:
     settings = get_settings()
     try:
@@ -586,6 +661,7 @@ def _report(
             agent_provider=agent_provider,
             settings=settings,
             max_explain=max_explain,
+            triage_runs=triage_runs,
         )
     except (LLMError, TriageError) as error:
         print(f"error: triage failed, nothing to report: {error}", file=sys.stderr)
@@ -618,11 +694,12 @@ def _build_report(
     agent_provider: LLMProvider,
     settings: Settings,
     max_explain: int,
+    triage_runs: int,
 ) -> tuple[SectionReport, Decision] | None:
     """The report for one section and what to do with it; shared by `report` and `check`.
 
-    None when the Item isn't found (the error is already printed). A failed triage raises
-    LLMError or TriageError, as build_section_report does.
+    None when the Item isn't found (the error is already printed). When every triage run
+    fails, LLMError or TriageError is raised, as build_section_report does.
     """
     sections = _section_pair(sec, old, new, item, part)
     if sections is None:
@@ -641,6 +718,7 @@ def _build_report(
         agent_provider=agent_provider,
         settings=settings,
         max_explain=max_explain,
+        triage_runs=triage_runs,
     )
     return report, decide(report)
 
@@ -651,11 +729,12 @@ def _print_report(report: SectionReport) -> None:
         f"{report.change_count} change(s): {report.high_count} high, "
         f"{report.medium_count} medium, {report.low_count} low"
     )
+    _print_triage_runs(report)
     _print_decision(decide(report))
 
     print(f"\n=== HIGH ({report.high_count}), {len(report.high)} explained ===")
     for item in report.high:
-        print(f"\n[{item.id}] triage: {item.triage_reason}")
+        print(f"\n[{item.id}] triage: {_votes(item.triage_votes)}{item.triage_reason}")
         if item.explanation is None:
             print(f"AGENT FAILED: {item.error}")
             continue
@@ -693,11 +772,34 @@ def _print_report(report: SectionReport) -> None:
         print("        (a failed model call isn't included: its token usage isn't known)")
 
 
+def _print_triage_runs(report: SectionReport) -> None:
+    """Only when triage ran more than once, so a single run prints exactly as before."""
+    if report.triage_runs == 1:
+        return
+    print(
+        f"triage: {report.triage_succeeded}/{report.triage_runs} runs succeeded; "
+        "a change is high if any run rated it high"
+    )
+    for error in report.triage_errors:
+        print(f"  FAILED {error}")
+
+
+def _votes(votes: tuple[Importance, ...]) -> str:
+    """'high in 1/3 runs | ', or nothing when there was a single vote (or none)."""
+    if len(votes) <= 1:
+        return ""
+    return f"high in {votes.count('high')}/{len(votes)} runs | "
+
+
+def _borderline(entry: DecisionEntry) -> str:
+    return "(borderline) " if is_borderline(entry.triage_votes) else ""
+
+
 def _print_decision(decision: Decision) -> None:
     alerts = decision.tier("alert")
     print(f"\n=== ALERT ({len(alerts)}) ===")
     for entry in alerts:
-        print(f"[{entry.id}] {entry.what_changed}")
+        print(f"[{entry.id}] {_borderline(entry)}{entry.what_changed}")
         print(f"{' ' * (len(entry.id) + 3)}WHY IT MATTERS: {entry.why_it_matters}")
     if not alerts:
         print("(none)")
@@ -710,7 +812,9 @@ def _print_decision(decision: Decision) -> None:
         entries = decision.tier(tier)
         print(f"\n=== {tier.upper()} ({len(entries)}): {heading} ===")
         for entry in entries:
-            print(f"[{entry.id}] {entry.reason} | triage: {entry.triage_reason}")
+            print(
+                f"[{entry.id}] {_borderline(entry)}{entry.reason} | triage: {entry.triage_reason}"
+            )
         if not entries:
             print("(none)")
 
@@ -719,7 +823,7 @@ def _count(number: int, noun: str) -> str:
     return f"{number} {noun}{'' if number == 1 else 's'}"
 
 
-def _check(*, dry_run: bool, include_unseen: bool, max_explain: int) -> int:
+def _check(*, dry_run: bool, include_unseen: bool, max_explain: int, triage_runs: int) -> int:
     try:
         entries = load_watchlist(WATCHLIST_PATH)
     except WatchlistError as error:
@@ -735,6 +839,7 @@ def _check(*, dry_run: bool, include_unseen: bool, max_explain: int) -> int:
             include_unseen=include_unseen,
             dry_run=dry_run,
             max_explain=max_explain,
+            triage_runs=triage_runs,
         )
 
 
@@ -747,6 +852,7 @@ def _run_check(
     include_unseen: bool,
     dry_run: bool,
     max_explain: int,
+    triage_runs: int,
 ) -> int:
     """Check every entry; one failing entry doesn't stop the others. 1 if any failed."""
     path = state_path(sec.data_dir)
@@ -771,6 +877,7 @@ def _run_check(
                 include_unseen=include_unseen,
                 dry_run=dry_run,
                 max_explain=max_explain,
+                triage_runs=triage_runs,
             )
             if seen is not None:
                 # A new dict, saved before it's kept: if the save fails, a later entry's save
@@ -799,6 +906,7 @@ def _check_entry(
     include_unseen: bool,
     dry_run: bool,
     max_explain: int,
+    triage_runs: int,
 ) -> SeenFiling | None:
     """Check one entry. Returns what to remember now, or None to leave its state as it is."""
     cik = sec.get_cik(entry.ticker)
@@ -827,7 +935,7 @@ def _check_entry(
     if dry_run:
         print(
             f"would compare {_filing_label(new)} with {_filing_label(old)}: "
-            f"triage + up to {max_explain} agent run(s)"
+            f"{triage_runs} triage run(s) + up to {max_explain} agent run(s)"
         )
         return None
 
@@ -844,6 +952,7 @@ def _check_entry(
         agent_provider=agent_provider,
         settings=settings,
         max_explain=max_explain,
+        triage_runs=triage_runs,
     )
     if built is None:
         raise CheckError("section not found (see the error above)")
@@ -875,10 +984,11 @@ def _print_check_summary(report: SectionReport, decision: Decision, saved: Path)
         f"{report.change_count} change(s): {report.high_count} high, "
         f"{report.medium_count} medium, {report.low_count} low"
     )
+    _print_triage_runs(report)
     alerts = decision.tier("alert")
     print(f"ALERT ({len(alerts)})")
     for entry in alerts:
-        print(f"  [{entry.id}] {entry.what_changed}")
+        print(f"  [{entry.id}] {_borderline(entry)}{entry.what_changed}")
     print(f"DIGEST ({len(decision.tier('digest'))}), REVIEW ({len(decision.tier('review'))})")
     cost = "unknown (no prices configured)"
     if report.cost_usd is not None:
@@ -1078,6 +1188,177 @@ def _total_cost(succeeded: list[RunRecord]) -> Decimal | None:
     return None if None in costs else sum((c for c in costs if c is not None), Decimal(0))
 
 
+def _eval_agent(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    runs: int,
+    ids: list[str] | None,
+) -> int:
+    settings = get_settings()
+    try:
+        triage_provider, agent_provider = _report_providers(settings)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    sections = _section_pair(sec, old, new, item, part)
+    if sections is None:
+        return 1
+    old_section, new_section = sections
+    return _run_agent_eval(
+        diff_sections(old_section, new_section),
+        old_section=old_section,
+        new_section=new_section,
+        metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+        company=ticker.upper(),
+        form=new.form,
+        new_accession=new.accession_number,
+        old_accession=old.accession_number,
+        triage_provider=triage_provider,
+        agent_provider=agent_provider,
+        settings=settings,
+        runs=runs,
+        ids=ids,
+        results_dir=RESULTS_DIR,
+    )
+
+
+def _run_agent_eval(
+    diff: SectionDiff,
+    *,
+    old_section: Section,
+    new_section: Section,
+    metrics: tuple[MetricValue, ...],
+    company: str,
+    form: str,
+    new_accession: str,
+    old_accession: str,
+    triage_provider: LLMProvider,
+    agent_provider: LLMProvider,
+    settings: Settings,
+    runs: int,
+    ids: list[str] | None,
+    results_dir: Path,
+) -> int:
+    """Pick the changes, run the agent `runs` times on each, print and save the result."""
+    section_title = _diff_label(diff)
+    try:
+        selection = select_changes(
+            diff,
+            ids=ids,
+            company=company,
+            form=form,
+            section_title=section_title,
+            triage_provider=triage_provider,
+            settings=settings,
+        )
+    except AgentEvalError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    except (LLMError, TriageError) as error:
+        print(f"error: triage failed, nothing to evaluate: {error}", file=sys.stderr)
+        return 1
+    if not selection.changes:
+        print("error: triage rated no change high; pick changes with --ids", file=sys.stderr)
+        return 1
+
+    picked = ", ".join(change.id for change in selection.changes)
+    source = "triage high" if selection.picked_by == "triage" else "--ids"
+    print(f"{section_title}: {_count(len(selection.changes), 'change')} ({source}): {picked}")
+    total = len(selection.changes) * runs
+    print(f"Running the agent {runs} time(s) per change: {total} agent run(s).\n")
+
+    def progress(change_id: str, run: StabilityRun) -> None:
+        print(f"[{change_id}] run {run.number}/{runs}: {run.tier} ({run.tier_reason})")
+
+    changes = run_stability(
+        selection,
+        diff,
+        old_section=old_section,
+        new_section=new_section,
+        metrics=metrics,
+        company=company,
+        form=form,
+        section_title=section_title,
+        agent_provider=agent_provider,
+        settings=settings,
+        runs=runs,
+        on_run=progress,
+    )
+    summary = summarize(changes, selection, settings)
+    result = AgentEvalResult(
+        created_at=datetime.now(UTC),
+        company=company,
+        form=form,
+        part=diff.part,
+        item=diff.item,
+        new_accession=new_accession,
+        old_accession=old_accession,
+        model=settings.llm_model,
+        prompt_version=agent_prompt_version(),
+        runs=runs,
+        picked_by=selection.picked_by,
+        changes=changes,
+        summary=summary,
+    )
+    saved = save_agent_eval(result, results_dir)
+    _print_agent_eval(result)
+    print(f"saved:  {saved}")
+    return 0 if summary.agent_failures < summary.total_runs else 1
+
+
+def _print_agent_eval(result: AgentEvalResult) -> None:
+    print(f"\n=== STABILITY: {result.runs} run(s) per change ===")
+    rows = [(change, _importances(change), _tiers(change)) for change in result.changes]
+    id_width = max(len(change.id) for change in result.changes) + 2
+    importance_width = max(len(importances) for _, importances, _ in rows)
+    tier_width = max(len(tiers) for _, _, tiers in rows)
+    for change, importances, tiers in rows:
+        print(
+            f"{'[' + change.id + ']':<{id_width}} importance: {importances:<{importance_width}}"
+            f"   tier: {tiers:<{tier_width}}   {'stable' if change.stable else 'UNSTABLE'}"
+        )
+
+    summary = result.summary
+    print("\n=== SUMMARY ===")
+    print(f"stable importance:   {summary.importance_stable}/{summary.changes} change(s)")
+    print(f"tier flips:          {summary.tier_flips}/{summary.changes} change(s)")
+    print(f"fact-check failures: {summary.fact_check_failures}/{summary.total_runs} run(s)")
+    print(f"agent failures:      {summary.agent_failures}/{summary.total_runs} run(s)")
+
+    cost = "unknown (no prices configured)"
+    if summary.cost_usd is not None:
+        cost = f"${summary.cost_usd:.4f}"
+    calls = f"{summary.total_runs} agent run(s)"
+    if result.picked_by == "triage":
+        calls = f"triage + {calls}"
+    print(f"\nmodel {result.model}, agent prompt version {result.prompt_version}")
+    print(f"tokens: {summary.input_tokens:,} input, {summary.output_tokens:,} output ({calls})")
+    print(f"cost:   {cost}")
+    if not summary.usage_complete:
+        print("        (a failed model call isn't included: its token usage isn't known)")
+
+
+def _importances(change: ChangeStability) -> str:
+    """One word per run: the agent's level, "failed" (no answer) or "none" (no level read)."""
+    words: list[str] = []
+    for run in change.runs:
+        if run.importance is not None:
+            words.append(run.importance)
+        else:
+            words.append("failed" if run.item.error is not None else "none")
+    return ", ".join(words)
+
+
+def _tiers(change: ChangeStability) -> str:
+    return ", ".join(run.tier for run in change.runs)
+
+
 def _eval_known(runs: int) -> int:
     settings = get_settings()
     try:
@@ -1213,6 +1494,13 @@ def _positive_int(text: str) -> int:
     if number < 1:
         raise argparse.ArgumentTypeError("must be at least 1")
     return number
+
+
+def _change_ids(text: str) -> list[str]:
+    ids = [part.strip() for part in text.split(",") if part.strip()]
+    if not ids:
+        raise argparse.ArgumentTypeError("give change IDs from `diff`, e.g. '~4,+2'")
+    return ids
 
 
 def _non_negative_int(text: str) -> int:

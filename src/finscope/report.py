@@ -1,5 +1,8 @@
 """One run over a section: triage every change, explain the high ones, fact-check each answer.
 
+Triage runs `triage_runs` times and a change counts as high if any run rated it high, so a
+borderline change still reaches the agent; each item keeps every run's rating (its votes).
+
 Plain orchestration code: no prompts of its own. It chains triage_section,
 explain_change_with_agent and the fact-checker, and returns plain data a later alert step
 can use.
@@ -16,7 +19,7 @@ from finscope.diff import SectionDiff, changes_by_id
 from finscope.explain import explain_change_with_agent
 from finscope.llm import LLMError, LLMProvider, cost_for_tokens
 from finscope.sections import Section
-from finscope.triage import triage_section
+from finscope.triage import Importance, triage_section_votes
 from finscope.verify import (
     ParsedExplanation,
     Verification,
@@ -45,6 +48,8 @@ class HighItem(BaseModel):
     # Every model call of this run; None when a call failed and its usage isn't known.
     input_tokens: int | None
     output_tokens: int | None
+    # Every triage run's rating of this change; empty when it wasn't picked by triage.
+    triage_votes: tuple[Importance, ...] = ()
 
 
 class RatedItem(BaseModel):
@@ -54,6 +59,7 @@ class RatedItem(BaseModel):
 
     id: str
     triage_reason: str
+    triage_votes: tuple[Importance, ...] = ()  # every triage run's rating; empty if not triaged
 
 
 class SectionReport(BaseModel):
@@ -69,7 +75,10 @@ class SectionReport(BaseModel):
     high: tuple[HighItem, ...]  # explained (or attempted) high changes, in diff order
     not_explained: tuple[RatedItem, ...]  # high changes over the max_explain cap, in diff order
     medium: tuple[RatedItem, ...]
-    # Totals over every call: triage plus each agent run, failed runs included.
+    triage_runs: int  # triage runs attempted
+    triage_succeeded: int
+    triage_errors: tuple[str, ...]  # one per failed triage run
+    # Totals over every call: each triage run plus each agent run, failed runs included.
     input_tokens: int
     output_tokens: int
     cost_usd: Decimal | None  # None when no prices are configured
@@ -89,21 +98,25 @@ def build_section_report(
     agent_provider: LLMProvider,
     settings: Settings,
     max_explain: int = 20,
+    triage_runs: int = 3,
 ) -> SectionReport:
     """Triage the section, then explain and fact-check up to `max_explain` high changes.
 
-    A failed triage (LLMError, TriageError) is raised: without ratings there is nothing to
-    report on. A failed agent run is recorded on its item and the next change still runs.
+    Triage runs `triage_runs` times; a change's rating is the highest any run gave. A failed
+    triage run is recorded and skipped; if every run fails, its error (LLMError, TriageError)
+    is raised: without ratings there is nothing to report on. A failed agent run is recorded
+    on its item and the next change still runs.
     """
     if max_explain < 0:
         raise ValueError("max_explain must be 0 or more")
-    triage = triage_section(
+    triage = triage_section_votes(
         diff,
         company=company,
         form=form,
         section_title=section_title,
         provider=triage_provider,
         settings=settings,
+        runs=triage_runs,
     )
     changes = changes_by_id(diff)
     high = [item for item in triage.items if item.importance == "high"]
@@ -119,7 +132,7 @@ def build_section_report(
             metrics=metrics,
         )
         explained.append(
-            _explain_and_check(
+            explain_and_check(
                 item.id,
                 item.reason,
                 context,
@@ -128,7 +141,7 @@ def build_section_report(
                 section_title=section_title,
                 provider=agent_provider,
                 settings=settings,
-            )
+            ).model_copy(update={"triage_votes": item.votes})
         )
 
     input_tokens = triage.input_tokens + sum(item.input_tokens or 0 for item in explained)
@@ -143,18 +156,27 @@ def build_section_report(
         low_count=low_count,
         high=tuple(explained),
         not_explained=tuple(
-            RatedItem(id=item.id, triage_reason=item.reason) for item in high[max_explain:]
+            RatedItem(id=item.id, triage_reason=item.reason, triage_votes=item.votes)
+            for item in high[max_explain:]
         ),
-        medium=tuple(RatedItem(id=item.id, triage_reason=item.reason) for item in medium),
+        medium=tuple(
+            RatedItem(id=item.id, triage_reason=item.reason, triage_votes=item.votes)
+            for item in medium
+        ),
+        triage_runs=triage.runs,
+        triage_succeeded=triage.succeeded,
+        triage_errors=triage.errors,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         # Price is per token, so the cost of the total is the sum of each call's cost.
         cost_usd=cost_for_tokens(input_tokens, output_tokens, settings),
-        usage_complete=all(item.input_tokens is not None for item in explained),
+        # A failed triage run's usage is lost with it, like a failed agent call's.
+        usage_complete=triage.succeeded == triage.runs
+        and all(item.input_tokens is not None for item in explained),
     )
 
 
-def _explain_and_check(
+def explain_and_check(
     change_id: str,
     triage_reason: str,
     context: ExplainContext,
@@ -165,6 +187,10 @@ def _explain_and_check(
     provider: LLMProvider,
     settings: Settings,
 ) -> HighItem:
+    """One agent run on one change, fact-checked. Agent and model-call failures are recorded.
+
+    Used by build_section_report for each high change, and by the agent eval for each run.
+    """
     try:
         explanation = explain_change_with_agent(
             context,

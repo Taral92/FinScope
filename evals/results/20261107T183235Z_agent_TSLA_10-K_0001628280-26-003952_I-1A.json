@@ -1,0 +1,238 @@
+{
+  "created_at": "2026-11-07T18:32:35.976280Z",
+  "company": "TSLA",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0001628280-26-003952",
+  "old_accession": "0001628280-25-003063",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "a2924454daea",
+  "runs": 3,
+  "picked_by": "ids",
+  "changes": [
+    {
+      "id": "~4",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~4",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla expanded the risk disclosure to include driver assistance, autonomous driving, AI capabilities, Cybercab and potential delays in launching and ramping Bots, while removing the list of manufacturing locations.\nWHY IT MATTERS: The filing ties future business success to developing these technologies as well as increasing vehicle production. Delays or manufacturing difficulties could affect product ramps and cost and profitability targets.\nIMPORTANCE: high - expanded technology and production risks\nEVIDENCE: \"our future business depends on development of our driver assistance systems and autonomous driving solutions\"; \"including Cybercab, our purpose-built Robotaxi product\"; \"we may experience delays in launching and ramping the production of this product.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded the risk disclosure to include driver assistance, autonomous driving, AI capabilities, Cybercab and potential delays in launching and ramping Bots, while removing the list of manufacturing locations.",
+              "why_it_matters": "The filing ties future business success to developing these technologies as well as increasing vehicle production. Delays or manufacturing difficulties could affect product ramps and cost and profitability targets.",
+              "importance": "high",
+              "importance_reason": "expanded technology and production risks",
+              "evidence": [
+                "our future business depends on development of our driver assistance systems and autonomous driving solutions",
+                "including Cybercab, our purpose-built Robotaxi product",
+                "we may experience delays in launching and ramping the production of this product."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2518,
+            "output_tokens": 193
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~4",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla expanded the risk discussion to include driver assistance, autonomous driving, AI capabilities, Cybercab production and potential delays in commercializing Bots, while removing the list of manufacturing locations.\nWHY IT MATTERS: The filing ties future business success to developing these technologies as well as scaling vehicle production. Delays or manufacturing difficulties could affect product launches and cost and profitability targets.\nIMPORTANCE: high - Expanded risks to future products and production.\nEVIDENCE: \"our future business depends on development of our driver assistance systems and autonomous driving solutions\"; \"including Cybercab, our purpose-built Robotaxi product\"; \"we may experience delays in launching and ramping the production of this product.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded the risk discussion to include driver assistance, autonomous driving, AI capabilities, Cybercab production and potential delays in commercializing Bots, while removing the list of manufacturing locations.",
+              "why_it_matters": "The filing ties future business success to developing these technologies as well as scaling vehicle production. Delays or manufacturing difficulties could affect product launches and cost and profitability targets.",
+              "importance": "high",
+              "importance_reason": "Expanded risks to future products and production.",
+              "evidence": [
+                "our future business depends on development of our driver assistance systems and autonomous driving solutions",
+                "including Cybercab, our purpose-built Robotaxi product",
+                "we may experience delays in launching and ramping the production of this product."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2518,
+            "output_tokens": 194
+          }
+        },
+        {
+          "number": 3,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~4",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla expanded the risk disclosure to include driver assistance, autonomous driving, AI capabilities, Cybercab production and potential delays in launching and ramping production of Bots, while removing the list of manufacturing locations.\nWHY IT MATTERS: The change broadens the stated dependencies for Tesla’s future business beyond mass-market vehicle production. Delays or difficulties could affect product launches, production ramps and cost and profitability targets.\nIMPORTANCE: high - broader technology and production risks\nEVIDENCE: \"our future business depends on development of our driver assistance systems and autonomous driving solutions\" \"including Cybercab, our purpose-built Robotaxi product\" \"we may experience delays in launching and ramping the production of this product\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded the risk disclosure to include driver assistance, autonomous driving, AI capabilities, Cybercab production and potential delays in launching and ramping production of Bots, while removing the list of manufacturing locations.",
+              "why_it_matters": "The change broadens the stated dependencies for Tesla’s future business beyond mass-market vehicle production. Delays or difficulties could affect product launches, production ramps and cost and profitability targets.",
+              "importance": "high",
+              "importance_reason": "broader technology and production risks",
+              "evidence": [
+                "our future business depends on development of our driver assistance systems and autonomous driving solutions",
+                "including Cybercab, our purpose-built Robotaxi product",
+                "we may experience delays in launching and ramping the production of this product"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2518,
+            "output_tokens": 199
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~11",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla expanded its collision risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about the potential financial impact of proceedings.\nWHY IT MATTERS: Tesla says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. It continues to say that it generally self-insures vehicle product liability exposure in most jurisdictions.\nIMPORTANCE: medium - Expanded risk disclosure and potential financial impact.\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"could have a material adverse impact on results of operations or cash flows for a particular period\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its collision risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about the potential financial impact of proceedings.",
+              "why_it_matters": "Tesla says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. It continues to say that it generally self-insures vehicle product liability exposure in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "Expanded risk disclosure and potential financial impact.",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "could have a material adverse impact on results of operations or cash flows for a particular period"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 180
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla expanded its collision-risk disclosure to explicitly include Robotaxi vehicles and autonomous driving systems, and added a warning about adverse outcomes in related proceedings.\nWHY IT MATTERS: Tesla says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. It continues to say it generally self-insures against vehicle product liability claims in most jurisdictions.\nIMPORTANCE: medium - Expanded exposure and potential financial impact.\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its collision-risk disclosure to explicitly include Robotaxi vehicles and autonomous driving systems, and added a warning about adverse outcomes in related proceedings.",
+              "why_it_matters": "Tesla says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. It continues to say it generally self-insures against vehicle product liability claims in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "Expanded exposure and potential financial impact.",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 189
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added Robotaxi collisions and autonomous driving systems to its product liability risk discussion and warned that unfavorable outcomes in related proceedings could materially affect results or cash flows.\nWHY IT MATTERS: The disclosure broadens the collision-related risks highlighted and adds a potential financial impact from proceedings. Tesla continues to say it generally self-insures vehicle product liability exposure in most jurisdictions.\nIMPORTANCE: medium - Expanded risk and financial impact disclosure\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added Robotaxi collisions and autonomous driving systems to its product liability risk discussion and warned that unfavorable outcomes in related proceedings could materially affect results or cash flows.",
+              "why_it_matters": "The disclosure broadens the collision-related risks highlighted and adds a potential financial impact from proceedings. Tesla continues to say it generally self-insures vehicle product liability exposure in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "Expanded risk and financial impact disclosure",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 191
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    }
+  ],
+  "summary": {
+    "changes": 2,
+    "importance_stable": 2,
+    "tier_flips": 0,
+    "total_runs": 6,
+    "fact_check_failures": 0,
+    "agent_failures": 0,
+    "input_tokens": 17274,
+    "output_tokens": 1146,
+    "cost_usd": "0.023004",
+    "usage_complete": true
+  }
+}

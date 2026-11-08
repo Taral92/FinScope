@@ -16,6 +16,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from finscope.report import HighItem, SectionReport
+from finscope.triage import Importance
 
 Tier = Literal["alert", "digest", "review"]
 
@@ -35,6 +36,7 @@ class DecisionEntry(BaseModel):
     tier: Tier
     reason: str  # why it landed in this tier, in plain words
     triage_reason: str
+    triage_votes: tuple[Importance, ...] = ()  # every triage run's rating, copied from the report
     # From the agent's answer, for an alert only; None in every digest and review entry.
     what_changed: str | None = None
     why_it_matters: str | None = None
@@ -53,23 +55,30 @@ class Decision(BaseModel):
 
 def decide(report: SectionReport) -> Decision:
     """Put every high change into alert, digest or review. None is ever left out."""
-    entries = [_decide_item(item) for item in report.high]
+    entries = [decide_item(item) for item in report.high]
     entries += [
         DecisionEntry(
             id=item.id,
             tier="review",
             reason="not explained: over the cap",
             triage_reason=item.triage_reason,
+            triage_votes=item.triage_votes,
         )
         for item in report.not_explained
     ]
     return Decision(entries=tuple(entries))
 
 
-def _decide_item(item: HighItem) -> DecisionEntry:
+def decide_item(item: HighItem) -> DecisionEntry:
+    """The tier of one explained change. decide() uses it, and so does the agent eval."""
+
     def review(reason: str) -> DecisionEntry:
         return DecisionEntry(
-            id=item.id, tier="review", reason=reason, triage_reason=item.triage_reason
+            id=item.id,
+            tier="review",
+            reason=reason,
+            triage_reason=item.triage_reason,
+            triage_votes=item.triage_votes,
         )
 
     if item.error is not None:
@@ -90,6 +99,7 @@ def _decide_item(item: HighItem) -> DecisionEntry:
             tier="alert",
             reason="agent rated high, fact-check passed",
             triage_reason=item.triage_reason,
+            triage_votes=item.triage_votes,
             what_changed=parsed.what_changed,
             why_it_matters=parsed.why_it_matters,
         )
@@ -98,6 +108,7 @@ def _decide_item(item: HighItem) -> DecisionEntry:
         tier="digest",
         reason=f"agent rated {parsed.importance}",
         triage_reason=item.triage_reason,
+        triage_votes=item.triage_votes,
     )
 
 

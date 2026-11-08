@@ -1,0 +1,1390 @@
+{
+  "created_at": "2026-11-08T13:51:25.557339Z",
+  "company": "TSLA",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0001628280-26-003952",
+  "old_accession": "0001628280-25-003063",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "a2924454daea",
+  "runs": 3,
+  "picked_by": "triage",
+  "changes": [
+    {
+      "id": "+3",
+      "triage_reason": "The company reports entering autonomous ride-hailing and describes adoption and competition risks for the new business.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+3",
+            "triage_reason": "The company reports entering autonomous ride-hailing and describes adoption and competition risks for the new business.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about expanding its Robotaxi service and plans to mass produce Cybercab.\nWHY IT MATTERS: Success depends on consumer acceptance of autonomous driving and Robotaxi amid growing competition. Slower-than-expected adoption could harm Tesla’s business and financial results.\nIMPORTANCE: medium - New business faces adoption and competition risks.\nEVIDENCE: \"our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions\" \"If the uptake rate for autonomous driving solutions does not develop as we expect, our business, prospects, financial condition and operating results may be harmed.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about expanding its Robotaxi service and plans to mass produce Cybercab.",
+              "why_it_matters": "Success depends on consumer acceptance of autonomous driving and Robotaxi amid growing competition. Slower-than-expected adoption could harm Tesla’s business and financial results.",
+              "importance": "medium",
+              "importance_reason": "New business faces adoption and competition risks.",
+              "evidence": [
+                "our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions",
+                "If the uptake rate for autonomous driving solutions does not develop as we expect, our business, prospects, financial condition and operating results may be harmed."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1967,
+            "output_tokens": 183
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+3",
+            "triage_reason": "The company reports entering autonomous ride-hailing and describes adoption and competition risks for the new business.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about consumer adoption and competition as it expands its Robotaxi business and plans to mass produce Cybercab.\nWHY IT MATTERS: Tesla says slower-than-expected adoption of autonomous driving solutions could harm its business and financial results.\nIMPORTANCE: medium - New market expansion faces uncertain demand.\nEVIDENCE: \"our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions\"; \"amid growing competition\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about consumer adoption and competition as it expands its Robotaxi business and plans to mass produce Cybercab.",
+              "why_it_matters": "Tesla says slower-than-expected adoption of autonomous driving solutions could harm its business and financial results.",
+              "importance": "medium",
+              "importance_reason": "New market expansion faces uncertain demand.",
+              "evidence": [
+                "our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions",
+                "amid growing competition"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1967,
+            "output_tokens": 152
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+3",
+            "triage_reason": "The company reports entering autonomous ride-hailing and describes adoption and competition risks for the new business.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about expanding its Robotaxi service and plans to mass produce Cybercab.\nWHY IT MATTERS: The business’s success depends on consumer acceptance of autonomous driving and Robotaxi amid growing competition. Slower-than-expected adoption could harm Tesla’s business and financial results.\nIMPORTANCE: medium - New business faces adoption and competition risks\nEVIDENCE: \"our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions\" \"If the uptake rate for autonomous driving solutions does not develop as we expect, our business, prospects, financial condition and operating results may be harmed.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about expanding its Robotaxi service and plans to mass produce Cybercab.",
+              "why_it_matters": "The business’s success depends on consumer acceptance of autonomous driving and Robotaxi amid growing competition. Slower-than-expected adoption could harm Tesla’s business and financial results.",
+              "importance": "medium",
+              "importance_reason": "New business faces adoption and competition risks",
+              "evidence": [
+                "our success will be dependent upon various factors, including the acceptance and adoption by consumers of autonomous driving solutions",
+                "If the uptake rate for autonomous driving solutions does not develop as we expect, our business, prospects, financial condition and operating results may be harmed."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1967,
+            "output_tokens": 186
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+4",
+      "triage_reason": "Growth is newly linked to commercializing bots in an undeveloped industry.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+4",
+            "triage_reason": "Growth is newly linked to commercializing bots in an undeveloped industry.",
+            "explanation": "WHAT CHANGED: Tesla added a risk factor linking business growth to its ability to develop and commercialize Bots, including Optimus.\nWHY IT MATTERS: Tesla says the industry has yet to develop commercially and that demand is uncertain. The surrounding text says the program requires significant investment and could harm the business if it fails or progresses more slowly than expected.\nIMPORTANCE: medium - Potential growth initiative with uncertain commercialization\nEVIDENCE: \"Growth of our business is also dependent upon our ability to develop and commercialize Bots\"  \"We have yet to commercialize Bots and cannot predict how demand for Bots will develop\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk factor linking business growth to its ability to develop and commercialize Bots, including Optimus.",
+              "why_it_matters": "Tesla says the industry has yet to develop commercially and that demand is uncertain. The surrounding text says the program requires significant investment and could harm the business if it fails or progresses more slowly than expected.",
+              "importance": "medium",
+              "importance_reason": "Potential growth initiative with uncertain commercialization",
+              "evidence": [
+                "Growth of our business is also dependent upon our ability to develop and commercialize Bots",
+                "We have yet to commercialize Bots and cannot predict how demand for Bots will develop"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1856,
+            "output_tokens": 179
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+4",
+            "triage_reason": "Growth is newly linked to commercializing bots in an undeveloped industry.",
+            "explanation": "WHAT CHANGED: Tesla added that its business growth depends on developing and commercializing Bots, including Optimus, in an industry that has yet to develop commercially.\nWHY IT MATTERS: Tesla has not yet commercialized Bots and cannot predict how demand will develop. The filing says the program requires significant investment and could harm the business if it fails or progresses more slowly than expected.\nIMPORTANCE: medium - New growth initiative faces commercialization uncertainty.\nEVIDENCE: \"Growth of our business is also dependent upon our ability to develop and commercialize Bots\" \"We have yet to commercialize Bots and cannot predict how demand for Bots will develop\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that its business growth depends on developing and commercializing Bots, including Optimus, in an industry that has yet to develop commercially.",
+              "why_it_matters": "Tesla has not yet commercialized Bots and cannot predict how demand will develop. The filing says the program requires significant investment and could harm the business if it fails or progresses more slowly than expected.",
+              "importance": "medium",
+              "importance_reason": "New growth initiative faces commercialization uncertainty.",
+              "evidence": [
+                "Growth of our business is also dependent upon our ability to develop and commercialize Bots",
+                "We have yet to commercialize Bots and cannot predict how demand for Bots will develop"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1856,
+            "output_tokens": 183
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+4",
+            "triage_reason": "Growth is newly linked to commercializing bots in an undeveloped industry.",
+            "explanation": "WHAT CHANGED: Tesla added that its business growth depends on developing and commercializing Bots, including Optimus, in an industry that has yet to develop commercially.\nWHY IT MATTERS: Tesla has not yet commercialized Bots and cannot predict how demand will develop. It says the program requires significant resources and could harm its business if it fails or progresses more slowly than expected.\nIMPORTANCE: Medium - uncertain commercialization and future growth\nEVIDENCE: \"Growth of our business is also dependent upon our ability to develop and commercialize Bots\" \"We have yet to commercialize Bots and cannot predict how demand for Bots will develop\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that its business growth depends on developing and commercializing Bots, including Optimus, in an industry that has yet to develop commercially.",
+              "why_it_matters": "Tesla has not yet commercialized Bots and cannot predict how demand will develop. It says the program requires significant resources and could harm its business if it fails or progresses more slowly than expected.",
+              "importance": "medium",
+              "importance_reason": "uncertain commercialization and future growth",
+              "evidence": [
+                "Growth of our business is also dependent upon our ability to develop and commercialize Bots",
+                "We have yet to commercialize Bots and cannot predict how demand for Bots will develop"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1856,
+            "output_tokens": 181
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+5",
+      "triage_reason": "The company describes a new bot business requiring significant investment and facing commercialization and competition risks.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "The company describes a new bot business requiring significant investment and facing commercialization and competition risks.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.\nWHY IT MATTERS: The program requires significant investment and management resources, but demand is uncertain and competition is significant. Tesla says delays or failure could harm its business and financial results.\nIMPORTANCE: Medium - Material development and commercialization uncertainty\nEVIDENCE: \"We have yet to commercialize Bots\"; \"there is no guarantee this business will be successful.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.",
+              "why_it_matters": "The program requires significant investment and management resources, but demand is uncertain and competition is significant. Tesla says delays or failure could harm its business and financial results.",
+              "importance": "medium",
+              "importance_reason": "Material development and commercialization uncertainty",
+              "evidence": [
+                "We have yet to commercialize Bots",
+                "there is no guarantee this business will be successful."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1939,
+            "output_tokens": 147
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "The company describes a new bot business requiring significant investment and facing commercialization and competition risks.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.\nWHY IT MATTERS: The company intends Bots and related services to be an important part of its business, but has not yet commercialized them and faces uncertain demand and competition. Delays or failure could harm its business and financial results.\nIMPORTANCE: medium - significant investment and commercialization uncertainty\nEVIDENCE: \"We have yet to commercialize Bots\" \"there is no guarantee this business will be successful\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.",
+              "why_it_matters": "The company intends Bots and related services to be an important part of its business, but has not yet commercialized them and faces uncertain demand and competition. Delays or failure could harm its business and financial results.",
+              "importance": "medium",
+              "importance_reason": "significant investment and commercialization uncertainty",
+              "evidence": [
+                "We have yet to commercialize Bots",
+                "there is no guarantee this business will be successful"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1939,
+            "output_tokens": 158
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "The company describes a new bot business requiring significant investment and facing commercialization and competition risks.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.\nWHY IT MATTERS: The program requires significant investment and management resources, but demand and commercial success are uncertain. Delays or failure could harm the company’s business and financial condition.\nIMPORTANCE: medium - significant investment with uncertain commercial prospects\nEVIDENCE: \"We have yet to commercialize Bots\" \"there is no guarantee this business will be successful\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure about developing and commercializing Bots, including Optimus.",
+              "why_it_matters": "The program requires significant investment and management resources, but demand and commercial success are uncertain. Delays or failure could harm the company’s business and financial condition.",
+              "importance": "medium",
+              "importance_reason": "significant investment with uncertain commercial prospects",
+              "evidence": [
+                "We have yet to commercialize Bots",
+                "there is no guarantee this business will be successful"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 1939,
+            "output_tokens": 148
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+6",
+      "triage_reason": "The CEO award introduces a risk of directing resources away from more valuable opportunities.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+6",
+            "triage_reason": "The CEO award introduces a risk of directing resources away from more valuable opportunities.",
+            "explanation": "WHAT CHANGED: Tesla added a risk that initiatives tied to the 2025 CEO Performance Award may not align with consumer demand.\nWHY IT MATTERS: The award could direct resources away from more valuable opportunities. The filing says misalignment could impair investment returns and lead to asset write-downs.\nIMPORTANCE: medium - Potential strategic and financial impact\nEVIDENCE: \"misaligned with current or future consumer demand\" \"failure to invest in or pursue another opportunity\" \"underperformance or write-downs of related assets\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk that initiatives tied to the 2025 CEO Performance Award may not align with consumer demand.",
+              "why_it_matters": "The award could direct resources away from more valuable opportunities. The filing says misalignment could impair investment returns and lead to asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "Potential strategic and financial impact",
+              "evidence": [
+                "misaligned with current or future consumer demand",
+                "failure to invest in or pursue another opportunity",
+                "underperformance or write-downs of related assets"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2044,
+            "output_tokens": 161
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+6",
+            "triage_reason": "The CEO award introduces a risk of directing resources away from more valuable opportunities.",
+            "explanation": "WHAT CHANGED: Tesla added a risk that initiatives tied to the 2025 CEO Performance Award could be misaligned with consumer demand and divert resources from more valuable opportunities.\nWHY IT MATTERS: The filing says these investments can require substantial capital and long development timelines. Misalignment could impair returns and lead to asset write-downs.\nIMPORTANCE: medium - potential strategic and financial consequences\nEVIDENCE: \"misaligned with current or future consumer demand\" \"failure to invest in or pursue another opportunity\" \"long development timelines and substantial capital\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk that initiatives tied to the 2025 CEO Performance Award could be misaligned with consumer demand and divert resources from more valuable opportunities.",
+              "why_it_matters": "The filing says these investments can require substantial capital and long development timelines. Misalignment could impair returns and lead to asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "potential strategic and financial consequences",
+              "evidence": [
+                "misaligned with current or future consumer demand",
+                "failure to invest in or pursue another opportunity",
+                "long development timelines and substantial capital"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2154,
+            "output_tokens": 165
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+6",
+            "triage_reason": "The CEO award introduces a risk of directing resources away from more valuable opportunities.",
+            "explanation": "WHAT CHANGED: Tesla added a risk that initiatives associated with the 2025 CEO Performance Award may not align with consumer demand.\nWHY IT MATTERS: The company could miss more valuable opportunities by pursuing those initiatives. The surrounding filing text says misalignment could also impair investment returns or lead to asset write-downs.\nIMPORTANCE: medium - potential effects on resource allocation and returns\nEVIDENCE: \"misaligned with current or future consumer demand\" \"failure to invest in or pursue another opportunity\" \"write-downs of related assets\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk that initiatives associated with the 2025 CEO Performance Award may not align with consumer demand.",
+              "why_it_matters": "The company could miss more valuable opportunities by pursuing those initiatives. The surrounding filing text says misalignment could also impair investment returns or lead to asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "potential effects on resource allocation and returns",
+              "evidence": [
+                "misaligned with current or future consumer demand",
+                "failure to invest in or pursue another opportunity",
+                "write-downs of related assets"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2044,
+            "output_tokens": 164
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+7",
+      "triage_reason": "The CEO award could create strategic misalignment and lead to underperformance or asset write-downs.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+7",
+            "triage_reason": "The CEO award could create strategic misalignment and lead to underperformance or asset write-downs.",
+            "explanation": "WHAT CHANGED: Tesla added a warning that the 2025 CEO Performance Award could direct resources toward technologies that do not align with market demand.\nWHY IT MATTERS: The filing says these investments can require substantial capital and long development timelines without assured returns. Misalignment could lead to missed opportunities, underperformance or asset write-downs.\nIMPORTANCE: medium - Potential strategic and financial consequences\nEVIDENCE: \"misaligned with market preferences\"; \"long development timelines and substantial capital\"; \"strategic misalignment, underperformance or write-downs of related assets\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a warning that the 2025 CEO Performance Award could direct resources toward technologies that do not align with market demand.",
+              "why_it_matters": "The filing says these investments can require substantial capital and long development timelines without assured returns. Misalignment could lead to missed opportunities, underperformance or asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "Potential strategic and financial consequences",
+              "evidence": [
+                "misaligned with market preferences",
+                "long development timelines and substantial capital",
+                "strategic misalignment, underperformance or write-downs of related assets"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2517,
+            "output_tokens": 169
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+7",
+            "triage_reason": "The CEO award could create strategic misalignment and lead to underperformance or asset write-downs.",
+            "explanation": "WHAT CHANGED: Tesla added a warning that the 2025 CEO Performance Award’s product goals could direct resources toward technologies that do not match market demand.\nWHY IT MATTERS: The company says these investments can require substantial capital and long development timelines without assured returns. Misalignment could lead to missed opportunities, underperformance or asset write-downs.\nIMPORTANCE: medium - potential strategic and financial consequences\nEVIDENCE: \"misaligned with market preferences\" \"long development timelines and substantial capital\" \"strategic misalignment, underperformance or write-downs of related assets\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a warning that the 2025 CEO Performance Award’s product goals could direct resources toward technologies that do not match market demand.",
+              "why_it_matters": "The company says these investments can require substantial capital and long development timelines without assured returns. Misalignment could lead to missed opportunities, underperformance or asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "potential strategic and financial consequences",
+              "evidence": [
+                "misaligned with market preferences",
+                "long development timelines and substantial capital",
+                "strategic misalignment, underperformance or write-downs of related assets"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2517,
+            "output_tokens": 171
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+7",
+            "triage_reason": "The CEO award could create strategic misalignment and lead to underperformance or asset write-downs.",
+            "explanation": "WHAT CHANGED: Tesla added a risk disclosure that the 2025 CEO Performance Award’s product goals could direct resources toward technologies that do not match customer demand.\nWHY IT MATTERS: The company says these initiatives often require substantial capital and long development timelines, with no assurance of expected benefits. Misalignment could lead to missed opportunities, underperformance or asset write-downs.\nIMPORTANCE: medium - Potential strategic and financial consequences\nEVIDENCE: \"may miss opportunities better aligned with other needs\"; \"frequently involve long development timelines and substantial capital\"; \"could lead to strategic misalignment, underperformance or write-downs of related assets\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a risk disclosure that the 2025 CEO Performance Award’s product goals could direct resources toward technologies that do not match customer demand.",
+              "why_it_matters": "The company says these initiatives often require substantial capital and long development timelines, with no assurance of expected benefits. Misalignment could lead to missed opportunities, underperformance or asset write-downs.",
+              "importance": "medium",
+              "importance_reason": "Potential strategic and financial consequences",
+              "evidence": [
+                "may miss opportunities better aligned with other needs",
+                "frequently involve long development timelines and substantial capital",
+                "could lead to strategic misalignment, underperformance or write-downs of related assets"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 1
+            },
+            "input_tokens": 2163,
+            "output_tokens": 184
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~1",
+      "triage_reason": "New trade policy and tariff changes have affected product pricing and could reduce demand.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~1",
+            "triage_reason": "New trade policy and tariff changes have affected product pricing and could reduce demand.",
+            "explanation": "WHAT CHANGED: Tesla expanded its international operations risk disclosure to address U.S. trade policy changes, tariffs and domestic supply-chain constraints.\nWHY IT MATTERS: Tesla says tariffs and uncertainty have affected product pricing and could hurt demand. It also says some vehicle and energy-storage components are difficult or impossible to source domestically.\nIMPORTANCE: high - Potential effects on costs, pricing and demand\nEVIDENCE: \"the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand\" \"certain parts and components are difficult or impossible to source within the United States\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its international operations risk disclosure to address U.S. trade policy changes, tariffs and domestic supply-chain constraints.",
+              "why_it_matters": "Tesla says tariffs and uncertainty have affected product pricing and could hurt demand. It also says some vehicle and energy-storage components are difficult or impossible to source domestically.",
+              "importance": "high",
+              "importance_reason": "Potential effects on costs, pricing and demand",
+              "evidence": [
+                "the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand",
+                "certain parts and components are difficult or impossible to source within the United States"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3067,
+            "output_tokens": 176
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~1",
+            "triage_reason": "New trade policy and tariff changes have affected product pricing and could reduce demand.",
+            "explanation": "WHAT CHANGED: Tesla expanded its international operations risk disclosure to address U.S. trade policy, tariffs and supply-chain sourcing constraints.\nWHY IT MATTERS: Tesla says tariff uncertainty has affected product pricing and could hurt demand, while past U.S. tariff actions increased vehicle costs. It also says some components are difficult or impossible to source domestically.\nIMPORTANCE: high - Potential effects on costs, pricing and demand.\nEVIDENCE: \"the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand\" \"certain parts and components are difficult or impossible to source within the United States\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its international operations risk disclosure to address U.S. trade policy, tariffs and supply-chain sourcing constraints.",
+              "why_it_matters": "Tesla says tariff uncertainty has affected product pricing and could hurt demand, while past U.S. tariff actions increased vehicle costs. It also says some components are difficult or impossible to source domestically.",
+              "importance": "high",
+              "importance_reason": "Potential effects on costs, pricing and demand.",
+              "evidence": [
+                "the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand",
+                "certain parts and components are difficult or impossible to source within the United States"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3067,
+            "output_tokens": 181
+          }
+        },
+        {
+          "number": 3,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~1",
+            "triage_reason": "New trade policy and tariff changes have affected product pricing and could reduce demand.",
+            "explanation": "WHAT CHANGED: Tesla expanded its international operations risk disclosure to address U.S. trade policy, tariffs and supply-chain constraints.\nWHY IT MATTERS: Tesla says tariffs and related uncertainty have affected product pricing and could hurt demand. It also says some parts and components are difficult or impossible to source domestically, potentially limiting its ability to manage these risks.\nIMPORTANCE: high - potential effects on costs, pricing and demand\nEVIDENCE: \"the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand\" \"certain parts and components are difficult or impossible to source within the United States\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its international operations risk disclosure to address U.S. trade policy, tariffs and supply-chain constraints.",
+              "why_it_matters": "Tesla says tariffs and related uncertainty have affected product pricing and could hurt demand. It also says some parts and components are difficult or impossible to source domestically, potentially limiting its ability to manage these risks.",
+              "importance": "high",
+              "importance_reason": "potential effects on costs, pricing and demand",
+              "evidence": [
+                "the uncertainties surrounding domestic and foreign tariffs have impacted the pricing for our products, which could adversely impact demand",
+                "certain parts and components are difficult or impossible to source within the United States"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3067,
+            "output_tokens": 182
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~3",
+      "triage_reason": "The regulatory risk now encompasses autonomous ride-hailing and potential restrictions on Robotaxi expansion.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~3",
+            "triage_reason": "The regulatory risk now encompasses autonomous ride-hailing and potential restrictions on Robotaxi expansion.",
+            "explanation": "WHAT CHANGED: Tesla added its autonomous ride-hailing service and Robotaxi business to its discussion of regulatory risks, while describing its vehicle features more broadly as driver assistance.\nWHY IT MATTERS: The filing says changing or conflicting regulations could affect the pace of Robotaxi expansion, as well as restrict vehicle features and designs. The driver assistance features still require drivers to remain fully engaged.\nIMPORTANCE: medium - New exposure to Robotaxi regulation\nEVIDENCE: \"We also launched our autonomous ride-hailing service in 2025.\" \"affect the pace at which we expand our Robotaxi business\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added its autonomous ride-hailing service and Robotaxi business to its discussion of regulatory risks, while describing its vehicle features more broadly as driver assistance.",
+              "why_it_matters": "The filing says changing or conflicting regulations could affect the pace of Robotaxi expansion, as well as restrict vehicle features and designs. The driver assistance features still require drivers to remain fully engaged.",
+              "importance": "medium",
+              "importance_reason": "New exposure to Robotaxi regulation",
+              "evidence": [
+                "We also launched our autonomous ride-hailing service in 2025.",
+                "affect the pace at which we expand our Robotaxi business"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2931,
+            "output_tokens": 177
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~3",
+            "triage_reason": "The regulatory risk now encompasses autonomous ride-hailing and potential restrictions on Robotaxi expansion.",
+            "explanation": "WHAT CHANGED: Tesla added its autonomous ride-hailing launch and Robotaxi business to its discussion of regulatory risks, while describing Autopilot and FSD more broadly as driver assistance features.\nWHY IT MATTERS: Tesla says changing or conflicting regulations could affect the pace of Robotaxi expansion and adversely affect its business and financial results. The filing continues to state that its current driver assistance features require drivers to remain fully engaged.\nIMPORTANCE: medium - expanded regulatory risk disclosure\nEVIDENCE: \"We also launched our autonomous ride-hailing service in 2025.\" \"affect the pace at which we expand our Robotaxi business\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added its autonomous ride-hailing launch and Robotaxi business to its discussion of regulatory risks, while describing Autopilot and FSD more broadly as driver assistance features.",
+              "why_it_matters": "Tesla says changing or conflicting regulations could affect the pace of Robotaxi expansion and adversely affect its business and financial results. The filing continues to state that its current driver assistance features require drivers to remain fully engaged.",
+              "importance": "medium",
+              "importance_reason": "expanded regulatory risk disclosure",
+              "evidence": [
+                "We also launched our autonomous ride-hailing service in 2025.",
+                "affect the pace at which we expand our Robotaxi business"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2931,
+            "output_tokens": 183
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~3",
+            "triage_reason": "The regulatory risk now encompasses autonomous ride-hailing and potential restrictions on Robotaxi expansion.",
+            "explanation": "WHAT CHANGED: Tesla added its autonomous ride-hailing service and Robotaxi business to its discussion of regulatory risks.\nWHY IT MATTERS: Changing or conflicting regulations could restrict vehicle functionality and designs or affect the pace of Robotaxi expansion. The filing says these effects could adversely affect its business and financial results.\nIMPORTANCE: medium - Expanded regulatory risk disclosure\nEVIDENCE: \"We also launched our autonomous ride-hailing service in 2025.\" \"affect the pace at which we expand our Robotaxi business\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added its autonomous ride-hailing service and Robotaxi business to its discussion of regulatory risks.",
+              "why_it_matters": "Changing or conflicting regulations could restrict vehicle functionality and designs or affect the pace of Robotaxi expansion. The filing says these effects could adversely affect its business and financial results.",
+              "importance": "medium",
+              "importance_reason": "Expanded regulatory risk disclosure",
+              "evidence": [
+                "We also launched our autonomous ride-hailing service in 2025.",
+                "affect the pace at which we expand our Robotaxi business"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2931,
+            "output_tokens": 160
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~5",
+      "triage_reason": "Repealed or restricted tax credits and regulatory credit programs could harm demand and financial results.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~5",
+            "triage_reason": "Repealed or restricted tax credits and regulatory credit programs could harm demand and financial results.",
+            "explanation": "WHAT CHANGED: Tesla added that recent government actions have repealed or restricted certain tax credits and regulatory credit programs.\nWHY IT MATTERS: Tesla warns that these actions may weaken vehicle demand and harm its growth and operating results. It also says the loss of tax credits and carbon offset mechanisms may negatively affect financial results.\nIMPORTANCE: high - Actual incentive restrictions create potential demand and financial risks.\nEVIDENCE: \"repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits\"; \"may affect demand for our vehicles, and harm our growth, prospects and operating results\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that recent government actions have repealed or restricted certain tax credits and regulatory credit programs.",
+              "why_it_matters": "Tesla warns that these actions may weaken vehicle demand and harm its growth and operating results. It also says the loss of tax credits and carbon offset mechanisms may negatively affect financial results.",
+              "importance": "high",
+              "importance_reason": "Actual incentive restrictions create potential demand and financial risks.",
+              "evidence": [
+                "repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits",
+                "may affect demand for our vehicles, and harm our growth, prospects and operating results"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2672,
+            "output_tokens": 172
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~5",
+            "triage_reason": "Repealed or restricted tax credits and regulatory credit programs could harm demand and financial results.",
+            "explanation": "WHAT CHANGED: Tesla added that recent government and regulatory actions have repealed or restricted tax credits and certain regulatory credit programs tied to its products.\nWHY IT MATTERS: Tesla says these actions could affect vehicle demand and harm its growth and operating results. It also warns that losing tax credits and carbon offset mechanisms may further hurt financial results.\nIMPORTANCE: high - Newly identified actions could affect demand and financial results.\nEVIDENCE: \"recent governmental and regulatory actions have repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits\" \"the loss of previously available tax credits and carbon offset mechanisms may further negatively impact our financial results\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that recent government and regulatory actions have repealed or restricted tax credits and certain regulatory credit programs tied to its products.",
+              "why_it_matters": "Tesla says these actions could affect vehicle demand and harm its growth and operating results. It also warns that losing tax credits and carbon offset mechanisms may further hurt financial results.",
+              "importance": "high",
+              "importance_reason": "Newly identified actions could affect demand and financial results.",
+              "evidence": [
+                "recent governmental and regulatory actions have repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits",
+                "the loss of previously available tax credits and carbon offset mechanisms may further negatively impact our financial results"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2672,
+            "output_tokens": 183
+          }
+        },
+        {
+          "number": 3,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~5",
+            "triage_reason": "Repealed or restricted tax credits and regulatory credit programs could harm demand and financial results.",
+            "explanation": "WHAT CHANGED: Tesla added that recent government actions have repealed or restricted tax credits and regulatory credit programs tied to its products.\nWHY IT MATTERS: Tesla says these actions may affect vehicle demand and harm its growth and operating results. It also warns that the loss of tax credits and carbon offset mechanisms may further negatively affect financial results.\nIMPORTANCE: high - Actual incentive restrictions could affect demand and financial results.\nEVIDENCE: \"recent governmental and regulatory actions have repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits\" \"the loss of previously available tax credits and carbon offset mechanisms may further negatively impact our financial results\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that recent government actions have repealed or restricted tax credits and regulatory credit programs tied to its products.",
+              "why_it_matters": "Tesla says these actions may affect vehicle demand and harm its growth and operating results. It also warns that the loss of tax credits and carbon offset mechanisms may further negatively affect financial results.",
+              "importance": "high",
+              "importance_reason": "Actual incentive restrictions could affect demand and financial results.",
+              "evidence": [
+                "recent governmental and regulatory actions have repealed and/or restricted consumer, manufacturing and charging infrastructure tax credits",
+                "the loss of previously available tax credits and carbon offset mechanisms may further negatively impact our financial results"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2672,
+            "output_tokens": 183
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~7",
+      "triage_reason": "The disclosure adds legislative changes and traceability requirements that could affect costs and incentive eligibility.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~7",
+            "triage_reason": "The disclosure adds legislative changes and traceability requirements that could affect costs and incentive eligibility.",
+            "explanation": "WHAT CHANGED: Tesla added risks related to the OBBBA’s potential effect on battery costs and requirements to document the origin of critical minerals.\nWHY IT MATTERS: Insufficient documentation could make products ineligible for tax credits and incentives, increasing customers’ effective prices and potentially reducing demand. The filing describes potential impacts, not confirmed losses.\nIMPORTANCE: medium - potential cost and demand exposure\nEVIDENCE: \"provisions of the OBBBA could affect battery cell expenses\" \"our products may lose eligibility for tax credits and incentives\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added risks related to the OBBBA’s potential effect on battery costs and requirements to document the origin of critical minerals.",
+              "why_it_matters": "Insufficient documentation could make products ineligible for tax credits and incentives, increasing customers’ effective prices and potentially reducing demand. The filing describes potential impacts, not confirmed losses.",
+              "importance": "medium",
+              "importance_reason": "potential cost and demand exposure",
+              "evidence": [
+                "provisions of the OBBBA could affect battery cell expenses",
+                "our products may lose eligibility for tax credits and incentives"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2878,
+            "output_tokens": 165
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~7",
+            "triage_reason": "The disclosure adds legislative changes and traceability requirements that could affect costs and incentive eligibility.",
+            "explanation": "WHAT CHANGED: Tesla added risks related to the OBBBA’s potential effect on battery cell expenses and the documentation needed to verify critical mineral origins.\nWHY IT MATTERS: If Tesla or its suppliers cannot provide sufficient documentation, products could lose eligibility for tax credits and incentives, increasing customers’ effective costs and potentially reducing demand.\nIMPORTANCE: medium - More specific incentive and supply-chain risks\nEVIDENCE: \"provisions of the OBBBA could affect battery cell expenses\" \"our products may lose eligibility for tax credits and incentives\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added risks related to the OBBBA’s potential effect on battery cell expenses and the documentation needed to verify critical mineral origins.",
+              "why_it_matters": "If Tesla or its suppliers cannot provide sufficient documentation, products could lose eligibility for tax credits and incentives, increasing customers’ effective costs and potentially reducing demand.",
+              "importance": "medium",
+              "importance_reason": "More specific incentive and supply-chain risks",
+              "evidence": [
+                "provisions of the OBBBA could affect battery cell expenses",
+                "our products may lose eligibility for tax credits and incentives"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2878,
+            "output_tokens": 164
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~7",
+            "triage_reason": "The disclosure adds legislative changes and traceability requirements that could affect costs and incentive eligibility.",
+            "explanation": "WHAT CHANGED: Tesla added risks related to OBBBA provisions and raw-material traceability, and broadened its net-metering wording from solar to energy generation systems.\nWHY IT MATTERS: The filing says battery cell expenses and consumer costs could be affected, while insufficient documentation of critical mineral origins could make products ineligible for incentives and reduce demand.\nIMPORTANCE: medium - More specific risks to costs and demand.\nEVIDENCE: \"provisions of the OBBBA could affect battery cell expenses\"; \"our products may lose eligibility for tax credits and incentives\"; \"energy generation systems\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added risks related to OBBBA provisions and raw-material traceability, and broadened its net-metering wording from solar to energy generation systems.",
+              "why_it_matters": "The filing says battery cell expenses and consumer costs could be affected, while insufficient documentation of critical mineral origins could make products ineligible for incentives and reduce demand.",
+              "importance": "medium",
+              "importance_reason": "More specific risks to costs and demand.",
+              "evidence": [
+                "provisions of the OBBBA could affect battery cell expenses",
+                "our products may lose eligibility for tax credits and incentives",
+                "energy generation systems"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2878,
+            "output_tokens": 174
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~11",
+      "triage_reason": "The disclosure adds Robotaxi collision exposure and warns that unfavorable proceedings could materially affect results or cash flows.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "The disclosure adds Robotaxi collision exposure and warns that unfavorable proceedings could materially affect results or cash flows.",
+            "explanation": "WHAT CHANGED: Tesla expanded its collision-related risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about potentially adverse financial outcomes from proceedings.\nWHY IT MATTERS: The filing says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. Tesla also continues to say it generally self-insures vehicle product liability exposure in most jurisdictions.\nIMPORTANCE: medium - Expanded risk disclosure and potential financial impact\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its collision-related risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about potentially adverse financial outcomes from proceedings.",
+              "why_it_matters": "The filing says unfavorable outcomes could materially affect results of operations or cash flows for a particular period. Tesla also continues to say it generally self-insures vehicle product liability exposure in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "Expanded risk disclosure and potential financial impact",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 192
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "The disclosure adds Robotaxi collision exposure and warns that unfavorable proceedings could materially affect results or cash flows.",
+            "explanation": "WHAT CHANGED: Tesla expanded its collision-risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about the potential financial impact of proceedings.\nWHY IT MATTERS: Unfavorable outcomes could materially affect results or cash flows in a particular period. Tesla also says it generally self-insures vehicle product liability exposure in most jurisdictions.\nIMPORTANCE: medium - Expanded risk disclosure and potential financial impact.\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"could have a material adverse impact on results of operations or cash flows for a particular period\" \"we generally self-insure against the risk of product liability claims for vehicle exposure\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its collision-risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about the potential financial impact of proceedings.",
+              "why_it_matters": "Unfavorable outcomes could materially affect results or cash flows in a particular period. Tesla also says it generally self-insures vehicle product liability exposure in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "Expanded risk disclosure and potential financial impact.",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "could have a material adverse impact on results of operations or cash flows for a particular period",
+                "we generally self-insure against the risk of product liability claims for vehicle exposure"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 193
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~11",
+            "triage_reason": "The disclosure adds Robotaxi collision exposure and warns that unfavorable proceedings could materially affect results or cash flows.",
+            "explanation": "WHAT CHANGED: Tesla expanded its collision-risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about adverse outcomes in related proceedings.\nWHY IT MATTERS: Unfavorable outcomes could materially affect results of operations or cash flows for a particular period. Tesla generally self-insures vehicle product liability exposure in most jurisdictions.\nIMPORTANCE: medium - expanded risk and potential financial impact\nEVIDENCE: \"whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged\" \"An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla expanded its collision-risk disclosure to include Robotaxi vehicles and autonomous driving systems, and added a warning about adverse outcomes in related proceedings.",
+              "why_it_matters": "Unfavorable outcomes could materially affect results of operations or cash flows for a particular period. Tesla generally self-insures vehicle product liability exposure in most jurisdictions.",
+              "importance": "medium",
+              "importance_reason": "expanded risk and potential financial impact",
+              "evidence": [
+                "whether involving Robotaxi vehicles or customer vehicles with driver assistance features engaged",
+                "An unfavorable outcome in some or all of these proceedings could have a material adverse impact on results of operations or cash flows for a particular period."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3240,
+            "output_tokens": 183
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~14",
+      "triage_reason": "Tariffs have increased supply chain costs and may restrict component availability.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~14",
+            "triage_reason": "Tariffs have increased supply chain costs and may restrict component availability.",
+            "explanation": "WHAT CHANGED: Tesla added that trade policy changes have increased supply chain costs and that AI advances may strain the availability or affordability of needed resources.\nWHY IT MATTERS: Tariffs and retaliatory export controls could affect access to technologies or components, while AI resource demands may exceed Tesla’s requirements in scale or affordability. The filing links component shortages to potential production delays and other disruptions.\nIMPORTANCE: medium - Additional supply chain cost and availability risks\nEVIDENCE: \"have impacted our supply chain costs\" \"may impact the availability of certain technologies or components\" \"may prove insufficient in scale or affordability to meet our requirements\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that trade policy changes have increased supply chain costs and that AI advances may strain the availability or affordability of needed resources.",
+              "why_it_matters": "Tariffs and retaliatory export controls could affect access to technologies or components, while AI resource demands may exceed Tesla’s requirements in scale or affordability. The filing links component shortages to potential production delays and other disruptions.",
+              "importance": "medium",
+              "importance_reason": "Additional supply chain cost and availability risks",
+              "evidence": [
+                "have impacted our supply chain costs",
+                "may impact the availability of certain technologies or components",
+                "may prove insufficient in scale or affordability to meet our requirements"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3649,
+            "output_tokens": 181
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~14",
+            "triage_reason": "Tariffs have increased supply chain costs and may restrict component availability.",
+            "explanation": "WHAT CHANGED: Tesla added that trade policy changes have increased supply chain costs and that growing AI resource demands may be difficult to meet.\nWHY IT MATTERS: Tariffs and retaliatory export controls could affect component availability, while AI resources may be insufficient or unaffordable. Shortages could disrupt production and capacity expansion.\nIMPORTANCE: medium - Added cost and supply risks\nEVIDENCE: \"have impacted our supply chain costs\" \"may prove insufficient in scale or affordability to meet our requirements\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that trade policy changes have increased supply chain costs and that growing AI resource demands may be difficult to meet.",
+              "why_it_matters": "Tariffs and retaliatory export controls could affect component availability, while AI resources may be insufficient or unaffordable. Shortages could disrupt production and capacity expansion.",
+              "importance": "medium",
+              "importance_reason": "Added cost and supply risks",
+              "evidence": [
+                "have impacted our supply chain costs",
+                "may prove insufficient in scale or affordability to meet our requirements"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3649,
+            "output_tokens": 156
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~14",
+            "triage_reason": "Tariffs have increased supply chain costs and may restrict component availability.",
+            "explanation": "WHAT CHANGED: Tesla added that trade policy changes have affected supply chain costs and that AI resource demands may exceed available or affordable supply.\nWHY IT MATTERS: Tariffs and retaliatory export controls could affect component availability, while shortages could disrupt production or capacity expansion.\nIMPORTANCE: medium - Added supply chain cost and availability risks.\nEVIDENCE: \"have impacted our supply chain costs\" \"may prove insufficient in scale or affordability to meet our requirements\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that trade policy changes have affected supply chain costs and that AI resource demands may exceed available or affordable supply.",
+              "why_it_matters": "Tariffs and retaliatory export controls could affect component availability, while shortages could disrupt production or capacity expansion.",
+              "importance": "medium",
+              "importance_reason": "Added supply chain cost and availability risks.",
+              "evidence": [
+                "have impacted our supply chain costs",
+                "may prove insufficient in scale or affordability to meet our requirements"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3649,
+            "output_tokens": 147
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~19",
+      "triage_reason": "The disclosure adds protests and violence targeting operations, products and personnel.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "The disclosure adds protests and violence targeting operations, products and personnel.",
+            "explanation": "WHAT CHANGED: Tesla added that third-party commentary has incited protests, some escalating to violence, and expanded its discussion of risks to include autonomous solutions, its brand and sales.\nWHY IT MATTERS: The filing links negative perceptions to potential harm to Tesla’s operations, personnel, brand and business, as well as difficulty raising funds.\nIMPORTANCE: high - Reported violence and potential business impact\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that third-party commentary has incited protests, some escalating to violence, and expanded its discussion of risks to include autonomous solutions, its brand and sales.",
+              "why_it_matters": "The filing links negative perceptions to potential harm to Tesla’s operations, personnel, brand and business, as well as difficulty raising funds.",
+              "importance": "high",
+              "importance_reason": "Reported violence and potential business impact",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2525,
+            "output_tokens": 170
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "The disclosure adds protests and violence targeting operations, products and personnel.",
+            "explanation": "WHAT CHANGED: Tesla added that third-party commentary has incited protests, some escalating to violence, and expanded its discussion of risks to include autonomous solutions, its brand and sales.\nWHY IT MATTERS: The filing identifies direct effects on operations, products and personnel, as well as potential harm to sales and access to funding.\nIMPORTANCE: high - newly disclosed violence and potential business impacts\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" “may harm our brand and our business (including sales)”",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that third-party commentary has incited protests, some escalating to violence, and expanded its discussion of risks to include autonomous solutions, its brand and sales.",
+              "why_it_matters": "The filing identifies direct effects on operations, products and personnel, as well as potential harm to sales and access to funding.",
+              "importance": "high",
+              "importance_reason": "newly disclosed violence and potential business impacts",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2525,
+            "output_tokens": 168
+          }
+        },
+        {
+          "number": 3,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "The disclosure adds protests and violence targeting operations, products and personnel.",
+            "explanation": "WHAT CHANGED: Tesla added that commentary has incited protests, some escalating to violence, and expanded the risk to include autonomous solutions and potential harm to its brand and sales.\nWHY IT MATTERS: The disclosure links negative perceptions to physical threats against operations, products and personnel, as well as potential business harm. Tesla also says such perceptions could make it harder to raise funds if needed.\nIMPORTANCE: high - Reports violence targeting operations and personnel.\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that commentary has incited protests, some escalating to violence, and expanded the risk to include autonomous solutions and potential harm to its brand and sales.",
+              "why_it_matters": "The disclosure links negative perceptions to physical threats against operations, products and personnel, as well as potential business harm. Tesla also says such perceptions could make it harder to raise funds if needed.",
+              "importance": "high",
+              "importance_reason": "Reports violence targeting operations and personnel.",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2525,
+            "output_tokens": 179
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "~24",
+      "triage_reason": "The disclosure adds enacted state privacy laws with potentially conflicting requirements.",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~24",
+            "triage_reason": "The disclosure adds enacted state privacy laws with potentially conflicting requirements.",
+            "explanation": "WHAT CHANGED: Tesla added discussion of distinct U.S. state privacy laws and broadened its reference to privacy and cybersecurity laws in China to include the Asia-Pacific region.\nWHY IT MATTERS: The filing highlights potentially conflicting requirements across jurisdictions, which could complicate compliance and increase costs. It already disclosed the broader risks of legal liability, fines and operational changes.\nIMPORTANCE: Medium - Greater emphasis on regulatory complexity.\nEVIDENCE: \"Many other U.S. states have enacted their own distinct privacy laws and regulations\" \"different, overlapping, and sometimes conflicting requirements\" \"the Asia-Pacific region, including China\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added discussion of distinct U.S. state privacy laws and broadened its reference to privacy and cybersecurity laws in China to include the Asia-Pacific region.",
+              "why_it_matters": "The filing highlights potentially conflicting requirements across jurisdictions, which could complicate compliance and increase costs. It already disclosed the broader risks of legal liability, fines and operational changes.",
+              "importance": "medium",
+              "importance_reason": "Greater emphasis on regulatory complexity.",
+              "evidence": [
+                "Many other U.S. states have enacted their own distinct privacy laws and regulations",
+                "different, overlapping, and sometimes conflicting requirements",
+                "the Asia-Pacific region, including China"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2968,
+            "output_tokens": 179
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~24",
+            "triage_reason": "The disclosure adds enacted state privacy laws with potentially conflicting requirements.",
+            "explanation": "WHAT CHANGED: Tesla added a discussion of differing U.S. state privacy laws and broadened its reference to Asia-Pacific privacy and cybersecurity laws beyond China.\nWHY IT MATTERS: Overlapping or conflicting requirements may complicate compliance across jurisdictions. Tesla says changing requirements may cause substantial costs, while noncompliance could result in penalties or legal liability.\nIMPORTANCE: medium - broader compliance complexity\nEVIDENCE: \"different, overlapping, and sometimes conflicting requirements across multiple jurisdictions\" \"the Asia-Pacific region, including China\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a discussion of differing U.S. state privacy laws and broadened its reference to Asia-Pacific privacy and cybersecurity laws beyond China.",
+              "why_it_matters": "Overlapping or conflicting requirements may complicate compliance across jurisdictions. Tesla says changing requirements may cause substantial costs, while noncompliance could result in penalties or legal liability.",
+              "importance": "medium",
+              "importance_reason": "broader compliance complexity",
+              "evidence": [
+                "different, overlapping, and sometimes conflicting requirements across multiple jurisdictions",
+                "the Asia-Pacific region, including China"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2968,
+            "output_tokens": 160
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~24",
+            "triage_reason": "The disclosure adds enacted state privacy laws with potentially conflicting requirements.",
+            "explanation": "WHAT CHANGED: Tesla added a discussion of distinct U.S. state privacy laws and broadened its reference to privacy and cybersecurity laws to include the Asia-Pacific region.\nWHY IT MATTERS: Different and potentially conflicting requirements may complicate compliance across jurisdictions. Tesla warns that compliance may require substantial spending and operational changes, while noncompliance could lead to penalties or legal liability.\nIMPORTANCE: medium - Expanded description of compliance risks\nEVIDENCE: \"Many other U.S. states have enacted their own distinct privacy laws and regulations\" \"different, overlapping, and sometimes conflicting requirements\" \"the Asia-Pacific region, including China\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added a discussion of distinct U.S. state privacy laws and broadened its reference to privacy and cybersecurity laws to include the Asia-Pacific region.",
+              "why_it_matters": "Different and potentially conflicting requirements may complicate compliance across jurisdictions. Tesla warns that compliance may require substantial spending and operational changes, while noncompliance could lead to penalties or legal liability.",
+              "importance": "medium",
+              "importance_reason": "Expanded description of compliance risks",
+              "evidence": [
+                "Many other U.S. states have enacted their own distinct privacy laws and regulations",
+                "different, overlapping, and sometimes conflicting requirements",
+                "the Asia-Pacific region, including China"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 2968,
+            "output_tokens": 181
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    }
+  ],
+  "summary": {
+    "changes": 13,
+    "importance_stable": 13,
+    "tier_flips": 0,
+    "total_runs": 39,
+    "fact_check_failures": 0,
+    "agent_failures": 0,
+    "input_tokens": 109848,
+    "output_tokens": 8224,
+    "cost_usd": "0.150968",
+    "usage_complete": true
+  }
+}

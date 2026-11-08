@@ -66,6 +66,8 @@ _METRICS_SPEC = ToolSpec(
     ),
     parameters={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
 )
+# What the model is shown about the tools: part of the agent's prompt version.
+TOOL_SPECS = (_NEARBY_SPEC, _METRICS_SPEC)
 
 
 def build_tools(context: ExplainContext) -> dict[str, Tool]:

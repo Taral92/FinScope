@@ -220,12 +220,16 @@ def score_triage(
 
 def save_result(result: EvalResult, directory: Path, labels_stem: str) -> Path:
     path = directory / result.file_name(labels_stem)
+    write_json_atomic(path, result)
+    return path
+
+
+def write_json_atomic(path: Path, result: BaseModel) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     # Same temp-file-then-rename as the filing cache, so a crash never leaves half a file.
     partial = path.with_name(path.name + ".partial")
     partial.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8")
     partial.replace(path)
-    return path
 
 
 def _gold(change_ids: Sequence[str], human: Mapping[str, str]) -> dict[str, Importance]:
