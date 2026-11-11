@@ -15,6 +15,7 @@ python -m finscope label TSLA --item 1A [--part I]      you rate every change (e
 python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage against your labels
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
 python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
+python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
 python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 1]  report on newly
                                                     filed watched sections
 """
@@ -85,18 +86,28 @@ from finscope.evals import (
 )
 from finscope.explain import explain_change, explain_change_with_agent
 from finscope.filings import load_filing_text
+from finscope.known_agent import (
+    AgentCaseResult,
+    KnownAgentEvalResult,
+    build_result,
+    mismatch_reasons,
+    run_known_cases,
+    save_known_agent_eval,
+)
 from finscope.known_cases import (
+    AGENT_CASES_PATH,
     COMPANY,
     FORM,
     KNOWN_CASES_PATH,
     KnownCasesError,
     build_known_diff,
     case_results,
+    load_agent_cases,
     load_known_cases,
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
-from finscope.report import SectionReport, build_section_report
+from finscope.report import HighItem, SectionReport, build_section_report
 from finscope.sections import Section, split_sections
 from finscope.triage import (
     SCHEMA,
@@ -228,6 +239,14 @@ def main(argv: list[str] | None = None) -> int:
         "--runs", type=_positive_int, default=3, help="triage runs, one API call each (default 3)"
     )
 
+    known_agent_parser = commands.add_parser(
+        "eval-known-agent",
+        help="score the explain agent's importance on made-up changes with obvious answers",
+    )
+    known_agent_parser.add_argument(
+        "--runs", type=_positive_int, default=2, help="agent runs per case (default 2)"
+    )
+
     check_parser = commands.add_parser(
         "check", help="run the report on every watched section that has a new filing"
     )
@@ -259,6 +278,8 @@ def main(argv: list[str] | None = None) -> int:
     # Needs no ticker and no SEC data: the cases are made up and stored in the repo.
     if args.command == "eval-known":
         return _eval_known(args.runs)
+    if args.command == "eval-known-agent":
+        return _eval_known_agent(args.runs)
     # Takes its tickers from the watchlist, not the command line.
     if args.command == "check":
         return _check(
@@ -1345,14 +1366,7 @@ def _print_agent_eval(result: AgentEvalResult) -> None:
 
 
 def _importances(change: ChangeStability) -> str:
-    """One word per run: the agent's level, "failed" (no answer) or "none" (no level read)."""
-    words: list[str] = []
-    for run in change.runs:
-        if run.importance is not None:
-            words.append(run.importance)
-        else:
-            words.append("failed" if run.item.error is not None else "none")
-    return ", ".join(words)
+    return ", ".join(_agent_word(run.item) for run in change.runs)
 
 
 def _tiers(change: ChangeStability) -> str:
@@ -1411,6 +1425,85 @@ def _run_known_eval(
         all_succeeded=len(succeeded) == len(records),
     )
     return 0 if succeeded else 1
+
+
+def _eval_known_agent(runs: int) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings)  # the same provider explain --agent and report use
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    return _run_known_agent_eval(
+        AGENT_CASES_PATH, provider=provider, settings=settings, runs=runs, results_dir=RESULTS_DIR
+    )
+
+
+def _run_known_agent_eval(
+    cases_path: Path, *, provider: LLMProvider, settings: Settings, runs: int, results_dir: Path
+) -> int:
+    """Explain every known case `runs` times; print PASS/FAIL per case and save the result."""
+    try:
+        cases = load_agent_cases(cases_path)
+    except KnownCasesError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(f"{len(cases)} known agent case(s) from {cases_path} ({COMPANY}, a made-up company)")
+    print(f"Running the agent {runs} time(s) per case: {len(cases) * runs} agent run(s).\n")
+
+    def progress(name: str, number: int, item: HighItem) -> None:
+        print(f"[{name}] run {number}/{runs}: {_agent_word(item)}")
+
+    results = run_known_cases(
+        cases, provider=provider, settings=settings, runs=runs, on_run=progress
+    )
+    result = build_result(
+        results,
+        cases_file=cases_path,
+        runs=runs,
+        settings=settings,
+        created_at=datetime.now(UTC),
+    )
+    saved = save_known_agent_eval(result, results_dir)
+    _print_known_agent_eval(result)
+    print(f"saved:  {saved}")
+    return 0 if result.agent_failures < result.total_runs else 1
+
+
+def _print_known_agent_eval(result: KnownAgentEvalResult) -> None:
+    print("\n=== CASES: PASS only if every run gave the expected importance ===")
+    name_width = max(len(case.name) for case in result.cases)
+    for case in result.cases:
+        print(
+            f"{'PASS' if case.passed else 'FAIL'} {case.matches}/{len(case.ratings)}  "
+            f"{case.name:<{name_width}} expected {case.expected:<6}  got {_agent_words(case)}"
+        )
+        if not case.passed:
+            indent = " " * len("PASS 0/0  ")
+            for reason in mismatch_reasons(case):
+                print(f"{indent}reason: {reason}")
+
+    print(f"\npassed: {result.passed}/{len(result.cases)} case(s)")
+    print(f"fact-check failures: {result.fact_check_failures}/{result.total_runs} run(s)")
+    print(f"agent failures:      {result.agent_failures}/{result.total_runs} run(s)")
+    print(f"\nmodel {result.model}, agent prompt version {result.prompt_version}")
+    _print_usage(
+        result.input_tokens,
+        result.output_tokens,
+        result.cost_usd,
+        all_succeeded=result.usage_complete,
+    )
+
+
+def _agent_words(case: AgentCaseResult) -> str:
+    return ", ".join(_agent_word(item) for item in case.runs)
+
+
+def _agent_word(item: HighItem) -> str:
+    """The agent's level, "failed" (no answer) or "none" (an answer without a readable level)."""
+    if item.parsed is not None and item.parsed.importance is not None:
+        return item.parsed.importance
+    return "failed" if item.error is not None else "none"
 
 
 def _print_eval(result: EvalResult) -> None:

@@ -85,10 +85,11 @@ def test_system_prompt_treats_filing_text_as_data() -> None:
 
 @pytest.mark.parametrize("prompt", [SYSTEM_PROMPT, AGENT_SYSTEM_PROMPT])
 def test_both_prompts_carry_the_importance_rubric(prompt: str) -> None:
-    assert "high (realized): the filing states something has ALREADY HAPPENED" in prompt
-    assert "medium (potential): a new or broader risk that MAY happen" in prompt
+    assert "high (realized): the filing says the company has ALREADY BEEN HURT" in prompt
+    assert "medium (potential): something happened or took effect" in prompt
     assert "low (wording): wording, formatting, reordering" in prompt
-    assert "Yes -> high. No -> medium." in prompt
+    assert "already been hurt? Yes -> high. No -> medium." in prompt
+    assert "is not harm." in prompt
     assert (
         "IMPORTANCE: <high | medium | low> - <realized | potential | wording>: <a few words>"
         in prompt

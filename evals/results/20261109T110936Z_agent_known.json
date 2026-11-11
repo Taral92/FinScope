@@ -1,0 +1,698 @@
+{
+  "created_at": "2026-11-09T11:09:36.336402Z",
+  "cases_file": "evals/known/agent_cases.json",
+  "company": "Acme Motors",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "e38b2ae0cef0",
+  "runs": 2,
+  "cases": [
+    {
+      "name": "tariffs-raised-costs",
+      "expected": "high",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "tariffs-raised-costs",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors now says tariffs imposed in 2025 have increased costs and reduced gross margin, rather than describing those effects as potential risks.\nWHY IT MATTERS: The tariff impact has already affected costs and profitability.\nIMPORTANCE: high - realized: costs and margin affected\nEVIDENCE: \"Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin.\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors now says tariffs imposed in 2025 have increased costs and reduced gross margin, rather than describing those effects as potential risks.",
+            "why_it_matters": "The tariff impact has already affected costs and profitability.",
+            "importance": "high",
+            "importance_reason": "realized: costs and margin affected",
+            "evidence": [
+              "Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin."
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 1,
+            "numbers_checked": 1
+          },
+          "input_tokens": 1825,
+          "output_tokens": 141,
+          "triage_votes": []
+        },
+        {
+          "id": "tariffs-raised-costs",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme now states that tariffs imposed in 2025 have increased costs and reduced gross margin, rather than presenting those effects as a possibility.\nWHY IT MATTERS: The tariff impact has already occurred, affecting costs and profitability.\nIMPORTANCE: high - realized: Costs increased and gross margin fell.\nEVIDENCE: \"Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin.\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme now states that tariffs imposed in 2025 have increased costs and reduced gross margin, rather than presenting those effects as a possibility.",
+            "why_it_matters": "The tariff impact has already occurred, affecting costs and profitability.",
+            "importance": "high",
+            "importance_reason": "realized: Costs increased and gross margin fell.",
+            "evidence": [
+              "Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin."
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 1,
+            "numbers_checked": 1
+          },
+          "input_tokens": 1825,
+          "output_tokens": 145,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "credit-repealed",
+      "expected": "high",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "credit-repealed",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The filing replaces a potential risk of reduced incentives with a statement that the federal electric vehicle tax credit was repealed in 2025.\nWHY IT MATTERS: The company says the repeal has reduced demand for its vehicles in the United States.\nIMPORTANCE: high - realized: Repeal has already reduced demand.\nEVIDENCE: \"The federal tax credit for electric vehicles was repealed in 2025\" \"has reduced demand for our vehicles in the United States\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The filing replaces a potential risk of reduced incentives with a statement that the federal electric vehicle tax credit was repealed in 2025.",
+            "why_it_matters": "The company says the repeal has reduced demand for its vehicles in the United States.",
+            "importance": "high",
+            "importance_reason": "realized: Repeal has already reduced demand.",
+            "evidence": [
+              "The federal tax credit for electric vehicles was repealed in 2025",
+              "has reduced demand for our vehicles in the United States"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 1
+          },
+          "input_tokens": 1847,
+          "output_tokens": 155,
+          "triage_votes": []
+        },
+        {
+          "id": "credit-repealed",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The filing replaces a potential loss of incentives with the reported repeal of the federal electric vehicle tax credit in 2025.\nWHY IT MATTERS: The company says the repeal has already reduced demand for its vehicles in the United States.\nIMPORTANCE: high - realized: Repeal has reduced demand.\nEVIDENCE: \"The federal tax credit for electric vehicles was repealed in 2025\" \"which has reduced demand for our vehicles in the United States\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The filing replaces a potential loss of incentives with the reported repeal of the federal electric vehicle tax credit in 2025.",
+            "why_it_matters": "The company says the repeal has already reduced demand for its vehicles in the United States.",
+            "importance": "high",
+            "importance_reason": "realized: Repeal has reduced demand.",
+            "evidence": [
+              "The federal tax credit for electric vehicles was repealed in 2025",
+              "which has reduced demand for our vehicles in the United States"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 1
+          },
+          "input_tokens": 1847,
+          "output_tokens": 153,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "lawsuit-filed",
+      "expected": "high",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "lawsuit-filed",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors disclosed a class action lawsuit alleging misleading claims about its vehicles’ driving range.\nWHY IT MATTERS: The lawsuit is already filed and could be costly and divert management’s attention.\nIMPORTANCE: high - realized: existing legal exposure\nEVIDENCE: \"a class action lawsuit was filed against us\" \"it may be costly and divert the attention of our management\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors disclosed a class action lawsuit alleging misleading claims about its vehicles’ driving range.",
+            "why_it_matters": "The lawsuit is already filed and could be costly and divert management’s attention.",
+            "importance": "high",
+            "importance_reason": "realized: existing legal exposure",
+            "evidence": [
+              "a class action lawsuit was filed against us",
+              "it may be costly and divert the attention of our management"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1731,
+          "output_tokens": 136,
+          "triage_votes": []
+        },
+        {
+          "id": "lawsuit-filed",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors disclosed a class action lawsuit alleging misleading claims about its vehicles’ driving range.\nWHY IT MATTERS: The company is defending the lawsuit, which may be costly and divert management’s attention.\nIMPORTANCE: high - realized: lawsuit already filed\nEVIDENCE: \"a class action lawsuit was filed against us\" \"it may be costly and divert the attention of our management\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors disclosed a class action lawsuit alleging misleading claims about its vehicles’ driving range.",
+            "why_it_matters": "The company is defending the lawsuit, which may be costly and divert management’s attention.",
+            "importance": "high",
+            "importance_reason": "realized: lawsuit already filed",
+            "evidence": [
+              "a class action lawsuit was filed against us",
+              "it may be costly and divert the attention of our management"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1731,
+          "output_tokens": 138,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "violence-occurred",
+      "expected": "high",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "violence-occurred",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors added a disclosure that protests escalated to vandalism and arson at its stores and service centers.\nWHY IT MATTERS: The incidents damaged locations and disrupted sales and service operations.\nIMPORTANCE: high - realized: damage and operational disruption occurred\nEVIDENCE: \"escalated to vandalism and arson\" \"damaged several of our locations and disrupted our sales and service operations\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors added a disclosure that protests escalated to vandalism and arson at its stores and service centers.",
+            "why_it_matters": "The incidents damaged locations and disrupted sales and service operations.",
+            "importance": "high",
+            "importance_reason": "realized: damage and operational disruption occurred",
+            "evidence": [
+              "escalated to vandalism and arson",
+              "damaged several of our locations and disrupted our sales and service operations"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1717,
+          "output_tokens": 142,
+          "triage_votes": []
+        },
+        {
+          "id": "violence-occurred",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors added a disclosure that protests escalated to vandalism and arson at stores and service centers.\nWHY IT MATTERS: The incidents have already damaged locations and disrupted sales and service operations.\nIMPORTANCE: high - realized: property damage and operational disruption\nEVIDENCE: \"escalated to vandalism and arson\" \"damaged several of our locations and disrupted our sales and service operations\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors added a disclosure that protests escalated to vandalism and arson at stores and service centers.",
+            "why_it_matters": "The incidents have already damaged locations and disrupted sales and service operations.",
+            "importance": "high",
+            "importance_reason": "realized: property damage and operational disruption",
+            "evidence": [
+              "escalated to vandalism and arson",
+              "damaged several of our locations and disrupted our sales and service operations"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1717,
+          "output_tokens": 143,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "recall-done",
+      "expected": "high",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "recall-done",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors added a disclosure that it recalled certain vehicles in 2025 to replace a faulty brake component.\nWHY IT MATTERS: The recall has already resulted in additional warranty costs, and future recalls could harm the company’s reputation.\nIMPORTANCE: high - realized: Recall and additional costs already occurred.\nEVIDENCE: \"we recalled certain of our vehicles to replace a faulty brake component\" \"we recorded additional warranty costs\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors added a disclosure that it recalled certain vehicles in 2025 to replace a faulty brake component.",
+            "why_it_matters": "The recall has already resulted in additional warranty costs, and future recalls could harm the company’s reputation.",
+            "importance": "high",
+            "importance_reason": "realized: Recall and additional costs already occurred.",
+            "evidence": [
+              "we recalled certain of our vehicles to replace a faulty brake component",
+              "we recorded additional warranty costs"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 1
+          },
+          "input_tokens": 1719,
+          "output_tokens": 146,
+          "triage_votes": []
+        },
+        {
+          "id": "recall-done",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors added disclosure of a vehicle recall to replace a faulty brake component.\nWHY IT MATTERS: The recall has already resulted in additional warranty costs. Future recalls could harm the company’s reputation.\nIMPORTANCE: high - realized: recall and warranty costs already occurred\nEVIDENCE: \"we recalled certain of our vehicles to replace a faulty brake component\" \"we recorded additional warranty costs\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors added disclosure of a vehicle recall to replace a faulty brake component.",
+            "why_it_matters": "The recall has already resulted in additional warranty costs. Future recalls could harm the company’s reputation.",
+            "importance": "high",
+            "importance_reason": "realized: recall and warranty costs already occurred",
+            "evidence": [
+              "we recalled certain of our vehicles to replace a faulty brake component",
+              "we recorded additional warranty costs"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1719,
+          "output_tokens": 139,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "launch-may-face-regulation",
+      "expected": "medium",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "launch-may-face-regulation",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme launched a ride-hailing service and disclosed a risk that changing regulations could limit its expansion.\nWHY IT MATTERS: The service is already operating, while regulatory limits on expansion remain a potential risk.\nIMPORTANCE: high - realized: service launched\nEVIDENCE: \"we launched a ride-hailing service using our vehicles in two cities\" \"could limit our ability to expand this service to additional markets\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme launched a ride-hailing service and disclosed a risk that changing regulations could limit its expansion.",
+            "why_it_matters": "The service is already operating, while regulatory limits on expansion remain a potential risk.",
+            "importance": "high",
+            "importance_reason": "realized: service launched",
+            "evidence": [
+              "we launched a ride-hailing service using our vehicles in two cities",
+              "could limit our ability to expand this service to additional markets"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1725,
+          "output_tokens": 196,
+          "triage_votes": []
+        },
+        {
+          "id": "launch-may-face-regulation",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme launched a ride-hailing service in two cities and added a warning about regulatory limits on expansion.\nWHY IT MATTERS: The service is already operating, but evolving regulations could limit its expansion into additional markets.\nIMPORTANCE: high - realized: service launch; expansion risk remains potential\nEVIDENCE: \"we launched a ride-hailing service using our vehicles in two cities\" \"could limit our ability to expand this service to additional markets\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme launched a ride-hailing service in two cities and added a warning about regulatory limits on expansion.",
+            "why_it_matters": "The service is already operating, but evolving regulations could limit its expansion into additional markets.",
+            "importance": "high",
+            "importance_reason": "realized: service launch; expansion risk remains potential",
+            "evidence": [
+              "we launched a ride-hailing service using our vehicles in two cities",
+              "could limit our ability to expand this service to additional markets"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1725,
+          "output_tokens": 223,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "law-in-effect-may-cost",
+      "expected": "medium",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "law-in-effect-may-cost",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors says privacy and data protection laws are now in effect in several states beyond California and may impose differing requirements and compliance costs.\nWHY IT MATTERS: The laws govern how the company collects, uses and shares customer and vehicle information. Compliance requirements may differ across states.\nIMPORTANCE: high - realized: additional state laws are in effect\nEVIDENCE: \"California and several other states, which are now in effect\" \"These laws may impose differing requirements and compliance costs.\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors says privacy and data protection laws are now in effect in several states beyond California and may impose differing requirements and compliance costs.",
+            "why_it_matters": "The laws govern how the company collects, uses and shares customer and vehicle information. Compliance requirements may differ across states.",
+            "importance": "high",
+            "importance_reason": "realized: additional state laws are in effect",
+            "evidence": [
+              "California and several other states, which are now in effect",
+              "These laws may impose differing requirements and compliance costs."
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1835,
+          "output_tokens": 157,
+          "triage_votes": []
+        },
+        {
+          "id": "law-in-effect-may-cost",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme expanded its disclosure to cover privacy laws in several other states that are now in effect, and noted potentially differing requirements and compliance costs.\nWHY IT MATTERS: The company must comply with laws governing how it handles customer and vehicle information across more states. Those laws may impose differing requirements and costs.\nIMPORTANCE: high - realized: additional state laws are in effect\nEVIDENCE: \"California and several other states, which are now in effect\" \"These laws may impose differing requirements and compliance costs.\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme expanded its disclosure to cover privacy laws in several other states that are now in effect, and noted potentially differing requirements and compliance costs.",
+            "why_it_matters": "The company must comply with laws governing how it handles customer and vehicle information across more states. Those laws may impose differing requirements and costs.",
+            "importance": "high",
+            "importance_reason": "realized: additional state laws are in effect",
+            "evidence": [
+              "California and several other states, which are now in effect",
+              "These laws may impose differing requirements and compliance costs."
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1835,
+          "output_tokens": 162,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "new-product-may-not-sell",
+      "expected": "medium",
+      "ratings": [
+        "high",
+        "high"
+      ],
+      "runs": [
+        {
+          "id": "new-product-may-not-sell",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors began producing a home robot for consumers and disclosed uncertainty about demand.\nWHY IT MATTERS: Production has begun, but the product may not achieve commercial success, which could adversely affect results of operations.\nIMPORTANCE: high - realized: production has begun\nEVIDENCE: \"we began producing a home robot for consumers\" \"Demand for this product is uncertain\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors began producing a home robot for consumers and disclosed uncertainty about demand.",
+            "why_it_matters": "Production has begun, but the product may not achieve commercial success, which could adversely affect results of operations.",
+            "importance": "high",
+            "importance_reason": "realized: production has begun",
+            "evidence": [
+              "we began producing a home robot for consumers",
+              "Demand for this product is uncertain"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1715,
+          "output_tokens": 207,
+          "triage_votes": []
+        },
+        {
+          "id": "new-product-may-not-sell",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme began producing a home robot for consumers and added a risk about uncertain demand.\nWHY IT MATTERS: Production has begun, but the product may not achieve commercial success, which could adversely affect operating results.\nIMPORTANCE: high - realized: new product production underway\nEVIDENCE: \"we began producing a home robot for consumers\" \"Demand for this product is uncertain\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme began producing a home robot for consumers and added a risk about uncertain demand.",
+            "why_it_matters": "Production has begun, but the product may not achieve commercial success, which could adversely affect operating results.",
+            "importance": "high",
+            "importance_reason": "realized: new product production underway",
+            "evidence": [
+              "we began producing a home robot for consumers",
+              "Demand for this product is uncertain"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1715,
+          "output_tokens": 268,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "award-may-misdirect",
+      "expected": "medium",
+      "ratings": [
+        "medium",
+        "medium"
+      ],
+      "runs": [
+        {
+          "id": "award-may-misdirect",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The board approved a new performance award for the Chief Executive Officer.\nWHY IT MATTERS: The award’s milestones may steer investment toward products customers do not want. The filing does not say that this has occurred.\nIMPORTANCE: medium - potential: possible investment misalignment\nEVIDENCE: \"Our board of directors approved a new performance award\" \"may steer our investment toward products that customers do not want\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The board approved a new performance award for the Chief Executive Officer.",
+            "why_it_matters": "The award’s milestones may steer investment toward products customers do not want. The filing does not say that this has occurred.",
+            "importance": "medium",
+            "importance_reason": "potential: possible investment misalignment",
+            "evidence": [
+              "Our board of directors approved a new performance award",
+              "may steer our investment toward products that customers do not want"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1703,
+          "output_tokens": 197,
+          "triage_votes": []
+        },
+        {
+          "id": "award-may-misdirect",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The board approved a new performance award for the Chief Executive Officer, whose milestones may steer investment toward products customers do not want.\nWHY IT MATTERS: The filing identifies a potential risk that investment decisions could favor products with insufficient customer demand.\nIMPORTANCE: medium - potential: investment direction may change\nEVIDENCE: \"approved a new performance award\" \"may steer our investment toward products that customers do not want\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The board approved a new performance award for the Chief Executive Officer, whose milestones may steer investment toward products customers do not want.",
+            "why_it_matters": "The filing identifies a potential risk that investment decisions could favor products with insufficient customer demand.",
+            "importance": "medium",
+            "importance_reason": "potential: investment direction may change",
+            "evidence": [
+              "approved a new performance award",
+              "may steer our investment toward products that customers do not want"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1703,
+          "output_tokens": 187,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "wording",
+      "expected": "low",
+      "ratings": [
+        "low",
+        "low"
+      ],
+      "runs": [
+        {
+          "id": "wording",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: Acme Motors replaced “utilize” with “use” in its description of third-party logistics providers.\nWHY IT MATTERS: The delivery disruption risk is unchanged.\nIMPORTANCE: low - wording: No substantive change.\nEVIDENCE: \"We utilize third-party logistics providers\" ; \"We use third-party logistics providers\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "Acme Motors replaced “utilize” with “use” in its description of third-party logistics providers.",
+            "why_it_matters": "The delivery disruption risk is unchanged.",
+            "importance": "low",
+            "importance_reason": "wording: No substantive change.",
+            "evidence": [
+              "We utilize third-party logistics providers",
+              "We use third-party logistics providers"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1773,
+          "output_tokens": 125,
+          "triage_votes": []
+        },
+        {
+          "id": "wording",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The filing replaces “utilize” with “use” in its description of third-party logistics providers.\nWHY IT MATTERS: The delivery-disruption risk is unchanged.\nIMPORTANCE: low - wording: No substantive change\nEVIDENCE: \"We utilize third-party logistics providers\" \"We use third-party logistics providers\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The filing replaces “utilize” with “use” in its description of third-party logistics providers.",
+            "why_it_matters": "The delivery-disruption risk is unchanged.",
+            "importance": "low",
+            "importance_reason": "wording: No substantive change",
+            "evidence": [
+              "We utilize third-party logistics providers",
+              "We use third-party logistics providers"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1773,
+          "output_tokens": 124,
+          "triage_votes": []
+        }
+      ]
+    },
+    {
+      "name": "reordered-list",
+      "expected": "low",
+      "ratings": [
+        "low",
+        "low"
+      ],
+      "runs": [
+        {
+          "id": "reordered-list",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The filing reordered the examples of natural disasters that could disrupt production.\nWHY IT MATTERS: The underlying risk is unchanged.\nIMPORTANCE: low - wording: Reordered examples only\nEVIDENCE: \"fire, flood or earthquake\"; \"earthquake, fire or flood\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The filing reordered the examples of natural disasters that could disrupt production.",
+            "why_it_matters": "The underlying risk is unchanged.",
+            "importance": "low",
+            "importance_reason": "wording: Reordered examples only",
+            "evidence": [
+              "fire, flood or earthquake",
+              "earthquake, fire or flood"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1797,
+          "output_tokens": 115,
+          "triage_votes": []
+        },
+        {
+          "id": "reordered-list",
+          "triage_reason": "known case (triage not run)",
+          "explanation": "WHAT CHANGED: The filing reordered the examples of natural disasters.\nWHY IT MATTERS: The underlying risk of production disruption remains unchanged.\nIMPORTANCE: low - wording: reordered examples\nEVIDENCE: \"fire, flood or earthquake\" \"earthquake, fire or flood\"",
+          "error": null,
+          "parsed": {
+            "what_changed": "The filing reordered the examples of natural disasters.",
+            "why_it_matters": "The underlying risk of production disruption remains unchanged.",
+            "importance": "low",
+            "importance_reason": "wording: reordered examples",
+            "evidence": [
+              "fire, flood or earthquake",
+              "earthquake, fire or flood"
+            ],
+            "issues": []
+          },
+          "verification": {
+            "passed": true,
+            "issues": [],
+            "quotes_checked": 2,
+            "numbers_checked": 0
+          },
+          "input_tokens": 1797,
+          "output_tokens": 112,
+          "triage_votes": []
+        }
+      ]
+    }
+  ],
+  "passed": 8,
+  "total_runs": 22,
+  "fact_check_failures": 0,
+  "agent_failures": 0,
+  "input_tokens": 38774,
+  "output_tokens": 3511,
+  "cost_usd": "0.056329",
+  "usage_complete": true
+}

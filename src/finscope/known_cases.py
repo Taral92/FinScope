@@ -1,10 +1,12 @@
-"""Known-answer triage cases: made-up changes whose right rating is obvious by design.
+"""Known-answer cases: made-up changes whose right rating is obvious by design.
 
 Plain code, no LLM. Unlike human labels, nobody has to rate anything: each case says what the
 answer must be ("a going-concern warning is high", "a typo fix is low"). The cases are about a
 made-up company, Acme Motors, so the model can't lean on what it knows about a real one.
 
-The cases are turned into a fake SectionDiff, so triage_section runs on them unchanged.
+Two case files share one format. Triage cases (high or low) are turned into one fake
+SectionDiff, so triage_section runs on them unchanged. Agent cases (high, medium or low) each
+get their own tiny fake section holding just that paragraph, so the agent's tools work on them.
 """
 
 from collections import Counter
@@ -19,12 +21,15 @@ from finscope.diff import (
     ParagraphChange,
     SectionDiff,
     changes_by_id,
+    section_paragraphs,
     similarity,
 )
 from finscope.evals import Importance, Ratings
+from finscope.sections import Section
 
 # Relative to the working directory, like LABELS_DIR. Committed with the code.
 KNOWN_CASES_PATH = Path("evals") / "known" / "triage_cases.json"
+AGENT_CASES_PATH = Path("evals") / "known" / "agent_cases.json"
 
 # What the fake filing claims to be; the company is made up on purpose.
 COMPANY = "Acme Motors"
@@ -32,21 +37,24 @@ FORM = "10-K"
 PART = "I"
 ITEM = "1A"
 TITLE = "Risk Factors"
+# The first line of a fake section, as split_sections would find it in a filing.
+_HEADING = f"Item {ITEM}. {TITLE}"
 
 
 class KnownCasesError(Exception):
     """The case file can't be used: missing, not JSON, or a case that doesn't make sense."""
 
 
-class KnownCase(BaseModel):
+class BaseCase(BaseModel):
+    """Everything a case has except its expected answer, which differs per case file."""
+
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str = Field(min_length=1)  # e.g. "going-concern"
     kind: Literal["added", "removed", "modified"]
     old_text: str | None  # null for an added case
     new_text: str | None  # null for a removed case
-    expected: Literal["high", "low"]  # the only right answer
-    why: str = Field(min_length=1)  # why that answer is obvious
+    why: str = Field(min_length=1)  # why the expected answer is obvious
 
     @model_validator(mode="after")
     def _texts_fit_kind(self) -> Self:
@@ -91,6 +99,34 @@ class KnownCase(BaseModel):
         )
 
 
+class KnownCase(BaseCase):
+    """A triage case: clearly high or clearly low, since triage's medium is a judgment call."""
+
+    expected: Literal["high", "low"]  # the only right answer
+
+
+class AgentCase(BaseCase):
+    """An explain-agent case. Medium is a right answer here: the realized-vs-potential line
+    between high and medium is exactly what these cases test."""
+
+    expected: Importance  # the only right answer
+
+    @model_validator(mode="after")
+    def _fits_a_fake_section(self) -> Self:
+        known_sections(self)  # raises ValueError if the text isn't exactly one paragraph
+        return self
+
+
+class KnownSections(BaseModel):
+    """One case as a filing would hold it: old and new section, and the change with offsets."""
+
+    model_config = ConfigDict(frozen=True)
+
+    old_section: Section
+    new_section: Section
+    change: ParagraphChange
+
+
 class KnownDiff(BaseModel):
     """The cases as one fake section, plus which change ID is which case."""
 
@@ -130,12 +166,61 @@ class CaseResult(BaseModel):
 
 
 _CASES = TypeAdapter(tuple[KnownCase, ...])
+_AGENT_CASES = TypeAdapter(tuple[AgentCase, ...])
 
 
 def load_known_cases(path: Path) -> tuple[KnownCase, ...]:
-    """The cases in the file, or a KnownCasesError saying exactly what's wrong with it."""
+    """The triage cases in the file, or a KnownCasesError saying exactly what's wrong."""
+    return _load(path, _CASES)
+
+
+def load_agent_cases(path: Path) -> tuple[AgentCase, ...]:
+    """The explain-agent cases in the file, or a KnownCasesError saying exactly what's wrong."""
+    return _load(path, _AGENT_CASES)
+
+
+def known_sections(case: BaseCase) -> KnownSections:
+    """A fake old and new Item 1A holding only this case's paragraph, if it has one.
+
+    Each section is the heading line, a blank line, then the paragraph, so section_paragraphs
+    finds exactly that one paragraph at the change's offsets: get_nearby_paragraphs works and
+    finds nothing around it. Raises ValueError if the text wouldn't be read back as exactly
+    one paragraph (a blank line inside it, leading spaces, ...).
+    """
+    offset = len(_HEADING) + 2  # after the heading line and one blank line
+    old_section = _fake_section(case.old_text)
+    new_section = _fake_section(case.new_text)
+    for section, text in [(old_section, case.old_text), (new_section, case.new_text)]:
+        if text is not None and section_paragraphs(section) != [(offset, text)]:
+            raise ValueError(
+                f"case {case.name!r}: each text must be exactly one paragraph "
+                "(no blank lines, no leading spaces)"
+            )
+
+    def span(text: str | None) -> tuple[int | None, int | None]:
+        return (offset, offset + len(text)) if text is not None else (None, None)
+
+    (old_start, old_end), (new_start, new_end) = span(case.old_text), span(case.new_text)
+    change = case.change().model_copy(
+        update={
+            "old_start": old_start,
+            "old_end": old_end,
+            "new_start": new_start,
+            "new_end": new_end,
+        }
+    )
+    return KnownSections(old_section=old_section, new_section=new_section, change=change)
+
+
+def _fake_section(paragraph: str | None) -> Section:
+    """The section with just a heading when the filing has no paragraph for this case."""
+    text = _HEADING if paragraph is None else f"{_HEADING}\n\n{paragraph}"
+    return Section(part=PART, item=ITEM, title=TITLE, start=0, end=len(text), text=text)
+
+
+def _load[C: BaseCase](path: Path, adapter: TypeAdapter[tuple[C, ...]]) -> tuple[C, ...]:
     try:
-        cases = _CASES.validate_json(path.read_text(encoding="utf-8"))
+        cases = adapter.validate_json(path.read_text(encoding="utf-8"))
     except OSError as error:
         raise KnownCasesError(f"can't read {path}: {error}") from error
     except ValidationError as error:  # bad JSON or a bad case; the message says where

@@ -22,15 +22,17 @@ Rules:
 - If the change is only wording, formatting or updated dates, say so plainly.
 
 Importance:
-- high (realized): the filing states something has ALREADY HAPPENED or is in effect (for
-  example tariffs have raised costs, a credit was repealed, a lawsuit or investigation
-  exists, violence occurred, a covenant was breached, a law was enacted) AND it affects
-  revenue, costs, operations, legal exposure or safety; or a material number changed.
-- medium (potential): a new or broader risk that MAY happen, with no event stated as already
-  happened; or an existing risk extended to new products or services.
+- high (realized): the filing says the company has ALREADY BEEN HURT (for example costs
+  rose, margin, revenue or demand fell, a lawsuit or investigation was brought against it,
+  property was damaged, operations were disrupted, a covenant was breached, a penalty was
+  paid); or a material number changed.
+- medium (potential): something happened or took effect (for example a product launch, the
+  start of production, a law taking effect, an approval, a new plan) but any harm is still
+  described as "may", "could" or uncertain; or a new or broader risk with no harm stated.
 - low (wording): wording, formatting, reordering, date or cross-reference updates.
-- Between high and medium, apply this test literally: does the filing say it already
-  happened or is in effect? Yes -> high. No -> medium."""
+- Between high and medium, apply this test literally: does the filing say the company has
+  already been hurt? Yes -> high. No -> medium. Something existing, starting or taking
+  effect is not harm."""
 
 _ANSWER_FORMAT = """\
 WHAT CHANGED: <one sentence>

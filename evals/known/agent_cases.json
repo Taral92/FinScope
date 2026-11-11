@@ -1,0 +1,90 @@
+[
+  {
+    "name": "tariffs-raised-costs",
+    "kind": "modified",
+    "old_text": "We import battery cells, semiconductors and other components from suppliers in Asia and Mexico. Tariffs on these imported components may increase our costs and could reduce our gross margin.",
+    "new_text": "We import battery cells, semiconductors and other components from suppliers in Asia and Mexico. Tariffs imposed in 2025 on these imported components have increased our costs and reduced our gross margin.",
+    "expected": "high",
+    "why": "Realized: the tariffs are in place and have already raised costs and cut gross margin."
+  },
+  {
+    "name": "credit-repealed",
+    "kind": "modified",
+    "old_text": "Demand for our vehicles depends in part on government incentives, such as the federal tax credit for electric vehicles. These incentives could be reduced or eliminated, which could reduce demand for our vehicles.",
+    "new_text": "Demand for our vehicles depends in part on government incentives, such as the federal tax credit for electric vehicles. The federal tax credit for electric vehicles was repealed in 2025, which has reduced demand for our vehicles in the United States.",
+    "expected": "high",
+    "why": "Realized: the credit is gone and U.S. demand has already fallen."
+  },
+  {
+    "name": "lawsuit-filed",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "In 2025, a class action lawsuit was filed against us alleging that we made misleading claims about the driving range of our vehicles. We are defending this lawsuit, and it may be costly and divert the attention of our management.",
+    "expected": "high",
+    "why": "Realized: the lawsuit exists; only its outcome is uncertain."
+  },
+  {
+    "name": "violence-occurred",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Public protests directed at our company have escalated to vandalism and arson at several of our stores and service centers. These incidents damaged several of our locations and disrupted our sales and service operations.",
+    "expected": "high",
+    "why": "Realized: locations were damaged and operations were disrupted."
+  },
+  {
+    "name": "recall-done",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "In 2025, we recalled certain of our vehicles to replace a faulty brake component. As a result of this recall, we recorded additional warranty costs, and any future recalls could harm our reputation.",
+    "expected": "high",
+    "why": "Realized: the recall happened and already added warranty costs."
+  },
+  {
+    "name": "launch-may-face-regulation",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "In 2025, we launched a ride-hailing service using our vehicles in two cities. Regulations governing autonomous vehicle services are evolving and may change, which could limit our ability to expand this service to additional markets.",
+    "expected": "medium",
+    "why": "Potential: the launch happened, but the harm (rules that limit expansion) only may happen."
+  },
+  {
+    "name": "law-in-effect-may-cost",
+    "kind": "modified",
+    "old_text": "We are subject to privacy and data protection laws in California, which govern how we collect, use and share personal information about our customers and their vehicles.",
+    "new_text": "We are subject to privacy and data protection laws in California and several other states, which are now in effect and govern how we collect, use and share personal information about our customers and their vehicles. These laws may impose differing requirements and compliance costs.",
+    "expected": "medium",
+    "why": "Potential: the laws are in effect, but no cost or harm has happened yet; they only may impose it."
+  },
+  {
+    "name": "new-product-may-not-sell",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "In 2025, we began producing a home robot for consumers. Demand for this product is uncertain, and it may not achieve commercial success, which could adversely affect our results of operations.",
+    "expected": "medium",
+    "why": "Potential: production started, but weak demand is only a possibility."
+  },
+  {
+    "name": "award-may-misdirect",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Our board of directors approved a new performance award for our Chief Executive Officer. The milestones in this award may steer our investment toward products that customers do not want.",
+    "expected": "medium",
+    "why": "Potential: the award exists, but misdirected investment only may happen."
+  },
+  {
+    "name": "wording",
+    "kind": "modified",
+    "old_text": "We utilize third-party logistics providers to deliver vehicles to our customers, and any disruption in their services could delay our deliveries.",
+    "new_text": "We use third-party logistics providers to deliver vehicles to our customers, and any disruption in their services could delay our deliveries.",
+    "expected": "low",
+    "why": "One word swapped for a synonym; the meaning is the same."
+  },
+  {
+    "name": "reordered-list",
+    "kind": "modified",
+    "old_text": "Our factories and offices are located in regions that may be affected by natural disasters, such as fire, flood or earthquake, which could disrupt our production.",
+    "new_text": "Our factories and offices are located in regions that may be affected by natural disasters, such as earthquake, fire or flood, which could disrupt our production.",
+    "expected": "low",
+    "why": "The same three disasters in a different order; nothing changed."
+  }
+]
