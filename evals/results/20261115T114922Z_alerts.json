@@ -1,0 +1,30 @@
+{
+  "created_at": "2026-11-15T11:49:22.419865Z",
+  "reports": [
+    {
+      "report": "TSLA_10-K_0001628280-26-003952_I-1A.json",
+      "checked_at": "2026-11-07T18:19:39.469402Z",
+      "useful": [
+        "~1",
+        "~19"
+      ],
+      "not_useful": [
+        "~5"
+      ],
+      "wrong": [],
+      "reviews_rated": 0,
+      "reviews_useful": 0,
+      "missed": [],
+      "notes": {}
+    }
+  ],
+  "alerts_rated": 3,
+  "useful": 2,
+  "not_useful": 1,
+  "wrong": 0,
+  "reviews_rated": 0,
+  "reviews_useful": 0,
+  "missed": 0,
+  "precision": 0.6666666666666666,
+  "wrong_rate": 0.0
+}
