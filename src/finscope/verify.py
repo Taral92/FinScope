@@ -156,7 +156,10 @@ def _quote_found(quote: str, normalized_sources: list[str]) -> bool:
 
 
 def _normalize(text: str) -> str:
-    return _WHITESPACE.sub(" ", unify_typography(text)).strip()
+    """Whitespace, typography and case all ignored: a model quoting "the Company is ..." from the
+    middle of a sentence as "The Company is ..." has quoted the filing, not invented it. (Two
+    true AAPL 10-K quotes were rejected for exactly this before case was ignored.)"""
+    return _WHITESPACE.sub(" ", unify_typography(text)).strip().casefold()
 
 
 def _number_value(text: str) -> Decimal:

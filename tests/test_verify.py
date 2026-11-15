@@ -140,8 +140,14 @@ def test_whitespace_and_typography_differences_still_pass() -> None:
     )
 
 
-def test_quotes_are_case_sensitive() -> None:
-    issues = verify(quoted("upon launching our robotaxi service"), [SOURCE, METRICS])
+def test_quotes_ignore_case() -> None:
+    # A quote lifted from mid-sentence is often capitalized: "The Company ..." for "the Company".
+    assert verify(quoted("upon launching our robotaxi service"), [SOURCE, METRICS]) == []
+    assert verify(quoted("UPON LAUNCHING our Robotaxi"), [SOURCE, METRICS]) == []
+
+
+def test_a_changed_word_still_fails_the_quote() -> None:
+    issues = verify(quoted("Upon launching our Robotaxi fleet"), [SOURCE, METRICS])
 
     assert [issue.kind for issue in issues] == ["quote"]
 

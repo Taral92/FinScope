@@ -1,0 +1,127 @@
+{
+  "created_at": "2026-11-15T11:59:52.997143Z",
+  "company": "AAPL",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0000320193-26-000026",
+  "old_accession": "0000320193-25-000079",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "983848dcbf2b",
+  "runs": 1,
+  "picked_by": "ids",
+  "changes": [
+    {
+      "id": "+5",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Apple added that it is experiencing component supply constraints and rising costs.\nWHY IT MATTERS: The constraints are already adversely affecting its ability to obtain components and products on commercially reasonable terms. Apple expects pressures on memory and storage components to intensify, and price increases may not fully offset the impacts.\nIMPORTANCE: high - realized: supply constraints and rising costs\nEVIDENCE: \"The Company is experiencing supply constraints and rising costs\" \"These constraints adversely affect the Company’s ability to obtain sufficient quantities of components and products\" \"The Company expects these trends to intensify for memory and storage components.\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Apple added that it is experiencing component supply constraints and rising costs.",
+              "why_it_matters": "The constraints are already adversely affecting its ability to obtain components and products on commercially reasonable terms. Apple expects pressures on memory and storage components to intensify, and price increases may not fully offset the impacts.",
+              "importance": "high",
+              "importance_reason": "realized: supply constraints and rising costs",
+              "evidence": [
+                "The Company is experiencing supply constraints and rising costs",
+                "These constraints adversely affect the Company's ability to obtain sufficient quantities of components and products",
+                "The Company expects these trends to intensify for memory and storage components."
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 3586,
+            "output_tokens": 212,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "Both lines accurately reflect the added paragraph’s stated impacts and expectations.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1133,
+              "output_tokens": 33
+            },
+            "judge_error": null
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+10",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+10",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Apple added a warning that artificial intelligence can increase security risks through targeted phishing, deepfakes and faster exploitation of vulnerabilities.\nWHY IT MATTERS: Security and quality problems could expose Apple to legal and regulatory costs, reputational harm and lost sales. The added text does not say these AI-related risks have already harmed Apple.\nIMPORTANCE: medium - potential: broader security and quality risks\nEVIDENCE: \"highly targeted phishing campaigns\"; \"generate deepfake content designed to bypass authentication protocols\"; \"could materially adversely affect the Company’s business\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Apple added a warning that artificial intelligence can increase security risks through targeted phishing, deepfakes and faster exploitation of vulnerabilities.",
+              "why_it_matters": "Security and quality problems could expose Apple to legal and regulatory costs, reputational harm and lost sales. The added text does not say these AI-related risks have already harmed Apple.",
+              "importance": "medium",
+              "importance_reason": "potential: broader security and quality risks",
+              "evidence": [
+                "highly targeted phishing campaigns",
+                "generate deepfake content designed to bypass authentication protocols",
+                "could materially adversely affect the Company's business"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 3,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4090,
+            "output_tokens": 224,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The explanation accurately reflects the added warning and its potential consequences.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1372,
+              "output_tokens": 32
+            },
+            "judge_error": null
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    }
+  ],
+  "summary": {
+    "changes": 2,
+    "importance_stable": 2,
+    "tier_flips": 0,
+    "total_runs": 2,
+    "fact_check_failures": 0,
+    "agent_failures": 0,
+    "input_tokens": 7676,
+    "output_tokens": 436,
+    "cost_usd": "0.009856",
+    "usage_complete": true
+  }
+}

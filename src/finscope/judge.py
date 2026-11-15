@@ -20,13 +20,21 @@ from finscope.prompting import filing_text_block
 from finscope.verify import ParsedExplanation
 
 JudgeVerdict = Literal["supported", "overstated", "unsupported"]
+ChangeKind = Literal["added", "removed", "modified"]
+_KIND_DESCRIPTIONS: dict[ChangeKind, str] = {
+    "added": "added paragraph (new in this filing; there is no previous version)",
+    "removed": "removed paragraph (the previous filing had it; there is no new version)",
+    "modified": "modified paragraph (source 1 is the old version, source 2 the new one)",
+}
 
 SYSTEM_PROMPT = """\
 You judge whether an explanation of a change in an SEC filing is faithful to its sources.
 
 You get the sources exactly as the explainer saw them: the changed paragraph (old and new
 version when both exist) and any tool results it looked at. Then you get the explanation,
-two lines: WHAT CHANGED and WHY IT MATTERS.
+two lines: WHAT CHANGED and WHY IT MATTERS. The "Change" line says what kind of change it
+is: an added paragraph has no previous version, so "the company added ..." is correct for it
+and needs no old text to check against; a removed paragraph has no new version.
 
 Verdict:
 - supported: every claim in both lines follows from the sources, with the same strength the
@@ -81,6 +89,7 @@ def judge_explanation(
     parsed: ParsedExplanation,
     sources: Sequence[str],
     *,
+    kind: ChangeKind,
     company: str,
     form: str,
     section_title: str,
@@ -90,7 +99,7 @@ def judge_explanation(
     """One model call. LLMError (from the provider or an unreadable answer) is the caller's."""
     result = provider.complete_json(
         SYSTEM_PROMPT,
-        build_user_message(parsed, sources, company, form, section_title),
+        build_user_message(parsed, sources, company, form, section_title, kind),
         "explanation_judgment",
         SCHEMA,
     )
@@ -105,7 +114,12 @@ def judge_explanation(
 
 
 def build_user_message(
-    parsed: ParsedExplanation, sources: Sequence[str], company: str, form: str, section: str
+    parsed: ParsedExplanation,
+    sources: Sequence[str],
+    company: str,
+    form: str,
+    section: str,
+    kind: ChangeKind,
 ) -> str:
     """The sources in the order verify.sources_for gives them: paragraph(s), then tool results."""
     blocks = [
@@ -116,6 +130,7 @@ def build_user_message(
         f"Company: {company}\n"
         f"Form: {form}\n"
         f"Section: {section}\n"
+        f"Change: {_KIND_DESCRIPTIONS[kind]}\n"
         f"Sources: {len(blocks)}\n\n" + "\n\n".join(blocks) + "\n\n"
         "Explanation to judge:\n"
         f"WHAT CHANGED: {parsed.what_changed or ''}\n"

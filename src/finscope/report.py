@@ -263,6 +263,7 @@ def explain_and_check(
         judgment = judge_explanation(
             parsed,
             sources,
+            kind=context.change.kind,
             company=company,
             form=form,
             section_title=section_title,
