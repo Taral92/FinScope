@@ -722,7 +722,7 @@ def _report(
 ) -> int:
     settings = get_settings()
     try:
-        triage_provider, agent_provider = _report_providers(settings)
+        triage_provider, agent_provider, judge_provider = _report_providers(settings)
     except LLMError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
@@ -738,6 +738,7 @@ def _report(
             part,
             triage_provider=triage_provider,
             agent_provider=agent_provider,
+            judge_provider=judge_provider,
             settings=settings,
             max_explain=max_explain,
             triage_runs=triage_runs,
@@ -752,13 +753,15 @@ def _report(
     return 0
 
 
-def _report_providers(settings: Settings) -> tuple[LLMProvider, LLMProvider]:
-    """Triage and agent providers: the ones triage and explain --agent use.
+def _report_providers(settings: Settings) -> tuple[LLMProvider, LLMProvider, LLMProvider]:
+    """Triage, agent and judge providers: the ones triage, explain --agent and the judge use.
 
-    Each fails fast (LLMError) without an API key.
+    Each fails fast (LLMError) without an API key. The judge is the same model as the agent
+    for now; a model judging its own answers is lenient, so a separate setting may follow
+    once the judge is measured against the user's feedback.
     """
     triage_provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
-    return triage_provider, OpenAIProvider(settings)
+    return triage_provider, OpenAIProvider(settings), OpenAIProvider(settings)
 
 
 def _build_report(
@@ -771,6 +774,7 @@ def _build_report(
     *,
     triage_provider: LLMProvider,
     agent_provider: LLMProvider,
+    judge_provider: LLMProvider | None = None,
     settings: Settings,
     max_explain: int,
     triage_runs: int,
@@ -798,6 +802,7 @@ def _build_report(
         settings=settings,
         max_explain=max_explain,
         triage_runs=triage_runs,
+        judge_provider=judge_provider,
     )
     return report, decide(report)
 
@@ -829,6 +834,7 @@ def _print_report(report: SectionReport) -> None:
             print("FACT-CHECK: FAILED")
             for issue in check.issues:
                 print(f"  {issue.kind}: {issue.message}")
+        _print_judgment(item)
     if report.not_explained:
         print(
             f"\n{len(report.not_explained)} more high change(s) not explained: "
@@ -849,6 +855,23 @@ def _print_report(report: SectionReport) -> None:
     print(f"cost:   {cost}")
     if not report.usage_complete:
         print("        (a failed model call isn't included: its token usage isn't known)")
+
+
+def _print_judgment(item: HighItem) -> None:
+    """The judge's line, only when it ran or failed: an unjudged item prints exactly as before."""
+    if item.judgment is not None:
+        print(f"JUDGE: {item.judgment.verdict} - {item.judgment.reason}")
+    elif item.judge_error is not None:
+        print(f"JUDGE: not available ({item.judge_error})")
+
+
+def _judge_suffix(item: HighItem) -> str:
+    """' | judge: overstated - reason' for a progress line; empty when the judge didn't run."""
+    if item.judgment is not None:
+        return f" | judge: {item.judgment.verdict} - {item.judgment.reason}"
+    if item.judge_error is not None:
+        return f" | judge: not available ({item.judge_error})"
+    return ""
 
 
 def _print_triage_runs(report: SectionReport) -> None:
@@ -937,7 +960,7 @@ def _run_check(
     *,
     sec: SecClient,
     settings: Settings,
-    make_providers: Callable[[], tuple[LLMProvider, LLMProvider]],
+    make_providers: Callable[[], tuple[LLMProvider, LLMProvider, LLMProvider]],
     include_unseen: bool,
     dry_run: bool,
     max_explain: int,
@@ -1000,7 +1023,7 @@ def _check_entry(
     *,
     sec: SecClient,
     settings: Settings,
-    providers: Callable[[], tuple[LLMProvider, LLMProvider]],
+    providers: Callable[[], tuple[LLMProvider, LLMProvider, LLMProvider]],
     include_unseen: bool,
     dry_run: bool,
     max_explain: int,
@@ -1038,7 +1061,7 @@ def _check_entry(
         )
         return None, None
 
-    triage_provider, agent_provider = providers()
+    triage_provider, agent_provider, judge_provider = providers()
     _print_filing_pair(old, new)
     built = _build_report(
         sec,
@@ -1049,6 +1072,7 @@ def _check_entry(
         entry.part,
         triage_provider=triage_provider,
         agent_provider=agent_provider,
+        judge_provider=judge_provider,
         settings=settings,
         max_explain=max_explain,
         triage_runs=triage_runs,
@@ -1453,7 +1477,7 @@ def _eval_agent(
 ) -> int:
     settings = get_settings()
     try:
-        triage_provider, agent_provider = _report_providers(settings)
+        triage_provider, agent_provider, judge_provider = _report_providers(settings)
     except LLMError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
@@ -1474,6 +1498,7 @@ def _eval_agent(
         old_accession=old.accession_number,
         triage_provider=triage_provider,
         agent_provider=agent_provider,
+        judge_provider=judge_provider,
         settings=settings,
         runs=runs,
         ids=ids,
@@ -1493,6 +1518,7 @@ def _run_agent_eval(
     old_accession: str,
     triage_provider: LLMProvider,
     agent_provider: LLMProvider,
+    judge_provider: LLMProvider | None = None,
     settings: Settings,
     runs: int,
     ids: list[str] | None,
@@ -1527,7 +1553,10 @@ def _run_agent_eval(
     print(f"Running the agent {runs} time(s) per change: {total} agent run(s).\n")
 
     def progress(change_id: str, run: StabilityRun) -> None:
-        print(f"[{change_id}] run {run.number}/{runs}: {run.tier} ({run.tier_reason})")
+        print(
+            f"[{change_id}] run {run.number}/{runs}: {run.tier} ({run.tier_reason})"
+            f"{_judge_suffix(run.item)}"
+        )
 
     changes = run_stability(
         selection,
@@ -1542,6 +1571,7 @@ def _run_agent_eval(
         settings=settings,
         runs=runs,
         on_run=progress,
+        judge_provider=judge_provider,
     )
     summary = summarize(changes, selection, settings)
     result = AgentEvalResult(

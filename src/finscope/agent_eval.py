@@ -192,10 +192,12 @@ def run_stability(
     settings: Settings,
     runs: int,
     on_run: Callable[[str, StabilityRun], None] | None = None,
+    judge_provider: LLMProvider | None = None,
 ) -> tuple[ChangeStability, ...]:
     """Explain and fact-check each selected change `runs` times; a failed run is recorded.
 
-    `on_run(change_id, run)` is called after every run, e.g. to print progress.
+    `on_run(change_id, run)` is called after every run, e.g. to print progress. With a
+    `judge_provider`, each answer that passes the fact-check is judged too (run.item.judgment).
     """
     if runs < 1:
         raise ValueError("runs must be at least 1")
@@ -219,6 +221,7 @@ def run_stability(
                 section_title=section_title,
                 provider=agent_provider,
                 settings=settings,
+                judge_provider=judge_provider,
             )
             run = _stability_run(number, item)
             change_runs.append(run)

@@ -133,7 +133,11 @@ def no_answer(tokens: tuple[int, int] = (120, 30)) -> list[AgentStep]:
 
 
 def report(
-    triage: FakeTriage, agent: FakeAgent, max_explain: int = 5, triage_runs: int = 1
+    triage: FakeTriage,
+    agent: FakeAgent,
+    max_explain: int = 5,
+    triage_runs: int = 1,
+    judge: "FakeJudge | None" = None,
 ) -> SectionReport:
     return build_section_report(
         DIFF,
@@ -148,7 +152,33 @@ def report(
         settings=SETTINGS,
         max_explain=max_explain,
         triage_runs=triage_runs,
+        judge_provider=judge,
     )
+
+
+JUDGE_TOKENS = (700, 40)
+
+
+class FakeJudge:
+    """Implements LLMProvider's complete_json: one scripted verdict (or LLMError) per call."""
+
+    def __init__(self, verdicts: list[tuple[str, str] | LLMError]) -> None:
+        self.verdicts = list(verdicts)
+        self.users: list[str] = []
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        self.users.append(user)
+        verdict = self.verdicts.pop(0)
+        if isinstance(verdict, LLMError):
+            raise verdict
+        return LLMResult(
+            text=json.dumps({"verdict": verdict[0], "reason": verdict[1]}),
+            model="fake-judge",
+            input_tokens=JUDGE_TOKENS[0],
+            output_tokens=JUDGE_TOKENS[1],
+        )
 
 
 def test_high_changes_are_explained_and_verified() -> None:
@@ -552,3 +582,115 @@ def test_report_command_passes_triage_runs_through(
 def test_zero_triage_runs_is_rejected(command: list[str]) -> None:
     with pytest.raises(SystemExit):
         cli.main([*command, "--triage-runs", "0"])
+
+
+# --- the judge --------------------------------------------------------------------------------
+
+
+def test_judge_rates_a_passed_answer_and_its_usage_is_counted() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+    agent = FakeAgent([answer("we entered a new market")])
+    judge = FakeJudge([("overstated", '"new risk" where the filing says new market')])
+
+    result = report(triage, agent, judge=judge)
+
+    [item] = result.high
+    assert item.judgment is not None
+    assert (item.judgment.verdict, item.judgment.model) == ("overstated", "fake-judge")
+    assert item.judgment.reason == '"new risk" where the filing says new market'
+    assert item.judge_error is None
+    # The judge saw the paragraph and the two explanation lines, not the agent's EVIDENCE.
+    [user] = judge.users
+    assert ROBOTAXI.new_text in user
+    assert "WHAT CHANGED: A new risk was added." in user
+    assert "WHY IT MATTERS: It is a new risk for the business." in user
+    assert "EVIDENCE" not in user
+    # Judge tokens are part of the item's and the report's usage.
+    assert (item.input_tokens, item.output_tokens) == (300 + 700, 50 + 40)
+    assert (result.input_tokens, result.output_tokens) == (1_000 + 300 + 700, 200 + 50 + 40)
+    assert result.cost_usd == Decimal("2000") * 2 / 1_000_000 + Decimal("290") * 8 / 1_000_000
+
+
+def test_judge_is_skipped_when_the_fact_check_fails() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+    agent = FakeAgent([answer("a quote that is not in the paragraph")])
+    judge = FakeJudge([])  # a call would pop from an empty list and fail the test
+
+    result = report(triage, agent, judge=judge)
+
+    [item] = result.high
+    assert item.verification is not None and not item.verification.passed
+    assert (item.judgment, item.judge_error) == (None, None)
+    assert judge.users == []
+    assert (item.input_tokens, item.output_tokens) == (300, 50)
+
+
+def test_judge_is_skipped_when_the_agent_failed() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+    judge = FakeJudge([])
+
+    result = report(triage, FakeAgent([no_answer()]), judge=judge)
+
+    [item] = result.high
+    assert item.error is not None
+    assert (item.judgment, item.judge_error) == (None, None)
+    assert judge.users == []
+
+
+def test_a_failed_judge_call_is_recorded_and_the_answer_is_kept() -> None:
+    triage = FakeTriage(ratings("high", "low", "high", "low"))
+    agent = FakeAgent([answer("we entered a new market"), answer("humanoid robot")])
+    judge = FakeJudge([LLMError("rate limited"), ("supported", "the paragraph says so")])
+
+    result = report(triage, agent, judge=judge)
+
+    first, second = result.high
+    assert first.judgment is None
+    assert first.judge_error == "judge call failed: rate limited"
+    assert first.verification is not None and first.verification.passed  # the answer stands
+    assert (first.input_tokens, first.output_tokens) == (300, 50)  # the lost call isn't guessed
+    assert second.judgment is not None and second.judgment.verdict == "supported"
+    assert second.judge_error is None
+
+
+def test_without_a_judge_nothing_is_judged() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+
+    result = report(triage, FakeAgent([answer("we entered a new market")]))
+
+    [item] = result.high
+    assert (item.judgment, item.judge_error) == (None, None)
+    assert (item.input_tokens, item.output_tokens) == (300, 50)
+
+
+def test_a_report_saved_before_the_judge_existed_still_loads() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+    result = report(triage, FakeAgent([answer("we entered a new market")]))
+    old_format = json.loads(result.model_dump_json())
+    del old_format["high"][0]["judgment"]
+    del old_format["high"][0]["judge_error"]
+
+    loaded = SectionReport.model_validate(old_format)
+
+    assert loaded == result
+
+
+def test_printed_report_shows_the_judge_line_only_when_it_ran(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    triage = FakeTriage(ratings("high", "low", "high", "high"))
+    agent = FakeAgent(
+        [
+            answer("we entered a new market"),
+            answer("humanoid robot"),
+            answer("not in the paragraph"),
+        ]
+    )
+    judge = FakeJudge([("unsupported", "the filing never says that"), LLMError("timeout")])
+
+    _print_report(report(triage, agent, judge=judge))
+
+    out = capsys.readouterr().out
+    assert "FACT-CHECK: passed (1 quote, 0 numbers)\nJUDGE: unsupported - the filing never" in out
+    assert "JUDGE: not available (judge call failed: timeout)" in out
+    assert out.count("JUDGE:") == 2  # the failed fact-check item has no judge line

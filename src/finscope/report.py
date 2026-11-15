@@ -17,6 +17,7 @@ from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
 from finscope.diff import SectionDiff, changes_by_id
 from finscope.explain import explain_change_with_agent
+from finscope.judge import Judgment, judge_explanation
 from finscope.llm import LLMError, LLMProvider, cost_for_tokens
 from finscope.sections import Section
 from finscope.triage import Importance, triage_section_votes
@@ -45,11 +46,17 @@ class HighItem(BaseModel):
     error: str | None  # why the agent failed; None when it answered
     parsed: ParsedExplanation | None  # the answer split into its labeled lines; None on failure
     verification: Verification | None  # None when there is no answer to check
-    # Every model call of this run; None when a call failed and its usage isn't known.
+    # Every model call of this run, the judge's included; None when a call failed and its
+    # usage isn't known.
     input_tokens: int | None
     output_tokens: int | None
     # Every triage run's rating of this change; empty when it wasn't picked by triage.
     triage_votes: tuple[Importance, ...] = ()
+    # The judge's verdict on the answer. None when there was nothing to judge (no answer, or
+    # the fact-check already failed), when no judge was given, or when the judge call failed:
+    # then judge_error says why. Reports saved before the judge existed load with None.
+    judgment: Judgment | None = None
+    judge_error: str | None = None
 
 
 class RatedItem(BaseModel):
@@ -100,13 +107,15 @@ def build_section_report(
     settings: Settings,
     max_explain: int = 20,
     triage_runs: int = 1,
+    judge_provider: LLMProvider | None = None,
 ) -> SectionReport:
     """Triage the section, then explain and fact-check up to `max_explain` high changes.
 
     Triage runs `triage_runs` times; a change's rating is the highest any run gave. A failed
     triage run is recorded and skipped; if every run fails, its error (LLMError, TriageError)
     is raised: without ratings there is nothing to report on. A failed agent run is recorded
-    on its item and the next change still runs.
+    on its item and the next change still runs. With a `judge_provider`, every answer that
+    passes the fact-check is also judged (see judge.py).
     """
     if max_explain < 0:
         raise ValueError("max_explain must be 0 or more")
@@ -142,6 +151,7 @@ def build_section_report(
                 section_title=section_title,
                 provider=agent_provider,
                 settings=settings,
+                judge_provider=judge_provider,
             ).model_copy(update={"triage_votes": item.votes})
         )
 
@@ -187,10 +197,13 @@ def explain_and_check(
     section_title: str,
     provider: LLMProvider,
     settings: Settings,
+    judge_provider: LLMProvider | None = None,
 ) -> HighItem:
     """One agent run on one change, fact-checked. Agent and model-call failures are recorded.
 
     Used by build_section_report for each high change, and by the agent eval for each run.
+    With a `judge_provider`, an answer that passes the fact-check is judged too; a failed
+    judge call is recorded on the item, never fatal.
     """
     try:
         explanation = explain_change_with_agent(
@@ -228,13 +241,40 @@ def explain_and_check(
 
     run = explanation.run
     parsed = parse_explanation(run.text, expect_evidence=True)
-    return HighItem(
+    sources = sources_for(context.change, run.tool_outputs)
+    verification = verify_explanation(parsed, sources)
+    item = HighItem(
         id=change_id,
         triage_reason=triage_reason,
         explanation=run.text,
         error=None,
         parsed=parsed,
-        verification=verify_explanation(parsed, sources_for(context.change, run.tool_outputs)),
+        verification=verification,
         input_tokens=run.input_tokens,
         output_tokens=run.output_tokens,
+    )
+    # Judged only when the answer could become an alert or a digest entry: a failed
+    # fact-check already sends it to review, so a judge call would be money for nothing.
+    judge = judge_provider is not None and verification.passed
+    if not judge or not parsed.what_changed or not parsed.why_it_matters:
+        return item
+    assert judge_provider is not None  # `judge` says so; this is for the type checker
+    try:
+        judgment = judge_explanation(
+            parsed,
+            sources,
+            company=company,
+            form=form,
+            section_title=section_title,
+            provider=judge_provider,
+            settings=settings,
+        )
+    except LLMError as error:
+        return item.model_copy(update={"judge_error": f"judge call failed: {error}"})
+    return item.model_copy(
+        update={
+            "judgment": judgment,
+            "input_tokens": run.input_tokens + judgment.input_tokens,
+            "output_tokens": run.output_tokens + judgment.output_tokens,
+        }
     )

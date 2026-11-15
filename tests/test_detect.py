@@ -157,17 +157,32 @@ class FakeAgent:
         raise AssertionError("the fake agent answers in one step")
 
 
+class FakeJudge:
+    """complete_json: finds every explanation supported."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        self.calls += 1
+        answer = {"verdict": "supported", "reason": "the paragraph says so"}
+        return LLMResult(text=json.dumps(answer), model="fake", input_tokens=500, output_tokens=20)
+
+
 class Providers:
     """The make_providers callable: counts how often the real thing would have been built."""
 
     def __init__(self, triage: FakeTriage | None = None) -> None:
         self.triage = triage or FakeTriage()
         self.agent = FakeAgent()
+        self.judge = FakeJudge()
         self.made = 0
 
-    def __call__(self) -> tuple[LLMProvider, LLMProvider]:
+    def __call__(self) -> tuple[LLMProvider, LLMProvider, LLMProvider]:
         self.made += 1
-        return self.triage, self.agent  # type: ignore[return-value]
+        return self.triage, self.agent, self.judge  # type: ignore[return-value]
 
 
 @pytest.fixture
@@ -285,12 +300,13 @@ def test_new_accession_runs_saves_the_report_then_updates_state(
 
     assert check(sec, providers) == 0
 
-    assert (providers.triage.calls, providers.agent.calls) == (1, 1)
+    assert (providers.triage.calls, providers.agent.calls, providers.judge.calls) == (1, 1, 1)
     assert remembered(sec, TSLA) == NEW[0]
     saved = json.loads(report_path.read_text(encoding="utf-8"))
     assert saved["old_filing"]["accession_number"] == OLD[0]
     assert saved["new_filing"]["accession_number"] == NEW[0]
     assert saved["report"]["high_count"] == 1
+    assert saved["report"]["high"][0]["judgment"]["verdict"] == "supported"
     assert [entry["tier"] for entry in saved["decision"]["entries"]] == ["alert"]
     out = capsys.readouterr().out
     assert "1 change(s): 1 high, 0 medium, 0 low" in out
