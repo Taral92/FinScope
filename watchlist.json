@@ -1,3 +1,4 @@
 [
-  {"ticker": "TSLA", "form": "10-K", "item": "1A", "part": "I"}
+  {"ticker": "TSLA", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "AAPL", "form": "10-K", "item": "1A", "part": "I"}
 ]
