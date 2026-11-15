@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-6.1-terra"
     llm_input_price_per_mtok: Decimal | None = Decimal("1.00")
     llm_output_price_per_mtok: Decimal | None = Decimal("5.00")
+    # Transient failures (connection errors, timeouts, 429 rate limits, 5xx) are retried by the
+    # OpenAI SDK with exponential backoff (0.5s doubling to 8s, plus jitter; honours Retry-After).
+    # This is how many retries, on top of the first attempt; 0 disables them.
+    llm_max_retries: int = Field(default=3, ge=0)
+    # Per-attempt limit. The SDK default (600s) would let one stuck call hang a pipeline step.
+    llm_timeout_seconds: float = Field(default=120.0, gt=0)
 
     # Telegram alerts. The bot token (from @BotFather) is a password: SecretStr, never printed.
     # The chat ID says where alerts go; `python -m finscope telegram-chat-id` finds yours.

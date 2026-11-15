@@ -139,8 +139,15 @@ class OpenAIProvider:
         if client is None:
             if settings.openai_api_key is None:
                 raise LLMError("OPENAI_API_KEY is not set (add it to .env)")
-            client = OpenAI(api_key=settings.openai_api_key.get_secret_value())
+            # The SDK owns the retry policy (see Settings.llm_max_retries): don't add a second
+            # retry loop here, or a rate limit gets retried retries-squared times.
+            client = OpenAI(
+                api_key=settings.openai_api_key.get_secret_value(),
+                max_retries=settings.llm_max_retries,
+                timeout=settings.llm_timeout_seconds,
+            )
         self._client = client
+        self._max_retries = settings.llm_max_retries
         self._model = settings.llm_model
         self._max_output_tokens = max_output_tokens
         self._reasoning_effort = reasoning_effort
@@ -212,8 +219,30 @@ class OpenAIProvider:
         except openai.AuthenticationError:
             # Not chained or echoed: the error text can include part of the key.
             raise LLMError("OpenAI rejected the API key (check OPENAI_API_KEY)") from None
+        except _RETRIED_ERRORS as error:
+            # The SDK already retried these with backoff; say so, or the message suggests
+            # that trying again would help.
+            attempts = 1 + self._max_retries
+            raise LLMError(
+                f"OpenAI request failed after {attempts} attempt(s): {_describe(error)}"
+            ) from error
         except openai.APIError as error:
             raise LLMError(f"OpenAI request failed: {error}") from error
+
+
+# What the SDK retries: network and timeout errors, 409 conflicts, 429 rate limits, 5xx.
+# (It also retries 408, which has no error class of its own.) Anything else fails at once.
+_RETRIED_ERRORS = (
+    openai.APIConnectionError,  # includes APITimeoutError
+    openai.RateLimitError,
+    openai.ConflictError,
+    openai.InternalServerError,
+)
+
+
+def _describe(error: openai.APIError) -> str:
+    status = getattr(error, "status_code", None)
+    return f"HTTP {status} {error}" if status else str(error)
 
 
 def _function_tool(tool: ToolSpec) -> FunctionToolParam:

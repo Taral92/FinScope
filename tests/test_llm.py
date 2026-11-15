@@ -1,5 +1,7 @@
 from typing import Any, cast
 
+import httpx2
+import openai
 import pytest
 from openai import OpenAI, omit
 from openai.types.responses import (
@@ -184,6 +186,82 @@ def test_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(LLMError, match="OPENAI_API_KEY is not set"):
         OpenAIProvider(settings)
+
+
+# --- Retries and timeouts (the SDK does the retrying; we configure and report it) -------------
+
+
+def test_retries_and_timeout_reach_the_sdk_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    created: list[dict[str, Any]] = []
+
+    def fake_openai(**kwargs: Any) -> FakeClient:
+        created.append(kwargs)
+        return FakeClient()
+
+    monkeypatch.setattr("finscope.llm.OpenAI", fake_openai)
+    settings = Settings(
+        _env_file=None,
+        sec_user_agent="FinScope Test test@example.com",
+        OPENAI_API_KEY="sk-test",
+        llm_max_retries=5,
+        llm_timeout_seconds=30,
+    )
+
+    OpenAIProvider(settings)
+
+    [kwargs] = created
+    assert kwargs["api_key"] == "sk-test"
+    assert kwargs["max_retries"] == 5
+    assert kwargs["timeout"] == 30
+
+
+class FailingClient:
+    """Stands in for openai.OpenAI after the SDK has given up: create() raises."""
+
+    def __init__(self, error: Exception) -> None:
+        self.responses = self
+        self._error = error
+
+    def create(self, **kwargs: Any) -> Response:
+        raise self._error
+
+
+def _api_error(error_type: type[openai.APIStatusError], status: int, message: str) -> Exception:
+    request = httpx2.Request("POST", "https://api.openai.com/v1/responses")
+    response = httpx2.Response(status, request=request, json={"error": {"message": message}})
+    return error_type(message, response=response, body=None)
+
+
+def test_rate_limit_failure_says_it_was_retried() -> None:
+    client = FailingClient(_api_error(openai.RateLimitError, 429, "Rate limit reached"))
+    provider = OpenAIProvider(SETTINGS, client=cast(OpenAI, client))
+
+    with pytest.raises(LLMError) as info:
+        provider.complete("system", "user")
+
+    # SETTINGS has the default 3 retries: 4 attempts in all.
+    expected = "OpenAI request failed after 4 attempt(s): HTTP 429 Rate limit reached"
+    assert str(info.value) == expected
+    assert isinstance(info.value.__cause__, openai.RateLimitError)
+
+
+def test_timeout_failure_says_it_was_retried() -> None:
+    request = httpx2.Request("POST", "https://api.openai.com/v1/responses")
+    client = FailingClient(openai.APITimeoutError(request=request))
+    provider = OpenAIProvider(SETTINGS, client=cast(OpenAI, client))
+
+    with pytest.raises(LLMError, match=r"after 4 attempt\(s\): Request timed out"):
+        provider.complete("system", "user")
+
+
+def test_non_retryable_failure_does_not_claim_retries() -> None:
+    client = FailingClient(_api_error(openai.BadRequestError, 400, "Unsupported parameter"))
+    provider = OpenAIProvider(SETTINGS, client=cast(OpenAI, client))
+
+    with pytest.raises(LLMError, match=r"^OpenAI request failed: ") as info:
+        provider.complete("system", "user")
+
+    assert "attempt" not in str(info.value)
 
 
 # --- Tool calling ---------------------------------------------------------------------------
