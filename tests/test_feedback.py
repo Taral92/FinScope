@@ -136,6 +136,7 @@ def test_save_then_load_round_trips(tmp_path: Path) -> None:
             tier="digest",
             verdict="useful",
             answered_at=datetime(2026, 11, 12, 9, 31, tzinfo=UTC),
+            note="a new market is an alert",
         ),
     )
     path = tmp_path / "feedback" / "TSLA_10-K_x_I-1A.json"
@@ -161,7 +162,7 @@ def test_alert_and_review_answers_are_saved_with_the_tier(
 ) -> None:
     result = check_result(entry("+1", "alert"), entry("~3", "review", "agent failed"))
     save_report(tmp_path, result)
-    typed += ["u", "w"]
+    typed += ["u", "w", "agent failed, nothing to rate"]
 
     assert _feedback(tmp_path, report=None, redo=False) == 0
 
@@ -178,7 +179,7 @@ def test_alert_and_review_answers_are_saved_with_the_tier(
 def test_full_words_are_accepted_too(tmp_path: Path, typed: list[str]) -> None:
     result = check_result(entry("+1", "alert"), entry("+2", "alert"))
     save_report(tmp_path, result)
-    typed += ["not_useful", "WRONG"]
+    typed += ["not_useful", "WRONG misleading"]
 
     assert _feedback(tmp_path, report=None, redo=False) == 0
 
@@ -217,6 +218,35 @@ def test_enter_at_the_digest_question_records_no_miss(tmp_path: Path, typed: lis
     assert _feedback(tmp_path, report=None, redo=False) == 0
 
     assert feedback_of(tmp_path, result) == [("+1", "alert", "useful")]
+
+
+def test_wrong_requires_a_note_and_other_keys_take_one_inline(
+    tmp_path: Path, typed: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = check_result(entry("+1", "alert"), entry("+2", "alert"), entry("+3", "alert"))
+    save_report(tmp_path, result)
+    typed += ["w", "", "   ", "says violence occurred, filing says may", "n too minor", "u"]
+
+    assert _feedback(tmp_path, report=None, redo=False) == 0
+
+    answers = load_feedback(feedback_dir(tmp_path) / result.file_name)
+    assert [(a.id, a.verdict, a.note) for a in answers] == [
+        ("+1", "wrong", "says violence occurred, filing says may"),
+        ("+2", "not_useful", "too minor"),
+        ("+3", "useful", None),
+    ]
+    assert capsys.readouterr().out.count("what was wrong?") == 0  # prompts go through input()
+
+
+def test_wrong_with_an_inline_note_is_not_asked_again(tmp_path: Path, typed: list[str]) -> None:
+    result = check_result(entry("+1", "alert"))
+    save_report(tmp_path, result)
+    typed += ["W  not what the filing says  "]
+
+    assert _feedback(tmp_path, report=None, redo=False) == 0
+
+    [answer] = load_feedback(feedback_dir(tmp_path) / result.file_name)
+    assert (answer.verdict, answer.note) == ("wrong", "not what the filing says")
 
 
 def test_bad_key_twice_then_accepted(
@@ -340,7 +370,7 @@ def test_redo_asks_again_and_replaces_the_old_answers(tmp_path: Path, typed: lis
     assert _feedback(tmp_path, report=None, redo=False) == 0
     assert feedback_of(tmp_path, result) == [("+1", "alert", "useful")]
 
-    typed += ["w"]
+    typed += ["w changed my mind"]
     assert _feedback(tmp_path, report=None, redo=True) == 0
 
     assert feedback_of(tmp_path, result) == [("+1", "alert", "wrong")]

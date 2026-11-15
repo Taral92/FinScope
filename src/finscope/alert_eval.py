@@ -32,6 +32,7 @@ class ReportScore(BaseModel):
     reviews_rated: int
     reviews_useful: int
     missed: tuple[str, ...]  # digest ids you'd have wanted as alerts
+    notes: dict[str, str] = {}  # id -> your note, for every answer that has one
 
     @property
     def alerts_rated(self) -> int:
@@ -122,4 +123,5 @@ def _score_report(name: str, answers: Sequence[Feedback]) -> ReportScore:
         reviews_useful=sum(1 for a in reviews if a.verdict == "useful"),
         # A digest entry gets feedback only when you named it as a missed alert.
         missed=tuple(a.id for a in answers if a.tier == "digest" and a.verdict == "useful"),
+        notes={a.id: a.note for a in answers if a.note},
     )

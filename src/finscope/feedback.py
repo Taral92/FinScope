@@ -31,8 +31,10 @@ Rate each alert and review:
   u  useful      glad I was told
   n  not_useful  true, but not worth telling me
   w  wrong       the explanation is false or misleading (not just unimportant)
-Every answer is saved right away."""
+A note may follow the key, e.g. "n too minor". For w a note is required: say what was wrong,
+so the case can be looked at later. Every answer is saved right away."""
 PROMPT = "[u/n/w] > "
+NOTE_PROMPT = "what was wrong? > "
 MISSED_PROMPT = "any of these you'd have wanted as an alert? (ids, comma separated, or enter) > "
 
 
@@ -51,6 +53,7 @@ class Feedback(BaseModel):
     tier: Tier  # where the entry landed; tier "digest" with verdict "useful" is a missed alert
     verdict: Verdict
     answered_at: datetime
+    note: str | None = None  # your words; always present for "wrong"
 
 
 _FEEDBACK = TypeAdapter(tuple[Feedback, ...])
@@ -121,7 +124,7 @@ def ask_feedback(
     )
     answers: list[Feedback] = []
 
-    def record(entry: DecisionEntry, verdict: Verdict) -> None:
+    def record(entry: DecisionEntry, verdict: Verdict, note: str | None = None) -> None:
         answers.append(
             Feedback(
                 report=path.name,
@@ -130,6 +133,7 @@ def ask_feedback(
                 tier=entry.tier,
                 verdict=verdict,
                 answered_at=datetime.now(UTC),
+                note=note,
             )
         )
 
@@ -138,12 +142,12 @@ def ask_feedback(
         show(f"\n=== ALERT {number}/{len(alerts)}: [{entry.id}] ===")
         show(f"WHAT CHANGED: {entry.what_changed}")
         show(f"WHY IT MATTERS: {entry.why_it_matters}")
-        record(entry, _ask_verdict(ask, show))
+        record(entry, *_ask_verdict(ask, show))
         save_feedback(answers, path)
     for number, entry in enumerate(reviews, start=1):
         show(f"\n=== REVIEW {number}/{len(reviews)}: [{entry.id}] ===")
         show(f"reason: {entry.reason}")
-        record(entry, _ask_verdict(ask, show))
+        record(entry, *_ask_verdict(ask, show))
         save_feedback(answers, path)
     if digests:
         by_id = {entry.id: entry for entry in digests}
@@ -154,12 +158,21 @@ def ask_feedback(
     return tuple(answers)
 
 
-def _ask_verdict(ask: Callable[[str], str], show: Callable[[str], None]) -> Verdict:
+def _ask_verdict(
+    ask: Callable[[str], str], show: Callable[[str], None]
+) -> tuple[Verdict, str | None]:
+    """The verdict and an optional note typed after the key; "wrong" without a note asks for one."""
     while True:
-        key = ask(PROMPT).strip().lower()
-        if key in KEYS:
-            return KEYS[key]
-        show(f"Unknown key {key!r}: u = useful, n = not_useful, w = wrong")
+        key, _, note = ask(PROMPT).strip().partition(" ")
+        key = key.lower()
+        if key not in KEYS:
+            show(f"Unknown key {key!r}: u = useful, n = not_useful, w = wrong")
+            continue
+        verdict = KEYS[key]
+        note = note.strip()
+        while verdict == "wrong" and not note:
+            note = ask(NOTE_PROMPT).strip()
+        return verdict, note or None
 
 
 def _ask_missed(

@@ -24,7 +24,9 @@ CHECKED = {
 ANSWERED = datetime(2026, 11, 14, 12, 0, tzinfo=UTC)
 
 
-def answer(report: str, change_id: str, tier: Tier, verdict: Verdict) -> Feedback:
+def answer(
+    report: str, change_id: str, tier: Tier, verdict: Verdict, note: str | None = None
+) -> Feedback:
     return Feedback(
         report=report,
         checked_at=CHECKED[report],
@@ -32,13 +34,14 @@ def answer(report: str, change_id: str, tier: Tier, verdict: Verdict) -> Feedbac
         tier=tier,
         verdict=verdict,
         answered_at=ANSWERED,
+        note=note,
     )
 
 
 A = [
     answer(REPORT_A, "~1", "alert", "useful"),
     answer(REPORT_A, "~5", "alert", "not_useful"),
-    answer(REPORT_A, "~19", "alert", "wrong"),
+    answer(REPORT_A, "~19", "alert", "wrong", "says violence occurred"),
     answer(REPORT_A, "+7", "review", "useful"),
     answer(REPORT_A, "+3", "digest", "useful"),  # a missed alert
 ]
@@ -120,6 +123,7 @@ def test_command_prints_per_report_and_totals_and_saves(
     assert "alerts 3: 1 useful, 1 not_useful, 1 wrong   precision 33%" in out
     assert "  wrong:  ~19" in out
     assert "  missed: +3" in out
+    assert "  note ~19: says violence occurred" in out
     assert "alert precision:  60%" in out
     assert "wrong:            20%" in out
     assert "reviews useful:   1/2" in out

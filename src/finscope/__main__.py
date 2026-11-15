@@ -1205,6 +1205,8 @@ def _print_alert_eval(result: AlertEvalResult) -> None:
             print(f"  wrong:  {', '.join(score.wrong)}")
         if score.missed:
             print(f"  missed: {', '.join(score.missed)}")
+        for noted_id, note in score.notes.items():
+            print(f"  note {noted_id}: {note}")
 
     print("\n=== TOTAL ===")
     print(f"alerts rated:     {result.alerts_rated}")
