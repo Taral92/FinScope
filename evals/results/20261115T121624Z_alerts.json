@@ -1,0 +1,89 @@
+{
+  "created_at": "2026-11-15T12:16:24.968936Z",
+  "reports": [
+    {
+      "report": "TSLA_10-K_0001628280-26-003952_I-1A.json",
+      "checked_at": "2026-11-07T18:19:39.469402Z",
+      "useful": [
+        "~1",
+        "~19"
+      ],
+      "not_useful": [
+        "~5"
+      ],
+      "wrong": [],
+      "reviews_rated": 0,
+      "reviews_useful": 0,
+      "missed": [],
+      "notes": {},
+      "judged": [
+        {
+          "id": "~1",
+          "human": "useful",
+          "judge": null,
+          "judge_reason": null
+        },
+        {
+          "id": "~5",
+          "human": "not_useful",
+          "judge": null,
+          "judge_reason": null
+        },
+        {
+          "id": "~19",
+          "human": "useful",
+          "judge": null,
+          "judge_reason": null
+        }
+      ]
+    },
+    {
+      "report": "AAPL_10-K_0000320193-26-000026_I-1A.json",
+      "checked_at": "2026-11-15T11:33:00.463318Z",
+      "useful": [
+        "+30",
+        "~6"
+      ],
+      "not_useful": [
+        "+9"
+      ],
+      "wrong": [],
+      "reviews_rated": 4,
+      "reviews_useful": 1,
+      "missed": [],
+      "notes": {},
+      "judged": [
+        {
+          "id": "+9",
+          "human": "not_useful",
+          "judge": "supported",
+          "judge_reason": "The filing discusses product and service defects, past service performance issues, and potential AI-related harms and vulnerabilities."
+        },
+        {
+          "id": "+30",
+          "human": "useful",
+          "judge": "supported",
+          "judge_reason": "The explanation accurately reflects the disclosed compliance changes, past effects, and uncertain competitive risks."
+        },
+        {
+          "id": "~6",
+          "human": "useful",
+          "judge": "supported",
+          "judge_reason": "Both lines accurately reflect the added restrictions and potential consequences, while preserving the filing’s distinction between current costs and possible effects."
+        }
+      ]
+    }
+  ],
+  "alerts_rated": 6,
+  "useful": 4,
+  "not_useful": 2,
+  "wrong": 0,
+  "reviews_rated": 4,
+  "reviews_useful": 1,
+  "missed": 0,
+  "precision": 0.6666666666666666,
+  "wrong_rate": 0.0,
+  "judge_compared": 3,
+  "judge_agreed": 3,
+  "judge_agreement": 1.0
+}

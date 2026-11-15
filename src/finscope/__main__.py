@@ -50,6 +50,7 @@ from finscope.agent_tools import ExplainContext
 from finscope.alert_eval import (
     AlertEvalResult,
     load_all_feedback,
+    load_judgments,
     save_alert_eval,
     score_reports,
     summarize_alerts,
@@ -341,7 +342,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "feedback":
         return _feedback(get_settings().data_dir, report=args.report, redo=args.redo)
     if args.command == "eval-alerts":
-        return _eval_alerts(feedback_dir(get_settings().data_dir), RESULTS_DIR)
+        data_dir = get_settings().data_dir
+        return _eval_alerts(feedback_dir(data_dir), reports_dir(data_dir), RESULTS_DIR)
     if args.command == "telegram-chat-id":
         return _telegram_chat_id(get_settings())
     if args.command == "notify-test":
@@ -1172,14 +1174,16 @@ def _feedback(data_dir: Path, *, report: str | None, redo: bool) -> int:
     return 0
 
 
-def _eval_alerts(feedback: Path, results_dir: Path) -> int:
-    """Score every feedback file, print per-report lines and the totals, save the result."""
+def _eval_alerts(feedback: Path, reports: Path, results_dir: Path) -> int:
+    """Score every feedback file against the judge's verdicts in the saved reports; print
+    per-report lines and the totals; save the result."""
     try:
         answers = load_all_feedback(feedback)
+        judgments = load_judgments(reports, (answer.report for answer in answers))
     except FeedbackError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
-    scores = score_reports(answers)
+    scores = score_reports(answers, judgments)
     if not scores:
         print(f"error: no feedback in {feedback}; run `feedback` first", file=sys.stderr)
         return 1
@@ -1207,6 +1211,13 @@ def _print_alert_eval(result: AlertEvalResult) -> None:
             print(f"  missed: {', '.join(score.missed)}")
         for noted_id, note in score.notes.items():
             print(f"  note {noted_id}: {note}")
+        if score.judge_compared:
+            print(
+                f"  judge agrees with you on {score.judge_agreed}/{score.judge_compared} alert(s)"
+            )
+        for alert in score.disagreements:
+            print(f"  judge disagrees [{alert.id}]: you {alert.human}, judge {alert.judge}")
+            print(f"    judge: {alert.judge_reason}")
 
     print("\n=== TOTAL ===")
     print(f"alerts rated:     {result.alerts_rated}")
@@ -1214,6 +1225,11 @@ def _print_alert_eval(result: AlertEvalResult) -> None:
     print(f"wrong:            {_pct(result.wrong_rate)}  (false or misleading, fact-check passed)")
     print(f"reviews useful:   {result.reviews_useful}/{result.reviews_rated}")
     print(f"missed alerts:    {result.missed}  (digest entries you wanted as alerts)")
+    not_judged = result.alerts_rated - result.judge_compared
+    print(
+        f"judge agreement:  {_pct(result.judge_agreement)}  "
+        f"({result.judge_agreed}/{result.judge_compared} judged alerts; {not_judged} not judged)"
+    )
 
 
 def _telegram_chat_id(settings: Settings) -> int:
