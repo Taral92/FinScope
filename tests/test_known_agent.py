@@ -6,7 +6,6 @@ from typing import Any
 import pytest
 
 import finscope.__main__ as cli
-from finscope.agent_eval import agent_prompt_version
 from finscope.agent_tools import get_nearby_paragraphs
 from finscope.config import Settings
 from finscope.diff import diff_sections
@@ -19,6 +18,7 @@ from finscope.known_cases import (
     load_known_cases,
 )
 from finscope.llm import AgentStep, ConversationState, LLMError, ToolResult, ToolSpec
+from finscope.versions import agent_prompt_version
 
 REPO = Path(__file__).resolve().parent.parent
 AGENT_CASES_FILE = REPO / AGENT_CASES_PATH

@@ -14,12 +14,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from finscope.agent_tools import TOOL_SPECS, ExplainContext
+from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
 from finscope.decide import Tier, decide_item
 from finscope.diff import SectionDiff, changes_by_id
-from finscope.evals import Importance, prompt_version, write_json_atomic
-from finscope.explain import AGENT_SYSTEM_PROMPT
+from finscope.evals import Importance, write_json_atomic
 from finscope.llm import LLMProvider, cost_for_tokens
 from finscope.report import HighItem, RatedItem, explain_and_check
 from finscope.sections import Section
@@ -103,7 +102,7 @@ class AgentEvalResult(BaseModel):
     new_accession: str
     old_accession: str
     model: str  # the model that was requested
-    prompt_version: str  # agent_prompt_version()
+    prompt_version: str  # versions.agent_prompt_version()
     runs: int  # per change
     picked_by: Literal["triage", "ids"]
     changes: tuple[ChangeStability, ...]
@@ -116,12 +115,6 @@ class AgentEvalResult(BaseModel):
             f"{self.created_at:%Y%m%dT%H%M%SZ}_agent_{self.company}_{self.form}_"
             f"{self.new_accession}_{section}.json"
         )
-
-
-def agent_prompt_version() -> str:
-    """Like the triage prompt version, over the agent's system prompt and its tool specs."""
-    tools = {"tools": [spec.model_dump(mode="json") for spec in TOOL_SPECS]}
-    return prompt_version(AGENT_SYSTEM_PROMPT, tools)
 
 
 def select_changes(

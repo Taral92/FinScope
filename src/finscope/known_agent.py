@@ -17,7 +17,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from finscope.agent_eval import agent_prompt_version
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
 from finscope.evals import Importance, write_json_atomic
@@ -33,6 +32,7 @@ from finscope.known_cases import (
 )
 from finscope.llm import LLMProvider, cost_for_tokens
 from finscope.report import HighItem, explain_and_check
+from finscope.versions import agent_prompt_version
 
 SECTION_TITLE = f"Part {PART} Item {ITEM}. {TITLE}"  # as _diff_label would write it
 # explain_and_check records why a change was picked; here nothing was triaged.
@@ -54,7 +54,7 @@ class KnownAgentEvalResult(BaseModel):
     cases_file: str
     company: str
     model: str  # the model that was requested
-    prompt_version: str  # agent_prompt_version()
+    prompt_version: str  # versions.agent_prompt_version()
     runs: int  # per case
     cases: tuple[AgentCaseResult, ...]  # in file order
     passed: int  # cases

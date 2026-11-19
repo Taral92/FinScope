@@ -28,6 +28,7 @@ from finscope.verify import (
     sources_for,
     verify_explanation,
 )
+from finscope.versions import PromptVersions, current_versions
 from finscope.xbrl import MetricValue
 
 
@@ -91,6 +92,8 @@ class SectionReport(BaseModel):
     output_tokens: int
     cost_usd: Decimal | None  # None when no prices are configured
     usage_complete: bool  # False when a failed call's usage is unknown (totals undercount)
+    # The model and prompts that made this report; None for reports saved before it was kept.
+    prompt_versions: PromptVersions | None = None
 
 
 def build_section_report(
@@ -184,6 +187,7 @@ def build_section_report(
         # A failed triage run's usage is lost with it, like a failed agent call's.
         usage_complete=triage.succeeded == triage.runs
         and all(item.input_tokens is not None for item in explained),
+        prompt_versions=current_versions(settings, judged=judge_provider is not None),
     )
 
 

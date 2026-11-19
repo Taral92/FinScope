@@ -22,6 +22,7 @@ from finscope.llm import (
 from finscope.report import SectionReport, build_section_report
 from finscope.sections import Section
 from finscope.triage import TriageError
+from finscope.versions import current_versions
 
 SETTINGS = Settings(
     _env_file=None,
@@ -694,3 +695,44 @@ def test_printed_report_shows_the_judge_line_only_when_it_ran(
     assert "FACT-CHECK: passed (1 quote, 0 numbers)\nJUDGE: unsupported - the filing never" in out
     assert "JUDGE: not available (judge call failed: timeout)" in out
     assert out.count("JUDGE:") == 2  # the failed fact-check item has no judge line
+
+
+def test_the_report_records_the_model_and_prompt_versions() -> None:
+    triage = FakeTriage(ratings("high", "low", "low", "low"))
+    agent = FakeAgent([answer("we entered a new market")])
+
+    judged = report(triage, agent, judge=FakeJudge([("supported", "the paragraph says so")]))
+    unjudged = report(
+        FakeTriage(ratings("high", "low", "low", "low")),
+        FakeAgent([answer("we entered a new market")]),
+    )
+
+    assert judged.prompt_versions == current_versions(SETTINGS, judged=True)
+    assert unjudged.prompt_versions == current_versions(SETTINGS, judged=False)
+    assert unjudged.prompt_versions is not None and unjudged.prompt_versions.judge is None
+
+
+def test_a_report_saved_before_versions_were_kept_loads_without_them() -> None:
+    result = report(FakeTriage(ratings("high", "low", "low", "low")), FakeAgent([no_answer()]))
+    old_format = json.loads(result.model_dump_json())
+    del old_format["prompt_versions"]
+
+    loaded = SectionReport.model_validate(old_format)
+
+    assert loaded.prompt_versions is None
+    assert loaded == result.model_copy(update={"prompt_versions": None})
+
+
+def test_printed_report_shows_the_versions(capsys: pytest.CaptureFixture[str]) -> None:
+    result = report(FakeTriage(ratings("high", "low", "low", "low")), FakeAgent([no_answer()]))
+    versions = current_versions(SETTINGS, judged=False)
+
+    _print_report(result)
+    _print_report(result.model_copy(update={"prompt_versions": None}))
+
+    out = capsys.readouterr().out
+    line = (
+        f"versions: model {versions.model}, triage {versions.triage}, "
+        f"agent {versions.agent}, judge -\n"
+    )
+    assert out.count(line) == 1  # the old report prints no versions line

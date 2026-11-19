@@ -22,6 +22,8 @@ python -m finscope feedback [--report NAME] [--redo]   rate a report's alerts (f
 python -m finscope eval-alerts                      score alert precision from your feedback
 python -m finscope telegram-chat-id                 chats that messaged your Telegram bot
 python -m finscope notify-test                      send a test message to your Telegram chat
+python -m finscope mcp                              serve filings, diffs and XBRL numbers to
+                                                    MCP clients such as Claude Code (stdio)
 """
 
 import argparse
@@ -40,7 +42,6 @@ from finscope.agent_eval import (
     AgentEvalResult,
     ChangeStability,
     StabilityRun,
-    agent_prompt_version,
     run_stability,
     save_agent_eval,
     select_changes,
@@ -93,7 +94,6 @@ from finscope.evals import (
     RatedChange,
     RunRecord,
     coverage_of,
-    prompt_version,
     save_result,
     score_triage,
 )
@@ -106,7 +106,7 @@ from finscope.feedback import (
     newest_report,
     save_feedback,
 )
-from finscope.filings import load_filing_text
+from finscope.filings import load_filing_text, load_metrics
 from finscope.known_agent import (
     AgentCaseResult,
     KnownAgentEvalResult,
@@ -128,6 +128,7 @@ from finscope.known_cases import (
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
+from finscope.mcp_server import run_server
 from finscope.notify import (
     NotifyError,
     TelegramNotifier,
@@ -135,24 +136,22 @@ from finscope.notify import (
     telegram_configured,
 )
 from finscope.report import HighItem, SectionReport, build_section_report
-from finscope.sections import Section, split_sections
+from finscope.sections import (
+    Section,
+    SectionLookupError,
+    find_section,
+    section_label,
+    split_sections,
+)
 from finscope.triage import (
-    SCHEMA,
-    SYSTEM_PROMPT,
     TriageError,
     TriageReport,
     is_borderline,
     triage_section,
 )
 from finscope.verify import parse_explanation, sources_for, verify_explanation
-from finscope.xbrl import (
-    METRICS,
-    MetricValue,
-    format_amount,
-    format_period,
-    key_metrics,
-    parse_facts,
-)
+from finscope.versions import agent_prompt_version, triage_prompt_version
+from finscope.xbrl import METRICS, MetricValue, format_amount, format_period
 
 LISTED_FORMS = {"10-K", "10-Q", "8-K"}
 PREVIEW_LINES = 40
@@ -321,6 +320,9 @@ def main(argv: list[str] | None = None) -> int:
         "telegram-chat-id", help="list the chats that messaged your Telegram bot, with their IDs"
     )
     commands.add_parser("notify-test", help="send a test message to your Telegram chat")
+    commands.add_parser(
+        "mcp", help="serve filings, diffs and XBRL numbers to MCP clients over stdin/stdout"
+    )
 
     args = parser.parse_args(argv)
 
@@ -348,6 +350,10 @@ def main(argv: list[str] | None = None) -> int:
         return _telegram_chat_id(get_settings())
     if args.command == "notify-test":
         return _notify_test(get_settings())
+    # Talks to its client over stdout, so it prints nothing and builds its own SecClient.
+    if args.command == "mcp":
+        run_server()
+        return 0
 
     with SecClient() as sec:
         try:
@@ -458,24 +464,15 @@ def _show_sections(sec: SecClient, filing: Filing, item: str | None, part: str |
 
 def _pick_section(sections: list[Section], item: str, part: str | None) -> Section | None:
     """The one section matching item (and part); prints why and returns None otherwise."""
-    matches = [
-        section
-        for section in sections
-        if section.item == item.upper() and (part is None or section.part == part.upper())
-    ]
-    if not matches:
-        available = ", ".join(_label(section) for section in sections)
-        print(f"error: Item {item} not found. Available: {available}", file=sys.stderr)
+    try:
+        return find_section(sections, item, part)
+    except SectionLookupError as error:
+        print(f"error: {error}", file=sys.stderr)
         return None
-    if len(matches) > 1:
-        options = " or ".join(f"--part {section.part}" for section in matches)
-        print(f"error: Item {item} appears in more than one Part; add {options}", file=sys.stderr)
-        return None
-    return matches[0]
 
 
 def _show_facts(sec: SecClient, filing: Filing) -> int:
-    found = {value.name: value for value in _load_metrics(sec, filing)}
+    found = {value.name: value for value in load_metrics(sec, filing)}
 
     print(f"{filing.form} filed {filing.filing_date.isoformat()}  ({filing.accession_number})")
     if not found:
@@ -497,12 +494,6 @@ def _show_facts(sec: SecClient, filing: Filing) -> int:
             f"{value.concept}"
         )
     return 0
-
-
-def _load_metrics(sec: SecClient, filing: Filing) -> list[MetricValue]:
-    concepts = {concept for metric in METRICS for concept in metric.concepts}
-    facts = parse_facts(sec.get_company_facts(filing.cik), concepts)
-    return key_metrics(facts, filing.accession_number, filing.form)
 
 
 def _show_diff(
@@ -533,8 +524,8 @@ def _show_diff(
             f"{diff.unchanged:>9}  {len(diff.of_kind('modified')):>8}  "
             f"{len(diff.of_kind('added')):>5}  {len(diff.of_kind('removed')):>7}"
         )
-    only_new = [_label(s) for key, s in new_by_key.items() if key not in old_by_key]
-    only_old = [_label(s) for key, s in old_by_key.items() if key not in new_by_key]
+    only_new = [section_label(s) for key, s in new_by_key.items() if key not in old_by_key]
+    only_old = [section_label(s) for key, s in old_by_key.items() if key not in new_by_key]
     if only_new or only_old:
         print()
         print(f"Only in the new filing: {', '.join(only_new) or '-'}")
@@ -584,7 +575,7 @@ def _explain(
             change=change,
             old_section=old_section,
             new_section=new_section,
-            metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+            metrics=tuple(load_metrics(sec, new)),  # loaded now: tools never touch the network
         )
         return _explain_with_agent(context, ticker, new, _diff_label(diff), provider)
 
@@ -795,7 +786,7 @@ def _build_report(
         diff,
         old_section=old_section,
         new_section=new_section,
-        metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+        metrics=tuple(load_metrics(sec, new)),  # loaded now: tools never touch the network
         company=ticker.upper(),
         form=new.form,
         section_title=_diff_label(diff),
@@ -816,6 +807,7 @@ def _print_report(report: SectionReport) -> None:
         f"{report.medium_count} medium, {report.low_count} low"
     )
     _print_triage_runs(report)
+    _print_versions(report)
     _print_decision(decide(report))
 
     print(f"\n=== HIGH ({report.high_count}), {len(report.high)} explained ===")
@@ -874,6 +866,17 @@ def _judge_suffix(item: HighItem) -> str:
     if item.judge_error is not None:
         return f" | judge: not available ({item.judge_error})"
     return ""
+
+
+def _print_versions(report: SectionReport) -> None:
+    """e.g. 'versions: model gpt-6.1-terra, triage 3d30ad40231e, agent ..., judge -'."""
+    versions = report.prompt_versions
+    if versions is None:  # a report saved before versions were kept
+        return
+    print(
+        f"versions: model {versions.model}, triage {versions.triage}, "
+        f"agent {versions.agent}, judge {versions.judge or '-'}"
+    )
 
 
 def _print_triage_runs(report: SectionReport) -> None:
@@ -1280,6 +1283,7 @@ def _print_check_summary(report: SectionReport, decision: Decision, saved: Path)
         f"{report.medium_count} medium, {report.low_count} low"
     )
     _print_triage_runs(report)
+    _print_versions(report)
     alerts = decision.tier("alert")
     print(f"ALERT ({len(alerts)})")
     for entry in alerts:
@@ -1406,7 +1410,7 @@ def _run_triage_eval(
         old_accession=labels.old_accession,
         labels_file=labels_path.name,
         model=settings.llm_model,
-        prompt_version=prompt_version(SYSTEM_PROMPT, SCHEMA),
+        prompt_version=triage_prompt_version(),
         runs=tuple(records),
         score=score_triage(change_ids, human, _run_ratings(records)),
         input_tokens=sum(record.input_tokens for record in succeeded),
@@ -1509,7 +1513,7 @@ def _eval_agent(
         diff_sections(old_section, new_section),
         old_section=old_section,
         new_section=new_section,
-        metrics=tuple(_load_metrics(sec, new)),  # loaded now: tools never touch the network
+        metrics=tuple(load_metrics(sec, new)),  # loaded now: tools never touch the network
         company=ticker.upper(),
         form=new.form,
         new_accession=new.accession_number,
@@ -1694,7 +1698,7 @@ def _run_known_eval(
     print(f"\npassed: {passed}/{len(results)} case(s)")
 
     succeeded = [record for record in records if record.error is None]
-    print(f"\nmodel {settings.llm_model}, prompt version {prompt_version(SYSTEM_PROMPT, SCHEMA)}")
+    print(f"\nmodel {settings.llm_model}, prompt version {triage_prompt_version()}")
     score = score_triage(list(known.names), known.expected, ratings)
     # Case names instead of bare IDs: "+1" means nothing for a made-up section.
     _print_score(score, records, names={i: f"{i} {name}" for i, name in known.names.items()})
@@ -1963,10 +1967,6 @@ def _diff_label(diff: SectionDiff) -> str:
 
 def _snippet(text: str) -> str:
     return text if len(text) <= SNIPPET_CHARS else text[:SNIPPET_CHARS] + " …"
-
-
-def _label(section: Section) -> str:
-    return f"{section.part} {section.item}" if section.part else section.item
 
 
 def _shorten(title: str, width: int) -> str:

@@ -10,7 +10,6 @@ from finscope.__main__ import _run_agent_eval
 from finscope.agent_eval import (
     AgentEvalError,
     Selection,
-    agent_prompt_version,
     run_stability,
     select_changes,
     summarize,
@@ -30,6 +29,7 @@ from finscope.llm import (
 )
 from finscope.report import RatedItem
 from finscope.sections import Section
+from finscope.versions import agent_prompt_version
 
 SETTINGS = Settings(
     _env_file=None,
