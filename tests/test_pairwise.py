@@ -1,12 +1,14 @@
 import json
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+from finscope.__main__ import _run_pairwise_eval
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
-from finscope.diff import ParagraphChange
+from finscope.diff import ParagraphChange, SectionDiff
 from finscope.explain import AGENT_SYSTEM_PROMPT
 from finscope.llm import (
     AgentStep,
@@ -19,13 +21,17 @@ from finscope.llm import (
 )
 from finscope.pairwise import (
     PairResult,
+    PairwiseError,
     combine,
     compare_pair,
+    judge_prompt_version,
+    load_candidate,
     run_pairwise,
     summarize_pairs,
 )
 from finscope.report import explain_and_verify
 from finscope.sections import Section
+from finscope.versions import agent_prompt_version
 
 SETTINGS = Settings(
     _env_file=None,
@@ -347,3 +353,177 @@ def test_explain_and_verify_uses_the_agent_prompt_unless_given_another() -> None
     assert agent.systems == [AGENT_SYSTEM_PROMPT, PROMPT_B]
     assert sources == [ROBOTAXI_TEXT]
     assert item.verification is not None and item.verification.passed
+
+
+# --- candidate prompt and CLI end to end, with fake providers ------------------------------------
+
+
+def test_load_candidate_strips_and_rejects_unusable_files(tmp_path: Path) -> None:
+    path = tmp_path / "agent_b.txt"
+    path.write_text(f"\n{PROMPT_B}\n\n", encoding="utf-8")
+    assert load_candidate(path) == PROMPT_B
+
+    path.write_text("  \n", encoding="utf-8")
+    with pytest.raises(PairwiseError, match="is empty"):
+        load_candidate(path)
+    path.write_text(AGENT_SYSTEM_PROMPT + "\n", encoding="utf-8")
+    with pytest.raises(PairwiseError, match="the agent's own prompt"):
+        load_candidate(path)
+    with pytest.raises(PairwiseError, match="can't read"):
+        load_candidate(tmp_path / "missing.txt")
+
+
+def test_versions_tell_the_prompts_apart() -> None:
+    assert agent_prompt_version(AGENT_SYSTEM_PROMPT) == agent_prompt_version()
+    assert agent_prompt_version(PROMPT_B) != agent_prompt_version()
+    assert len(judge_prompt_version()) == 12
+
+
+TARIFFS_TEXT = "New tariffs on imported components could raise our costs."
+TARIFFS = ROBOTAXI.model_copy(update={"new_text": TARIFFS_TEXT, "new_end": len(TARIFFS_TEXT)})
+DIFF = SectionDiff(
+    part="I", item="1A", title="RISK FACTORS", unchanged=3, changes=(ROBOTAXI, TARIFFS)
+)
+TRIAGE_TOKENS = (1_000, 200)
+
+
+class FakeTriage:
+    """Implements LLMProvider's complete_json: rates +1 and +2 as told."""
+
+    def __init__(self, *levels: str) -> None:
+        items = [
+            {"id": f"+{n}", "importance": level, "reason": f"reason +{n}"}
+            for n, level in enumerate(levels, start=1)
+        ]
+        self.text = json.dumps({"items": items})
+        self.calls = 0
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        self.calls += 1
+        return LLMResult(
+            text=self.text,
+            model="fake-model",
+            input_tokens=TRIAGE_TOKENS[0],
+            output_tokens=TRIAGE_TOKENS[1],
+        )
+
+
+def run_cli(
+    tmp_path: Path,
+    triage: FakeTriage,
+    agent: FakeAgent,
+    judge: FakeJudge,
+    *,
+    ids: list[str] | None = None,
+    max_changes: int = 5,
+) -> int:
+    return _run_pairwise_eval(
+        DIFF,
+        old_section=SECTION,
+        new_section=SECTION,
+        metrics=(),
+        company="TSLA",
+        form="10-K",
+        new_accession="0001628280-26-003952",
+        old_accession="0001628280-25-003063",
+        triage_provider=triage,
+        agent_provider=agent,
+        judge_provider=judge,
+        settings=SETTINGS,
+        candidate_file="evals/prompts/agent_b.txt",
+        candidate=PROMPT_B,
+        ids=ids,
+        max_changes=max_changes,
+        results_dir=tmp_path / "results",
+    )
+
+
+def test_cli_compares_triage_picks_up_to_max_prints_and_saves(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    triage = FakeTriage("high", "high")
+    agent = FakeAgent([steps(answer("A says so.")), steps(answer("B says so."))])
+    judge = FakeJudge(["2", "1"])  # B in both orders
+
+    assert run_cli(tmp_path, triage, agent, judge, max_changes=1) == 0
+
+    assert agent.systems == [AGENT_SYSTEM_PROMPT, PROMPT_B]
+    [path] = (tmp_path / "results").iterdir()
+    assert path.name.endswith("Z_pairwise_TSLA_10-K_0001628280-26-003952_I-1A.json")
+    saved = json.loads(path.read_text())
+    assert (saved["prompt_a"], saved["prompt_b"]) == (
+        agent_prompt_version(),
+        agent_prompt_version(PROMPT_B),
+    )
+    assert saved["candidate_prompt"] == PROMPT_B
+    assert saved["candidate_file"] == "evals/prompts/agent_b.txt"
+    assert saved["judge_version"] == judge_prompt_version()
+    assert saved["picked_by"] == "triage"
+    assert [r["id"] for r in saved["results"]] == ["+1"]
+    assert saved["results"][0]["outcome"] == "b"
+    # Triage, two agent runs, two judge calls.
+    assert saved["summary"]["input_tokens"] == 1_000 + 2 * 300 + 2 * 700
+
+    out = capsys.readouterr().out
+    assert "triage rated 2 changes high; comparing the first 1" in out
+    assert f"B = evals/prompts/agent_b.txt ({agent_prompt_version(PROMPT_B)})" in out
+    assert "=== [+1] B wins (judge, both orders) ===" in out
+    assert "A: WHAT CHANGED: A says so.\n   WHY IT MATTERS: The company now runs" in out
+    assert "   IMPORTANCE: medium - potential: new market\n" in out
+    assert "judge, A first: picked B - picked 2\njudge, B first: picked B - picked 1" in out
+    assert "A wins: 0   B wins: 1   ties: 0   inconsistent: 0   failed: 0" in out
+    assert "judge asked on 1/1 change(s)" in out
+    assert "(1 change: too few for the count to mean much)" in out
+
+
+def test_cli_with_ids_skips_triage_and_the_cap(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    triage = FakeTriage()
+    agent = FakeAgent(
+        [
+            steps(answer("A says so.", quote="New tariffs")),  # +2 first: the tariffs one
+            steps(answer("B", quote="made up")),  # B fails the fact-check
+            steps(answer("A again.")),
+            steps(answer("B again.")),
+        ]
+    )
+    judge = FakeJudge(["1", "1"])  # +1: each order picks the first answer
+
+    assert run_cli(tmp_path, triage, agent, judge, ids=["+2", "+1"], max_changes=1) == 0
+
+    assert triage.calls == 0
+    out = capsys.readouterr().out
+    assert "2 changes (--ids): +2, +1" in out
+    assert "=== [+2] A wins (only one answer usable) ===" in out
+    assert "B: not usable: failed the fact-check (quote)" in out
+    assert "=== [+1] INCONSISTENT: each order picked differently (judge, both orders) ===" in out
+    assert "judge asked on 1/2 change(s)" in out
+
+
+def test_cli_rejects_unknown_ids_without_calling_or_saving(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    agent, judge = FakeAgent([]), FakeJudge([])
+
+    assert run_cli(tmp_path, FakeTriage(), agent, judge, ids=["~9"]) == 1
+
+    assert "unknown change ID(s): ~9" in capsys.readouterr().err
+    assert agent.systems == [] and judge.users == []
+    assert not (tmp_path / "results").exists()
+
+
+def test_cli_fails_when_every_judge_call_failed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    agent = FakeAgent([steps(answer("A says so.")), steps(answer("B says so."))])
+
+    assert run_cli(tmp_path, FakeTriage(), agent, FakeJudge([LLMError("down")]), ids=["+1"]) == 1
+
+    out = capsys.readouterr().out
+    assert "=== [+1] FAILED (judge, both orders) ===" in out
+    assert "judge: judge call failed: down" in out
+    assert "(a failed model call isn't included" in out
+    assert len(list((tmp_path / "results").iterdir())) == 1  # still saved, for the record

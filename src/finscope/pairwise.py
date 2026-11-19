@@ -11,13 +11,17 @@ counted on its own: it is a measure of the judge, not of the prompts.
 """
 
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
+from finscope.evals import prompt_version, write_json_atomic
+from finscope.explain import AGENT_SYSTEM_PROMPT
 from finscope.judge import KIND_DESCRIPTIONS, ChangeKind
 from finscope.llm import LLMError, LLMProvider, cost_for_tokens, parse_json
 from finscope.prompting import filing_text_block
@@ -126,6 +130,41 @@ class PairwiseSummary(BaseModel):
     usage_complete: bool  # False when a failed call's usage is unknown (totals undercount)
 
 
+class PairwiseEvalResult(BaseModel):
+    """One eval-pairwise run, saved to evals/results/."""
+
+    model_config = ConfigDict(frozen=True)
+
+    created_at: datetime
+    company: str
+    form: str
+    part: str | None
+    item: str
+    new_accession: str
+    old_accession: str
+    model: str
+    prompt_a: str  # agent_prompt_version() of the agent's own prompt
+    prompt_b: str  # agent_prompt_version(candidate)
+    candidate_file: str
+    candidate_prompt: str  # B's full text: the file may change after the run
+    judge_version: str  # judge_prompt_version()
+    picked_by: Literal["triage", "ids"]
+    results: tuple[PairResult, ...]
+    summary: PairwiseSummary
+
+    @property
+    def file_name(self) -> str:
+        section = f"{self.part}-{self.item}" if self.part else self.item
+        return (
+            f"{self.created_at:%Y%m%dT%H%M%SZ}_pairwise_{self.company}_{self.form}_"
+            f"{self.new_accession}_{section}.json"
+        )
+
+
+class PairwiseError(Exception):
+    """The candidate prompt can't be used; the message says why."""
+
+
 class _PairwiseAnswer(BaseModel):
     """The JSON the model returns, mirroring SCHEMA."""
 
@@ -133,6 +172,30 @@ class _PairwiseAnswer(BaseModel):
 
     winner: Literal["1", "2", "tie"]
     reason: str
+
+
+def judge_prompt_version() -> str:
+    """The pairwise judge's own version, like the other prompts' (evals.prompt_version)."""
+    return prompt_version(SYSTEM_PROMPT, SCHEMA)
+
+
+def load_candidate(path: Path) -> str:
+    """Prompt B from a text file, or PairwiseError when it is unreadable, empty or prompt A."""
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        raise PairwiseError(f"can't read the candidate prompt {path}: {error}") from error
+    if not text:
+        raise PairwiseError(f"the candidate prompt {path} is empty")
+    if text == AGENT_SYSTEM_PROMPT.strip():
+        raise PairwiseError(f"{path} is the agent's own prompt: nothing to compare")
+    return text
+
+
+def save_pairwise_eval(result: PairwiseEvalResult, directory: Path) -> Path:
+    path = directory / result.file_name
+    write_json_atomic(path, result)
+    return path
 
 
 def usable(item: HighItem) -> bool:
@@ -327,8 +390,8 @@ def build_user_message(
         f"Section: {section}\n"
         f"Change: {KIND_DESCRIPTIONS[kind]}\n"
         f"Sources: {len(blocks)}\n\n" + "\n\n".join(blocks) + "\n\n"
-        f"Explanation 1:\n{_explanation_lines(first)}\n\n"
-        f"Explanation 2:\n{_explanation_lines(second)}"
+        f"Explanation 1:\n{explanation_lines(first)}\n\n"
+        f"Explanation 2:\n{explanation_lines(second)}"
     )
 
 
@@ -368,7 +431,7 @@ def _judge_call(
     )
 
 
-def _explanation_lines(parsed: ParsedExplanation) -> str:
+def explanation_lines(parsed: ParsedExplanation) -> str:
     importance: str = parsed.importance or "missing"
     if parsed.importance_reason:
         importance += f" - {parsed.importance_reason}"

@@ -16,6 +16,9 @@ python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage again
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
 python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
 python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
+python -m finscope eval-pairwise TSLA --item 1A --candidate FILE [--ids '~4'] [--max 5]
+                                                    the agent's prompt vs a candidate, judged
+                                                    side by side
 python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 1] [--no-notify]
                                                     report on newly filed watched sections
 python -m finscope feedback [--report NAME] [--redo]   rate a report's alerts (feeds evals)
@@ -100,7 +103,7 @@ from finscope.evals import (
     save_result,
     score_triage,
 )
-from finscope.explain import explain_change, explain_change_with_agent
+from finscope.explain import AGENT_SYSTEM_PROMPT, explain_change, explain_change_with_agent
 from finscope.feedback import (
     FeedbackError,
     ask_feedback,
@@ -137,6 +140,18 @@ from finscope.notify import (
     TelegramNotifier,
     format_alert_message,
     telegram_configured,
+)
+from finscope.pairwise import (
+    PairResult,
+    PairwiseError,
+    PairwiseEvalResult,
+    explanation_lines,
+    judge_prompt_version,
+    load_candidate,
+    run_pairwise,
+    save_pairwise_eval,
+    summarize_pairs,
+    usable,
 )
 from finscope.report import HighItem, SectionReport, build_section_report
 from finscope.sections import (
@@ -260,6 +275,29 @@ def main(argv: list[str] | None = None) -> int:
         help="exactly these changes, no triage, e.g. '~4,~11' (quote it: zsh expands ~4)",
     )
 
+    pairwise_parser = commands.add_parser(
+        "eval-pairwise",
+        help="run the agent's prompt (A) and a candidate (B) on the same changes; a judge picks",
+    )
+    pairwise_parser.add_argument("ticker", help="stock ticker, e.g. TSLA")
+    pairwise_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
+    pairwise_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
+    pairwise_parser.add_argument("--part", help="which Part, if the Item exists in several")
+    pairwise_parser.add_argument(
+        "--candidate", required=True, type=Path, help="text file with prompt B, a full agent prompt"
+    )
+    pairwise_parser.add_argument(
+        "--ids",
+        type=_change_ids,
+        help="exactly these changes, no triage, e.g. '~4,~11' (quote it: zsh expands ~4)",
+    )
+    pairwise_parser.add_argument(
+        "--max",
+        type=_positive_int,
+        default=5,
+        help="compare at most this many of triage's high changes (default 5; not for --ids)",
+    )
+
     known_parser = commands.add_parser(
         "eval-known", help="score AI triage on made-up changes with obvious answers"
     )
@@ -379,6 +417,7 @@ def main(argv: list[str] | None = None) -> int:
             "label",
             "eval-triage",
             "eval-agent",
+            "eval-pairwise",
         ):
             if len(filings) < 2:
                 print(f"error: need two {args.form} filings to compare", file=sys.stderr)
@@ -408,6 +447,18 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "eval-agent":
                 return _eval_agent(
                     sec, args.ticker, old, new, args.item, args.part, args.runs, args.ids
+                )
+            if args.command == "eval-pairwise":
+                return _eval_pairwise(
+                    sec,
+                    args.ticker,
+                    old,
+                    new,
+                    args.item,
+                    args.part,
+                    candidate_file=args.candidate,
+                    ids=args.ids,
+                    max_changes=args.max,
                 )
             return _show_diff(sec, old=old, new=new, item=args.item, part=args.part)
         if args.command == "read":
@@ -1621,6 +1672,230 @@ def _run_agent_eval(
     _print_agent_eval(result)
     print(f"saved:  {saved}")
     return 0 if summary.agent_failures < summary.total_runs else 1
+
+
+def _eval_pairwise(
+    sec: SecClient,
+    ticker: str,
+    old: Filing,
+    new: Filing,
+    item: str,
+    part: str | None,
+    *,
+    candidate_file: Path,
+    ids: list[str] | None,
+    max_changes: int,
+) -> int:
+    settings = get_settings()
+    try:
+        candidate = load_candidate(candidate_file)
+        triage_provider, agent_provider, judge_provider = _report_providers(settings)
+    except (PairwiseError, LLMError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    _print_filing_pair(old, new)
+    sections = _section_pair(sec, old, new, item, part)
+    if sections is None:
+        return 1
+    old_section, new_section = sections
+    return _run_pairwise_eval(
+        diff_sections(old_section, new_section),
+        old_section=old_section,
+        new_section=new_section,
+        metrics=tuple(load_metrics(sec, new)),  # loaded now: tools never touch the network
+        company=ticker.upper(),
+        form=new.form,
+        new_accession=new.accession_number,
+        old_accession=old.accession_number,
+        triage_provider=triage_provider,
+        agent_provider=agent_provider,
+        judge_provider=judge_provider,
+        settings=settings,
+        candidate_file=str(candidate_file),
+        candidate=candidate,
+        ids=ids,
+        max_changes=max_changes,
+        results_dir=RESULTS_DIR,
+    )
+
+
+def _run_pairwise_eval(
+    diff: SectionDiff,
+    *,
+    old_section: Section,
+    new_section: Section,
+    metrics: tuple[MetricValue, ...],
+    company: str,
+    form: str,
+    new_accession: str,
+    old_accession: str,
+    triage_provider: LLMProvider,
+    agent_provider: LLMProvider,
+    judge_provider: LLMProvider,
+    settings: Settings,
+    candidate_file: str,
+    candidate: str,
+    ids: list[str] | None,
+    max_changes: int,
+    results_dir: Path,
+) -> int:
+    """Pick the changes, compare prompt A and the candidate on each, print and save."""
+    section_title = _diff_label(diff)
+    try:
+        selection = select_changes(
+            diff,
+            ids=ids,
+            company=company,
+            form=form,
+            section_title=section_title,
+            triage_provider=triage_provider,
+            settings=settings,
+        )
+    except AgentEvalError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    except (LLMError, TriageError) as error:
+        print(f"error: triage failed, nothing to compare: {error}", file=sys.stderr)
+        return 1
+    if not selection.changes:
+        print("error: triage rated no change high; pick changes with --ids", file=sys.stderr)
+        return 1
+
+    picked = selection.changes
+    if selection.picked_by == "triage" and len(picked) > max_changes:
+        print(f"triage rated {len(picked)} changes high; comparing the first {max_changes}")
+        picked = picked[:max_changes]
+    source = "triage high" if selection.picked_by == "triage" else "--ids"
+    ids_text = ", ".join(change.id for change in picked)
+    print(f"{section_title}: {_count(len(picked), 'change')} ({source}): {ids_text}")
+    prompt_a, prompt_b = agent_prompt_version(), agent_prompt_version(candidate)
+    print(f"A = the agent's prompt ({prompt_a}), B = {candidate_file} ({prompt_b})")
+    print(
+        "Per change: 2 agent runs, then 2 judge calls (one in each order) if both "
+        "answers pass the fact-check.\n"
+    )
+
+    changes = changes_by_id(diff)
+    results = run_pairwise(
+        [
+            (
+                change.id,
+                change.triage_reason,
+                ExplainContext(
+                    change=changes[change.id],
+                    old_section=old_section,
+                    new_section=new_section,
+                    metrics=metrics,
+                ),
+            )
+            for change in picked
+        ],
+        prompt_a=AGENT_SYSTEM_PROMPT,
+        prompt_b=candidate,
+        company=company,
+        form=form,
+        section_title=section_title,
+        agent_provider=agent_provider,
+        judge_provider=judge_provider,
+        settings=settings,
+        on_result=_print_pair,
+    )
+    summary = summarize_pairs(
+        results,
+        settings,
+        extra_input_tokens=selection.input_tokens,
+        extra_output_tokens=selection.output_tokens,
+    )
+    result = PairwiseEvalResult(
+        created_at=datetime.now(UTC),
+        company=company,
+        form=form,
+        part=diff.part,
+        item=diff.item,
+        new_accession=new_accession,
+        old_accession=old_accession,
+        model=settings.llm_model,
+        prompt_a=prompt_a,
+        prompt_b=prompt_b,
+        candidate_file=candidate_file,
+        candidate_prompt=candidate,
+        judge_version=judge_prompt_version(),
+        picked_by=selection.picked_by,
+        results=results,
+        summary=summary,
+    )
+    saved = save_pairwise_eval(result, results_dir)
+    _print_pairwise_summary(result)
+    print(f"saved:  {saved}")
+    return 0 if summary.failed < summary.changes else 1
+
+
+_OUTCOME_WORDS = {
+    "a": "A wins",
+    "b": "B wins",
+    "tie": "tie",
+    "inconsistent": "INCONSISTENT: each order picked differently",
+    "failed": "FAILED",
+}
+
+
+def _print_pair(result: PairResult) -> None:
+    """One change as it finishes: the outcome, both answers, and what decided it."""
+    how = {
+        "one_usable": "only one answer usable",
+        "neither_usable": "neither answer usable",
+        "judge": "judge, both orders",
+    }[result.decided_by]
+    print(f"=== [{result.id}] {_OUTCOME_WORDS[result.outcome]} ({how}) ===")
+    for label, item in (("A", result.a), ("B", result.b)):
+        parsed = item.parsed
+        if not usable(item) or parsed is None:
+            print(f"{label}: not usable: {_unusable_reason(item)}")
+            continue
+        print(f"{label}: " + explanation_lines(parsed).replace("\n", "\n   "))
+    for call in result.calls:
+        print(f"judge, {call.first.upper()} first: {_pick_word(call.pick)} - {call.reason}")
+    if result.error is not None:
+        print(f"judge: {result.error}")
+    print()
+
+
+def _pick_word(pick: str) -> str:
+    return "tie" if pick == "tie" else f"picked {pick.upper()}"
+
+
+def _unusable_reason(item: HighItem) -> str:
+    if item.error is not None:
+        return item.error
+    if item.verification is not None and not item.verification.passed:
+        kinds = sorted({issue.kind for issue in item.verification.issues})
+        return f"failed the fact-check ({', '.join(kinds)})"
+    return "no WHAT CHANGED or WHY IT MATTERS line"
+
+
+def _print_pairwise_summary(result: PairwiseEvalResult) -> None:
+    summary = result.summary
+    print(f"=== PAIRWISE: A = {result.prompt_a}, B = {result.prompt_b} ===")
+    print(
+        f"A wins: {summary.a_wins}   B wins: {summary.b_wins}   ties: {summary.ties}   "
+        f"inconsistent: {summary.inconsistent}   failed: {summary.failed}"
+    )
+    print(
+        f"judge asked on {summary.decided_by_judge}/{summary.changes} change(s); "
+        "the others were settled by the fact-check"
+    )
+    if summary.changes < 10:
+        print(f"({_count(summary.changes, 'change')}: too few for the count to mean much)")
+
+    cost = "unknown (no prices configured)"
+    if summary.cost_usd is not None:
+        cost = f"${summary.cost_usd:.4f}"
+    print(f"\nmodel {result.model}, pairwise judge version {result.judge_version}")
+    print(f"tokens: {summary.input_tokens:,} input, {summary.output_tokens:,} output")
+    print(f"cost:   {cost}")
+    if not summary.usage_complete:
+        print("        (a failed model call isn't included: its token usage isn't known)")
 
 
 def _print_agent_eval(result: AgentEvalResult) -> None:

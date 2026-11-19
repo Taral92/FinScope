@@ -35,10 +35,13 @@ def triage_prompt_version() -> str:
     return prompt_version(triage.SYSTEM_PROMPT, triage.SCHEMA)
 
 
-def agent_prompt_version() -> str:
-    """Like the triage prompt version, over the agent's system prompt and its tool specs."""
+def agent_prompt_version(system_prompt: str = AGENT_SYSTEM_PROMPT) -> str:
+    """Like the triage prompt version, over the agent's system prompt and its tool specs.
+
+    `system_prompt` gives the version of another agent prompt, e.g. a pairwise candidate.
+    """
     tools = {"tools": [spec.model_dump(mode="json") for spec in TOOL_SPECS]}
-    return prompt_version(AGENT_SYSTEM_PROMPT, tools)
+    return prompt_version(system_prompt, tools)
 
 
 def judge_prompt_version() -> str:
