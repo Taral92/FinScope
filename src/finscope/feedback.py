@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
 
-from finscope.decide import DecisionEntry, Tier
+from finscope.decide import DecisionEntry, Tier, entry_line
 from finscope.detect import CheckResult
 
 Verdict = Literal["useful", "not_useful", "wrong"]
@@ -32,9 +32,11 @@ Rate each alert and review:
   n  not_useful  true, but not worth telling me
   w  wrong       the explanation is false or misleading (not just unimportant)
 A note may follow the key, e.g. "n too minor". For w a note is required: say what was wrong,
-so the case can be looked at later. Every answer is saved right away."""
+so the case can be looked at later; b instead of the note goes back to the verdict.
+Every answer is saved right away."""
 PROMPT = "[u/n/w] > "
-NOTE_PROMPT = "what was wrong? > "
+NOTE_PROMPT = "what was wrong? (b = back) > "
+BACK = "b"  # typed as the note of a "wrong": undo the w and ask for the verdict again
 MISSED_PROMPT = "any of these you'd have wanted as an alert? (ids, comma separated, or enter) > "
 
 
@@ -151,7 +153,9 @@ def ask_feedback(
         save_feedback(answers, path)
     if digests:
         by_id = {entry.id: entry for entry in digests}
-        show(f"\n=== DIGEST ({len(digests)}): {', '.join(by_id)} ===")
+        show(f"\n=== DIGEST ({len(digests)}): agent rated lower than triage ===")
+        for entry in digests:
+            show(entry_line(entry))
         for change_id in _ask_missed(ask, show, list(by_id)):
             record(by_id[change_id], "useful")  # a digest you wanted as an alert: a miss
     save_feedback(answers, path)  # also when nothing was recorded: the report is done
@@ -161,7 +165,11 @@ def ask_feedback(
 def _ask_verdict(
     ask: Callable[[str], str], show: Callable[[str], None]
 ) -> tuple[Verdict, str | None]:
-    """The verdict and an optional note typed after the key; "wrong" without a note asks for one."""
+    """The verdict and an optional note typed after the key; "wrong" without a note asks for one.
+
+    A "wrong" whose note is just b (typed inline or at the note prompt) is taken back: the
+    verdict is asked again, for a w pressed by mistake.
+    """
     while True:
         key, _, note = ask(PROMPT).strip().partition(" ")
         key = key.lower()
@@ -172,6 +180,8 @@ def _ask_verdict(
         note = note.strip()
         while verdict == "wrong" and not note:
             note = ask(NOTE_PROMPT).strip()
+        if verdict == "wrong" and note.lower() == BACK:
+            continue
         return verdict, note or None
 
 

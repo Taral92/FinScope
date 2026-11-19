@@ -16,7 +16,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from finscope.report import HighItem, SectionReport
-from finscope.triage import Importance
+from finscope.triage import Importance, is_borderline
 
 Tier = Literal["alert", "digest", "review"]
 
@@ -51,6 +51,19 @@ class Decision(BaseModel):
 
     def tier(self, tier: Tier) -> tuple[DecisionEntry, ...]:
         return tuple(entry for entry in self.entries if entry.tier == tier)
+
+
+def borderline_mark(entry: DecisionEntry) -> str:
+    """'(borderline) ' when the triage runs didn't agree on the change, else ''."""
+    return "(borderline) " if is_borderline(entry.triage_votes) else ""
+
+
+def entry_line(entry: DecisionEntry) -> str:
+    """One line for a digest or review entry: why it landed there, and triage's reason.
+
+    Shared by `check`/`report` and `feedback`, so both show an entry the same way.
+    """
+    return f"[{entry.id}] {borderline_mark(entry)}{entry.reason} | triage: {entry.triage_reason}"
 
 
 def decide(report: SectionReport) -> Decision:

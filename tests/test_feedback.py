@@ -206,8 +206,29 @@ def test_missed_alert_ids_become_useful_digest_feedback(
         ("+2", "digest", "useful"),
     ]
     out = capsys.readouterr().out
-    assert "=== DIGEST (3): +2, +4, ~5 ===" in out
+    assert (
+        "=== DIGEST (3): agent rated lower than triage ===\n"
+        "[+2] fixed reason | triage: TRIAGE-ONLY +2\n"
+        "[+4] fixed reason | triage: TRIAGE-ONLY +4\n"
+        "[~5] fixed reason | triage: TRIAGE-ONLY ~5\n"
+    ) in out
     assert "incl. 2 missed alerts from the digest" in out
+
+
+def test_digest_lines_mark_borderline_entries(
+    tmp_path: Path, typed: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    split = entry("+2", "digest", "agent rated medium").model_copy(
+        update={"triage_votes": ("high", "medium", "high")}
+    )
+    result = check_result(entry("+1", "alert"), split)
+    save_report(tmp_path, result)
+    typed += ["u", ""]
+
+    assert _feedback(tmp_path, report=None, redo=False) == 0
+
+    out = capsys.readouterr().out
+    assert "[+2] (borderline) agent rated medium | triage: TRIAGE-ONLY +2\n" in out
 
 
 def test_enter_at_the_digest_question_records_no_miss(tmp_path: Path, typed: list[str]) -> None:
@@ -470,3 +491,23 @@ def test_feedback_command_passes_its_options_through(
 
     assert cli.main(argv) == 0
     assert seen == {"data_dir": tmp_path, **expected}
+
+
+def test_b_at_the_note_prompt_goes_back_to_the_verdict(tmp_path: Path, typed: list[str]) -> None:
+    result = check_result(entry("+1", "alert"), entry("+2", "alert"), entry("+3", "alert"))
+    save_report(tmp_path, result)
+    typed += [
+        "w", "b", "u",  # +1: w by mistake, back, useful
+        "w", "B", "w", "quote is from the old filing",  # +2: back, then a real wrong
+        "w b", "n too minor",  # +3: b typed inline also goes back
+    ]  # fmt: skip
+
+    assert _feedback(tmp_path, report=None, redo=False) == 0
+
+    answers = load_feedback(feedback_dir(tmp_path) / result.file_name)
+    assert [(a.id, a.verdict, a.note) for a in answers] == [
+        ("+1", "useful", None),
+        ("+2", "wrong", "quote is from the old filing"),
+        ("+3", "not_useful", "too minor"),
+    ]
+    assert typed == []  # every typed line was used: nothing was skipped or left over

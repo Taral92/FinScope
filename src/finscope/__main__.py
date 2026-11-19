@@ -60,7 +60,7 @@ from finscope.alert_eval import (
     versions_in,
 )
 from finscope.config import Settings, get_settings
-from finscope.decide import Decision, DecisionEntry, Tier, decide
+from finscope.decide import Decision, Tier, borderline_mark, decide, entry_line
 from finscope.detect import (
     WATCHLIST_PATH,
     CheckError,
@@ -149,7 +149,6 @@ from finscope.sections import (
 from finscope.triage import (
     TriageError,
     TriageReport,
-    is_borderline,
     triage_section,
 )
 from finscope.verify import parse_explanation, sources_for, verify_explanation
@@ -895,15 +894,11 @@ def _votes(votes: tuple[Importance, ...]) -> str:
     return f"high in {votes.count('high')}/{len(votes)} runs | "
 
 
-def _borderline(entry: DecisionEntry) -> str:
-    return "(borderline) " if is_borderline(entry.triage_votes) else ""
-
-
 def _print_decision(decision: Decision) -> None:
     alerts = decision.tier("alert")
     print(f"\n=== ALERT ({len(alerts)}) ===")
     for entry in alerts:
-        print(f"[{entry.id}] {_borderline(entry)}{entry.what_changed}")
+        print(f"[{entry.id}] {borderline_mark(entry)}{entry.what_changed}")
         print(f"{' ' * (len(entry.id) + 3)}WHY IT MATTERS: {entry.why_it_matters}")
     if not alerts:
         print("(none)")
@@ -916,9 +911,7 @@ def _print_decision(decision: Decision) -> None:
         entries = decision.tier(tier)
         print(f"\n=== {tier.upper()} ({len(entries)}): {heading} ===")
         for entry in entries:
-            print(
-                f"[{entry.id}] {_borderline(entry)}{entry.reason} | triage: {entry.triage_reason}"
-            )
+            print(entry_line(entry))
         if not entries:
             print("(none)")
 
@@ -1300,7 +1293,7 @@ def _print_check_summary(report: SectionReport, decision: Decision, saved: Path)
     alerts = decision.tier("alert")
     print(f"ALERT ({len(alerts)})")
     for entry in alerts:
-        print(f"  [{entry.id}] {_borderline(entry)}{entry.what_changed}")
+        print(f"  [{entry.id}] {borderline_mark(entry)}{entry.what_changed}")
     print(f"DIGEST ({len(decision.tier('digest'))}), REVIEW ({len(decision.tier('review'))})")
     cost = "unknown (no prices configured)"
     if report.cost_usd is not None:
