@@ -50,11 +50,14 @@ from finscope.agent_eval import (
 from finscope.agent_tools import ExplainContext
 from finscope.alert_eval import (
     AlertEvalResult,
+    VersionScore,
+    judgments_in,
     load_all_feedback,
-    load_judgments,
+    load_reports,
     save_alert_eval,
     score_reports,
     summarize_alerts,
+    versions_in,
 )
 from finscope.config import Settings, get_settings
 from finscope.decide import Decision, DecisionEntry, Tier, decide
@@ -869,14 +872,8 @@ def _judge_suffix(item: HighItem) -> str:
 
 
 def _print_versions(report: SectionReport) -> None:
-    """e.g. 'versions: model gpt-6.1-terra, triage 3d30ad40231e, agent ..., judge -'."""
-    versions = report.prompt_versions
-    if versions is None:  # a report saved before versions were kept
-        return
-    print(
-        f"versions: model {versions.model}, triage {versions.triage}, "
-        f"agent {versions.agent}, judge {versions.judge or '-'}"
-    )
+    if report.prompt_versions is not None:  # None: a report saved before versions were kept
+        print(f"versions: {report.prompt_versions.label}")
 
 
 def _print_triage_runs(report: SectionReport) -> None:
@@ -1179,14 +1176,14 @@ def _feedback(data_dir: Path, *, report: str | None, redo: bool) -> int:
 
 def _eval_alerts(feedback: Path, reports: Path, results_dir: Path) -> int:
     """Score every feedback file against the judge's verdicts in the saved reports; print
-    per-report lines and the totals; save the result."""
+    per-report lines, the totals and the totals per set of versions; save the result."""
     try:
         answers = load_all_feedback(feedback)
-        judgments = load_judgments(reports, (answer.report for answer in answers))
+        saved_reports = load_reports(reports, (answer.report for answer in answers))
     except FeedbackError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
-    scores = score_reports(answers, judgments)
+    scores = score_reports(answers, judgments_in(saved_reports), versions_in(saved_reports))
     if not scores:
         print(f"error: no feedback in {feedback}; run `feedback` first", file=sys.stderr)
         return 1
@@ -1233,6 +1230,22 @@ def _print_alert_eval(result: AlertEvalResult) -> None:
         f"judge agreement:  {_pct(result.judge_agreement)}  "
         f"({result.judge_agreed}/{result.judge_compared} judged alerts; {not_judged} not judged)"
     )
+    _print_by_version(result.by_version)
+
+
+def _print_by_version(groups: tuple[VersionScore, ...]) -> None:
+    """The totals per set of versions; few rated alerts per version means the gap is noise."""
+    print(f"\n=== BY VERSION ({len(groups)}) ===")
+    for group in groups:
+        label = group.versions.label if group.versions else "unknown (saved before versions)"
+        print(f"{label}\n  {len(group.reports)} report(s): {', '.join(group.reports)}")
+        judge = f"{group.judge_agreed}/{group.judge_compared}" if group.judge_compared else "-"
+        print(
+            f"  alerts {group.alerts_rated}   precision {_pct(group.precision)}   "
+            f"wrong {_pct(group.wrong_rate)}   missed {group.missed}   judge agrees {judge}"
+        )
+    if len(groups) == 1:
+        print("one set of versions so far: nothing to compare yet")
 
 
 def _telegram_chat_id(settings: Settings) -> int:

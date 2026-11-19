@@ -12,6 +12,10 @@ verdict, does the judge agree with you? You said "wrong" and the judge said over
 unsupported: agreement. You said useful or not_useful (a faithful explanation, whatever its
 importance) and the judge said supported: agreement. Anything else is a disagreement, listed
 by id so it can be looked at.
+
+Reports also record the model and prompt versions that made them (versions.py), so the same
+numbers are given per version: the start of an A/B comparison between prompts. With a handful
+of rated alerts per version the difference is noise; the alert counts are printed for that.
 """
 
 from collections import defaultdict
@@ -21,12 +25,16 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
+from finscope.detect import CheckResult
 from finscope.evals import write_json_atomic
 from finscope.feedback import Feedback, Verdict, load_feedback, load_report
 from finscope.judge import JudgeVerdict, Judgment
+from finscope.versions import PromptVersions
 
 # report file name -> change id -> the judge's verdict on it (None: not judged)
 Judgments = Mapping[str, Mapping[str, Judgment | None]]
+# report file name -> the versions that made it (None: saved before versions were kept)
+Versions = Mapping[str, PromptVersions | None]
 
 
 class JudgedAlert(BaseModel):
@@ -67,6 +75,7 @@ class ReportScore(BaseModel):
     missed: tuple[str, ...]  # digest ids you'd have wanted as alerts
     notes: dict[str, str] = {}  # id -> your note, for every answer that has one
     judged: tuple[JudgedAlert, ...] = ()  # every rated alert, with the judge's verdict if any
+    versions: PromptVersions | None = None  # None: unknown (old report, or not on disk)
 
     @property
     def judge_compared(self) -> int:
@@ -94,6 +103,29 @@ class ReportScore(BaseModel):
         return len(self.wrong) / self.alerts_rated if self.alerts_rated else None
 
 
+class VersionScore(BaseModel):
+    """The alert numbers over every report made with one set of versions."""
+
+    model_config = ConfigDict(frozen=True)
+
+    versions: PromptVersions | None  # None: the reports whose versions are unknown
+    reports: tuple[str, ...]  # oldest check first
+    alerts_rated: int
+    useful: int
+    wrong: int
+    missed: int
+    judge_compared: int
+    judge_agreed: int
+
+    @property
+    def precision(self) -> float | None:
+        return self.useful / self.alerts_rated if self.alerts_rated else None
+
+    @property
+    def wrong_rate(self) -> float | None:
+        return self.wrong / self.alerts_rated if self.alerts_rated else None
+
+
 class AlertEvalResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -111,6 +143,7 @@ class AlertEvalResult(BaseModel):
     judge_compared: int = 0  # rated alerts that also have a judge verdict
     judge_agreed: int = 0
     judge_agreement: float | None = None  # agreed / compared; None when nothing was compared
+    by_version: tuple[VersionScore, ...] = ()  # in the order each set of versions was first used
 
     @property
     def file_name(self) -> str:
@@ -125,34 +158,69 @@ def load_all_feedback(directory: Path) -> list[Feedback]:
     return answers
 
 
-def load_judgments(reports: Path, names: Iterable[str]) -> dict[str, dict[str, Judgment | None]]:
-    """The judge's verdicts in each named report, by change id.
-
-    A report that is no longer on disk gives no verdicts (its alerts count as not judged); a
-    report that can't be read is a FeedbackError, like a bad feedback file.
-    """
-    judgments: dict[str, dict[str, Judgment | None]] = {}
+def load_reports(reports: Path, names: Iterable[str]) -> dict[str, CheckResult]:
+    """The saved reports with these file names, skipping any no longer on disk (their alerts
+    then count as not judged, versions unknown); one that can't be read is a FeedbackError,
+    like a bad feedback file."""
+    loaded: dict[str, CheckResult] = {}
     for name in sorted(set(names)):
         path = reports / name
-        if not path.exists():
-            continue
-        result = load_report(path)
-        judgments[name] = {item.id: item.judgment for item in result.report.high}
-    return judgments
+        if path.exists():
+            loaded[name] = load_report(path)
+    return loaded
+
+
+def judgments_in(results: Mapping[str, CheckResult]) -> dict[str, dict[str, Judgment | None]]:
+    """The judge's verdicts in each report, by change id."""
+    return {
+        name: {item.id: item.judgment for item in result.report.high}
+        for name, result in results.items()
+    }
+
+
+def versions_in(results: Mapping[str, CheckResult]) -> dict[str, PromptVersions | None]:
+    return {name: result.report.prompt_versions for name, result in results.items()}
 
 
 def score_reports(
-    answers: Sequence[Feedback], judgments: Judgments | None = None
+    answers: Sequence[Feedback],
+    judgments: Judgments | None = None,
+    versions: Versions | None = None,
 ) -> tuple[ReportScore, ...]:
-    """One score per report, oldest check first. `judgments` adds the judge comparison."""
+    """One score per report, oldest check first. `judgments` adds the judge comparison,
+    `versions` what made each report."""
     by_report: dict[str, list[Feedback]] = defaultdict(list)
     for answer in answers:
         by_report[answer.report].append(answer)
     scores = [
-        _score_report(name, group, (judgments or {}).get(name, {}))
+        _score_report(name, group, (judgments or {}).get(name, {})).model_copy(
+            update={"versions": (versions or {}).get(name)}
+        )
         for name, group in by_report.items()
     ]
     return tuple(sorted(scores, key=lambda score: (score.checked_at, score.report)))
+
+
+def score_versions(scores: Sequence[ReportScore]) -> tuple[VersionScore, ...]:
+    """The scores grouped by the full set of versions (model and all three prompts), in the
+    order each set was first used. `scores` must be oldest check first, as score_reports
+    returns them."""
+    groups: dict[PromptVersions | None, list[ReportScore]] = defaultdict(list)
+    for score in scores:
+        groups[score.versions].append(score)
+    return tuple(
+        VersionScore(
+            versions=versions,
+            reports=tuple(score.report for score in group),
+            alerts_rated=sum(score.alerts_rated for score in group),
+            useful=sum(len(score.useful) for score in group),
+            wrong=sum(len(score.wrong) for score in group),
+            missed=sum(len(score.missed) for score in group),
+            judge_compared=sum(score.judge_compared for score in group),
+            judge_agreed=sum(score.judge_agreed for score in group),
+        )
+        for versions, group in groups.items()
+    )
 
 
 def summarize_alerts(scores: Sequence[ReportScore], created_at: datetime) -> AlertEvalResult:
@@ -176,6 +244,7 @@ def summarize_alerts(scores: Sequence[ReportScore], created_at: datetime) -> Ale
         judge_compared=compared,
         judge_agreed=agreed,
         judge_agreement=agreed / compared if compared else None,
+        by_version=score_versions(scores),
     )
 
 

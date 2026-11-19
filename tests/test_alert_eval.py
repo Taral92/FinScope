@@ -9,10 +9,13 @@ from finscope.__main__ import _eval_alerts
 from finscope.alert_eval import (
     AlertEvalResult,
     judge_agrees,
+    judgments_in,
     load_all_feedback,
-    load_judgments,
+    load_reports,
     score_reports,
+    score_versions,
     summarize_alerts,
+    versions_in,
 )
 from finscope.decide import Decision, Tier
 from finscope.detect import CheckResult, WatchEntry, save_check_result
@@ -20,12 +23,15 @@ from finscope.edgar import Filing
 from finscope.feedback import Feedback, FeedbackError, Verdict, save_feedback
 from finscope.judge import JudgeVerdict, Judgment
 from finscope.report import HighItem, SectionReport
+from finscope.versions import PromptVersions
 
 REPORT_A = "TSLA_10-K_0001628280-26-000003_I-1A.json"  # checked 2026-11-07
 REPORT_B = "AAPL_10-K_0000320193-26-000001_I-1A.json"  # checked 2026-11-10
+REPORT_C = "NVDA_10-K_0001045810-26-000002_I-1A.json"  # checked 2026-11-12
 CHECKED = {
     REPORT_A: datetime(2026, 11, 7, tzinfo=UTC),
     REPORT_B: datetime(2026, 11, 10, tzinfo=UTC),
+    REPORT_C: datetime(2026, 11, 12, tzinfo=UTC),
 }
 ANSWERED = datetime(2026, 11, 14, 12, 0, tzinfo=UTC)
 
@@ -253,7 +259,9 @@ def high_item(change_id: str, judged: Judgment | None) -> HighItem:
     )
 
 
-def save_report(directory: Path, name: str, *items: HighItem) -> None:
+def save_report(
+    directory: Path, name: str, *items: HighItem, versions: PromptVersions | None = None
+) -> None:
     ticker, form, accession, section = name.removesuffix(".json").split("_")
     part, item = section.split("-")
     report = SectionReport(
@@ -271,6 +279,7 @@ def save_report(directory: Path, name: str, *items: HighItem) -> None:
         output_tokens=0,
         cost_usd=None,
         usage_complete=True,
+        prompt_versions=versions,
     )
     filing = Filing(
         cik="0000000001",
@@ -292,10 +301,10 @@ def save_report(directory: Path, name: str, *items: HighItem) -> None:
     save_check_result(result, directory)
 
 
-def test_load_judgments_reads_the_reports_that_exist(tmp_path: Path) -> None:
+def test_load_reports_reads_the_reports_that_exist(tmp_path: Path) -> None:
     save_report(tmp_path, REPORT_A, high_item("~1", judgment("supported")), high_item("~5", None))
 
-    loaded = load_judgments(tmp_path, [REPORT_A, REPORT_B, REPORT_A])
+    loaded = judgments_in(load_reports(tmp_path, [REPORT_A, REPORT_B, REPORT_A]))
 
     assert list(loaded) == [REPORT_A]  # B is not on disk: its alerts are simply not judged
     assert loaded[REPORT_A]["~1"] is not None and loaded[REPORT_A]["~1"].verdict == "supported"
@@ -303,7 +312,7 @@ def test_load_judgments_reads_the_reports_that_exist(tmp_path: Path) -> None:
 
     (tmp_path / REPORT_B).write_text("{broken", encoding="utf-8")
     with pytest.raises(FeedbackError, match="can't read report"):
-        load_judgments(tmp_path, [REPORT_B])
+        load_reports(tmp_path, [REPORT_B])
 
 
 def test_command_prints_the_judge_comparison(
@@ -331,3 +340,103 @@ def test_command_prints_the_judge_comparison(
     [saved] = list(results.iterdir())
     result = AlertEvalResult.model_validate_json(saved.read_text(encoding="utf-8"))
     assert (result.judge_compared, result.judge_agreed) == (3, 2)
+
+
+V1 = PromptVersions(model="m", triage="t1", agent="a1", judge="j1")
+V2 = PromptVersions(model="m", triage="t1", agent="a2", judge="j1")  # only the agent changed
+C = [
+    answer(REPORT_C, "+1", "alert", "wrong", "made up"),
+    answer(REPORT_C, "+9", "digest", "useful"),
+]
+
+
+def test_scores_carry_their_report_versions() -> None:
+    scores = score_reports(A + B, versions={REPORT_A: None, REPORT_B: V1})
+
+    assert [score.versions for score in scores] == [None, V1]
+    assert [score.versions for score in score_reports(A)] == [None]  # no versions given
+
+
+def test_versions_group_reports_in_the_order_each_was_first_used() -> None:
+    scores = score_reports(A + B + C, versions={REPORT_A: V2, REPORT_B: V1, REPORT_C: V2})
+
+    v2, v1 = score_versions(scores)
+
+    assert (v2.versions, v2.reports) == (V2, (REPORT_A, REPORT_C))
+    # A: ~1 useful, ~5 not_useful, ~19 wrong; C: +1 wrong. Missed: A's +3 and C's +9.
+    assert (v2.alerts_rated, v2.useful, v2.wrong, v2.missed) == (4, 1, 2, 2)
+    assert (v2.precision, v2.wrong_rate) == (0.25, 0.5)
+    assert (v1.versions, v1.reports) == (V1, (REPORT_B,))
+    assert (v1.alerts_rated, v1.useful, v1.wrong, v1.missed) == (2, 2, 0, 0)
+    assert (v1.precision, v1.wrong_rate) == (1.0, 0.0)
+
+
+def test_reports_without_versions_form_one_unknown_group() -> None:
+    scores = score_reports(A + B + C, versions={REPORT_C: V1})
+
+    unknown, v1 = score_versions(scores)
+
+    assert (unknown.versions, unknown.reports) == (None, (REPORT_A, REPORT_B))
+    assert (v1.versions, v1.reports) == (V1, (REPORT_C,))
+    # The groups split the totals: nothing counted twice or lost.
+    total = summarize_alerts(scores, ANSWERED)
+    assert total.by_version == (unknown, v1)
+    assert unknown.alerts_rated + v1.alerts_rated == total.alerts_rated
+    assert unknown.useful + v1.useful == total.useful
+
+
+def test_versions_in_reads_each_saved_report(tmp_path: Path) -> None:
+    save_report(tmp_path, REPORT_A, high_item("~1", None))
+    save_report(tmp_path, REPORT_B, high_item("+1", None), versions=V1)
+
+    assert versions_in(load_reports(tmp_path, [REPORT_A, REPORT_B])) == {
+        REPORT_A: None,
+        REPORT_B: V1,
+    }
+
+
+def test_command_prints_the_numbers_per_version(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    feedback, reports, results = tmp_path / "feedback", tmp_path / "reports", tmp_path / "results"
+    write_feedback(feedback, A, B)
+    save_report(reports, REPORT_A, high_item("~1", None))  # saved before versions were kept
+    save_report(
+        reports,
+        REPORT_B,
+        high_item("+1", judgment("supported")),
+        high_item("+2", judgment("supported")),
+        versions=V1,
+    )
+
+    assert _eval_alerts(feedback, reports, results) == 0
+
+    out = capsys.readouterr().out
+    by_version = out[out.index("=== BY VERSION (2) ===") :]
+    assert (
+        "unknown (saved before versions)\n"
+        f"  1 report(s): {REPORT_A}\n"
+        "  alerts 3   precision 33%   wrong 33%   missed 1   judge agrees -\n"
+    ) in by_version
+    assert (
+        "model m, triage t1, agent a1, judge j1\n"
+        f"  1 report(s): {REPORT_B}\n"
+        "  alerts 2   precision 100%   wrong 0%   missed 0   judge agrees 2/2\n"
+    ) in by_version
+    assert "nothing to compare yet" not in out
+    [saved] = list(results.iterdir())
+    result = AlertEvalResult.model_validate_json(saved.read_text(encoding="utf-8"))
+    assert [group.versions for group in result.by_version] == [None, V1]
+
+
+def test_command_says_when_there_is_one_version_only(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    feedback = tmp_path / "feedback"
+    write_feedback(feedback, B)
+
+    assert _eval_alerts(feedback, tmp_path / "reports", tmp_path / "results") == 0
+
+    out = capsys.readouterr().out
+    assert "=== BY VERSION (1) ===\nunknown (saved before versions)" in out
+    assert "one set of versions so far: nothing to compare yet" in out

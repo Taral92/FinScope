@@ -22,6 +22,14 @@ class PromptVersions(BaseModel):
     agent: str
     judge: str | None  # None when no judge ran
 
+    @property
+    def label(self) -> str:
+        """e.g. 'model gpt-6.1-terra, triage 3d30ad40231e, agent 983848dcbf2b, judge -'."""
+        return (
+            f"model {self.model}, triage {self.triage}, agent {self.agent}, "
+            f"judge {self.judge or '-'}"
+        )
+
 
 def triage_prompt_version() -> str:
     return prompt_version(triage.SYSTEM_PROMPT, triage.SCHEMA)
