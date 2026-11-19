@@ -24,4 +24,13 @@ cp .env.example .env   # then set your name and contact email
 uv run pytest
 ```
 
+## Use the data from Claude Code
+
+FinScope is also an [MCP](https://modelcontextprotocol.io) server. `.mcp.json` registers it, so
+opening this folder in Claude Code gives Claude five read-only tools: `list_filings`,
+`get_section`, `diff_section`, `get_change_context` and `get_key_metrics`. Ask, for example,
+"what did Apple add to its 10-K risk factors this year?" and Claude answers from the real diff
+and SEC XBRL numbers. No model runs inside the server. Start it by hand with
+`uv run python -m finscope mcp`.
+
 **Status:** early development.

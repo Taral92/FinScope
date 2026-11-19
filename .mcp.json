@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "finscope": {
+      "command": "uv",
+      "args": ["run", "--quiet", "python", "-m", "finscope", "mcp"]
+    }
+  }
+}

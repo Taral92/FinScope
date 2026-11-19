@@ -1,7 +1,15 @@
-"""Load a filing as plain text, using the on-disk caches."""
+"""Load a filing's text (from the on-disk caches) and its key XBRL numbers."""
 
 from finscope.edgar import Filing, SecClient, filing_path
 from finscope.text import html_to_text
+from finscope.xbrl import METRICS, MetricValue, key_metrics, parse_facts
+
+
+def load_metrics(sec: SecClient, filing: Filing) -> list[MetricValue]:
+    """The filing's key financial numbers from SEC XBRL data (never from a model)."""
+    concepts = {concept for metric in METRICS for concept in metric.concepts}
+    facts = parse_facts(sec.get_company_facts(filing.cik), concepts)
+    return key_metrics(facts, filing.accession_number, filing.form)
 
 
 def load_filing_text(sec: SecClient, filing: Filing, *, refresh: bool = False) -> str:

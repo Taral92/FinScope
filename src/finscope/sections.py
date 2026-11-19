@@ -39,6 +39,31 @@ class _Heading:
     title: str
 
 
+class SectionLookupError(LookupError):
+    """No section matches, or more than one does (Items can repeat across Parts)."""
+
+
+def find_section(sections: list[Section], item: str, part: str | None) -> Section:
+    """The one section with this Item (and Part, if given); SectionLookupError otherwise."""
+    matches = [
+        section
+        for section in sections
+        if section.item == item.upper() and (part is None or section.part == part.upper())
+    ]
+    if not matches:
+        available = ", ".join(section_label(section) for section in sections)
+        raise SectionLookupError(f"Item {item} not found. Available: {available}")
+    if len(matches) > 1:
+        parts = " or ".join(f"Part {section.part}" for section in matches)
+        raise SectionLookupError(f"Item {item} appears in more than one Part; say {parts}")
+    return matches[0]
+
+
+def section_label(section: Section) -> str:
+    """'I 1A' for an Item inside a Part, else just the Item."""
+    return f"{section.part} {section.item}" if section.part else section.item
+
+
 def split_sections(text: str) -> list[Section]:
     """Return the filing's Items in document order."""
     headings = _find_headings(text)

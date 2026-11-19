@@ -112,10 +112,15 @@ def get_nearby_paragraphs(context: ExplainContext, count: int) -> str:
 
 
 def get_key_metrics(context: ExplainContext) -> str:
-    if not context.metrics:
+    return format_metrics(context.metrics)
+
+
+def format_metrics(metrics: tuple[MetricValue, ...]) -> str:
+    """One line per metric: name | period | value | prior | change. Also used by the MCP server."""
+    if not metrics:
         return "No XBRL metrics are available for this filing."
     lines = []
-    for metric in context.metrics:
+    for metric in metrics:
         prior = format_amount(metric.prior.value, metric.unit) if metric.prior else "n/a"
         change = f"{metric.change_pct:+.1f}%" if metric.change_pct is not None else "n/a"
         lines.append(
