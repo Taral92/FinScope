@@ -21,7 +21,7 @@ from finscope.verify import ParsedExplanation
 
 JudgeVerdict = Literal["supported", "overstated", "unsupported"]
 ChangeKind = Literal["added", "removed", "modified"]
-_KIND_DESCRIPTIONS: dict[ChangeKind, str] = {
+KIND_DESCRIPTIONS: dict[ChangeKind, str] = {
     "added": "added paragraph (new in this filing; there is no previous version)",
     "removed": "removed paragraph (the previous filing had it; there is no new version)",
     "modified": "modified paragraph (source 1 is the old version, source 2 the new one)",
@@ -130,7 +130,7 @@ def build_user_message(
         f"Company: {company}\n"
         f"Form: {form}\n"
         f"Section: {section}\n"
-        f"Change: {_KIND_DESCRIPTIONS[kind]}\n"
+        f"Change: {KIND_DESCRIPTIONS[kind]}\n"
         f"Sources: {len(blocks)}\n\n" + "\n\n".join(blocks) + "\n\n"
         "Explanation to judge:\n"
         f"WHAT CHANGED: {parsed.what_changed or ''}\n"

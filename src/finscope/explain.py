@@ -107,10 +107,14 @@ def explain_change_with_agent(
     provider: LLMProvider,
     settings: Settings,
     max_steps: int = 6,
+    system_prompt: str = AGENT_SYSTEM_PROMPT,
 ) -> AgentExplanation:
-    """Like explain_change, but the model first gathers context with read-only tools."""
+    """Like explain_change, but the model first gathers context with read-only tools.
+
+    `system_prompt` replaces the agent's prompt, e.g. with a candidate in a pairwise eval.
+    """
     run = run_agent(
-        AGENT_SYSTEM_PROMPT,
+        system_prompt,
         build_user_message(context.change, company, form, section_title),
         build_tools(context),
         provider,

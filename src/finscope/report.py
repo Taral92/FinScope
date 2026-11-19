@@ -16,7 +16,7 @@ from finscope.agent import AgentError
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
 from finscope.diff import SectionDiff, changes_by_id
-from finscope.explain import explain_change_with_agent
+from finscope.explain import AGENT_SYSTEM_PROMPT, explain_change_with_agent
 from finscope.judge import Judgment, judge_explanation
 from finscope.llm import LLMError, LLMProvider, cost_for_tokens
 from finscope.sections import Section
@@ -209,6 +209,63 @@ def explain_and_check(
     With a `judge_provider`, an answer that passes the fact-check is judged too; a failed
     judge call is recorded on the item, never fatal.
     """
+    item, sources = explain_and_verify(
+        change_id,
+        triage_reason,
+        context,
+        company=company,
+        form=form,
+        section_title=section_title,
+        provider=provider,
+        settings=settings,
+    )
+    # Judged only when the answer could become an alert or a digest entry: a failed
+    # fact-check already sends it to review, so a judge call would be money for nothing.
+    parsed, verification = item.parsed, item.verification
+    if judge_provider is None or parsed is None or verification is None:
+        return item
+    if not verification.passed or not parsed.what_changed or not parsed.why_it_matters:
+        return item
+    try:
+        judgment = judge_explanation(
+            parsed,
+            sources,
+            kind=context.change.kind,
+            company=company,
+            form=form,
+            section_title=section_title,
+            provider=judge_provider,
+            settings=settings,
+        )
+    except LLMError as error:
+        return item.model_copy(update={"judge_error": f"judge call failed: {error}"})
+    assert item.input_tokens is not None and item.output_tokens is not None  # it answered
+    return item.model_copy(
+        update={
+            "judgment": judgment,
+            "input_tokens": item.input_tokens + judgment.input_tokens,
+            "output_tokens": item.output_tokens + judgment.output_tokens,
+        }
+    )
+
+
+def explain_and_verify(
+    change_id: str,
+    triage_reason: str,
+    context: ExplainContext,
+    *,
+    company: str,
+    form: str,
+    section_title: str,
+    provider: LLMProvider,
+    settings: Settings,
+    system_prompt: str = AGENT_SYSTEM_PROMPT,
+) -> tuple[HighItem, list[str]]:
+    """explain_and_check without the judge: the item, and the sources its answer was checked
+    against (the paragraph(s) alone when the agent failed), for a judge to see the same.
+
+    `system_prompt` replaces the agent's prompt, as in explain_change_with_agent.
+    """
     try:
         explanation = explain_change_with_agent(
             context,
@@ -217,10 +274,11 @@ def explain_and_check(
             section_title=section_title,
             provider=provider,
             settings=settings,
+            system_prompt=system_prompt,
         )
     except AgentError as error:
         # The trace says what the steps so far used, so this run's usage is still known.
-        return HighItem(
+        failed = HighItem(
             id=change_id,
             triage_reason=triage_reason,
             explanation=None,
@@ -230,9 +288,10 @@ def explain_and_check(
             input_tokens=sum(step.input_tokens for step in error.trace),
             output_tokens=sum(step.output_tokens for step in error.trace),
         )
+        return failed, sources_for(context.change)
     except LLMError as error:
         # A model call failed inside the loop: what the earlier steps used is lost with it.
-        return HighItem(
+        failed = HighItem(
             id=change_id,
             triage_reason=triage_reason,
             explanation=None,
@@ -242,6 +301,7 @@ def explain_and_check(
             input_tokens=None,
             output_tokens=None,
         )
+        return failed, sources_for(context.change)
 
     run = explanation.run
     parsed = parse_explanation(run.text, expect_evidence=True)
@@ -257,29 +317,4 @@ def explain_and_check(
         input_tokens=run.input_tokens,
         output_tokens=run.output_tokens,
     )
-    # Judged only when the answer could become an alert or a digest entry: a failed
-    # fact-check already sends it to review, so a judge call would be money for nothing.
-    judge = judge_provider is not None and verification.passed
-    if not judge or not parsed.what_changed or not parsed.why_it_matters:
-        return item
-    assert judge_provider is not None  # `judge` says so; this is for the type checker
-    try:
-        judgment = judge_explanation(
-            parsed,
-            sources,
-            kind=context.change.kind,
-            company=company,
-            form=form,
-            section_title=section_title,
-            provider=judge_provider,
-            settings=settings,
-        )
-    except LLMError as error:
-        return item.model_copy(update={"judge_error": f"judge call failed: {error}"})
-    return item.model_copy(
-        update={
-            "judgment": judgment,
-            "input_tokens": run.input_tokens + judgment.input_tokens,
-            "output_tokens": run.output_tokens + judgment.output_tokens,
-        }
-    )
+    return item, sources
