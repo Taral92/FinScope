@@ -86,8 +86,8 @@
     "what_changed": "Acme added a risk that severe winter weather could delay vehicle deliveries.",
     "why_it_matters": "Severe winter weather could delay a large share of Acme's deliveries across all of its markets.",
     "extra_sources": [],
-    "expected": "overstated",
-    "why": "The filing says 'some' deliveries in 'northern regions'; the explanation widens it to a large share of all markets."
+    "expected": "unsupported",
+    "why": "The filing says 'some' deliveries in 'northern regions'; 'a large share across all markets' is a claim the filing never makes."
   },
   {
     "name": "wrong-attribution",

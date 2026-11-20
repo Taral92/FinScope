@@ -1,0 +1,429 @@
+{
+  "created_at": "2026-11-20T07:59:19.207751Z",
+  "cases_file": "evals/known/judge_cases.json",
+  "company": "Acme Motors",
+  "model": "gpt-6.1-terra",
+  "judge_version": "47e9614aaa94",
+  "runs": 4,
+  "cases": [
+    {
+      "name": "faithful-may-risk",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The explanation accurately describes the added risk and its potential effect on customers who finance purchases.",
+          "error": null,
+          "input_tokens": 534,
+          "output_tokens": 64
+        },
+        {
+          "verdict": "supported",
+          "reason": "The explanation accurately reflects the risk and its connection to customer financing.",
+          "error": null,
+          "input_tokens": 534,
+          "output_tokens": 59
+        },
+        {
+          "verdict": "supported",
+          "reason": "The filing identifies customer financing as the reason rising interest rates could reduce vehicle demand.",
+          "error": null,
+          "input_tokens": 534,
+          "output_tokens": 57
+        },
+        {
+          "verdict": "supported",
+          "reason": "The filing identifies the risk of lower demand and links it to customers financing their purchases.",
+          "error": null,
+          "input_tokens": 534,
+          "output_tokens": 62
+        }
+      ]
+    },
+    {
+      "name": "realized-harm-stated",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The new filing reports an actual 2025 cost increase while retaining the possibility of reduced gross margin.",
+          "error": null,
+          "input_tokens": 576,
+          "output_tokens": 40
+        },
+        {
+          "verdict": "supported",
+          "reason": "The new filing reports a 2025 cost increase while retaining the possibility of reduced gross margin.",
+          "error": null,
+          "input_tokens": 576,
+          "output_tokens": 39
+        },
+        {
+          "verdict": "supported",
+          "reason": "The new filing reports an actual cost increase in 2025 while retaining the possibility of reduced gross margin.",
+          "error": null,
+          "input_tokens": 576,
+          "output_tokens": 41
+        },
+        {
+          "verdict": "supported",
+          "reason": "The new paragraph reports increased costs in 2025 and retains the potential gross margin risk.",
+          "error": null,
+          "input_tokens": 576,
+          "output_tokens": 38
+        }
+      ]
+    },
+    {
+      "name": "claim-from-tool-result",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The explanation accurately describes the risk and a plausible consequence of a production delay.",
+          "error": null,
+          "input_tokens": 571,
+          "output_tokens": 67
+        },
+        {
+          "verdict": "supported",
+          "reason": "The sources support both the production risk and the potential impact on models supplied by the plant.",
+          "error": null,
+          "input_tokens": 571,
+          "output_tokens": 64
+        },
+        {
+          "verdict": "supported",
+          "reason": "The sources support both the production risk and the potential effect on new models supplied by the plant.",
+          "error": null,
+          "input_tokens": 571,
+          "output_tokens": 59
+        },
+        {
+          "verdict": "supported",
+          "reason": "The sources support the stated production risk and the potential impact on new models supplied by the plant.",
+          "error": null,
+          "input_tokens": 571,
+          "output_tokens": 58
+        }
+      ]
+    },
+    {
+      "name": "added-described-as-added",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph expressly discloses the single-supplier dependency, and the change is identified as new.",
+          "error": null,
+          "input_tokens": 538,
+          "output_tokens": 41
+        },
+        {
+          "verdict": "supported",
+          "reason": "Both statements accurately describe the added single-supplier dependency disclosure.",
+          "error": null,
+          "input_tokens": 538,
+          "output_tokens": 32
+        },
+        {
+          "verdict": "supported",
+          "reason": "Both statements follow from the added paragraph and the change designation.",
+          "error": null,
+          "input_tokens": 538,
+          "output_tokens": 32
+        },
+        {
+          "verdict": "supported",
+          "reason": "Both statements follow from the added paragraph and its status as a new disclosure.",
+          "error": null,
+          "input_tokens": 538,
+          "output_tokens": 35
+        }
+      ]
+    },
+    {
+      "name": "may-becomes-will",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The claim that higher rates \"will reduce demand\" overstates the filing’s statement that they could reduce demand.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 44
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The claim that higher rates “will reduce demand” overstates the filing’s statement that they “could reduce demand.”",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 45
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“Higher interest rates will reduce demand” states as certain what the filing says could happen.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 40
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The claim that higher rates \"will reduce demand\" is stronger than the filing's statement that they \"could reduce demand.\"",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 46
+        }
+      ]
+    },
+    {
+      "name": "possibility-as-fact",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” and “Customers claim” present a possible future risk as an existing fact.",
+          "error": null,
+          "input_tokens": 530,
+          "output_tokens": 81
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” presents a possible risk as an existing fact; the filing says Acme “may face lawsuits.”",
+          "error": null,
+          "input_tokens": 530,
+          "output_tokens": 93
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The filing says Acme may face lawsuits, not that it “faces lawsuits” or that customers have already made claims.",
+          "error": null,
+          "input_tokens": 530,
+          "output_tokens": 101
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The claim that Acme “faces lawsuits” presents a possible risk as an existing fact; the filing says it “may face lawsuits.”",
+          "error": null,
+          "input_tokens": 530,
+          "output_tokens": 90
+        }
+      ]
+    },
+    {
+      "name": "may-harm-becomes-has-harmed",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The claim that publicity \"has harmed Acme's brand and reduced its sales\" presents possible harm as an established fact.",
+          "error": null,
+          "input_tokens": 524,
+          "output_tokens": 46
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The claim that negative publicity \"has harmed Acme's brand and reduced its sales\" presents a potential risk as an established fact; the filing says it \"may\" do so.",
+          "error": null,
+          "input_tokens": 524,
+          "output_tokens": 58
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says publicity \"has harmed Acme's brand and reduced its sales,\" while the filing says it may do so.",
+          "error": null,
+          "input_tokens": 524,
+          "output_tokens": 47
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says publicity “has harmed Acme's brand and reduced its sales,” but the filing says it “may” do so.",
+          "error": null,
+          "input_tokens": 524,
+          "output_tokens": 49
+        }
+      ]
+    },
+    {
+      "name": "small-risk-made-big",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that delays could affect “a large share” of deliveries “across all of its markets” is unsupported; the filing refers only to some deliveries in northern regions.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 72
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that delays could affect “a large share” of deliveries “across all of its markets” is unsupported; the filing says “some” deliveries in northern regions.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 73
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that delays could affect “a large share” of deliveries “across all of its markets” is unsupported; the filing says some deliveries in northern regions could be delayed.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 90
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that delays could affect “a large share” of deliveries “across all of its markets” contradicts the source’s reference to some deliveries in northern regions.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 79
+        }
+      ]
+    },
+    {
+      "name": "wrong-attribution",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that the CEO's \"statements\" incited protests is unsupported; the filing attributes them to media coverage of the CEO.",
+          "error": null,
+          "input_tokens": 533,
+          "output_tokens": 63
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that the CEO’s “statements” incited protests is unsupported; the filing attributes them to media coverage of the CEO.",
+          "error": null,
+          "input_tokens": 533,
+          "output_tokens": 61
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that the CEO’s “statements” incited protests is unsupported; the filing attributes them to media coverage of the CEO.",
+          "error": null,
+          "input_tokens": 533,
+          "output_tokens": 62
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that the CEO's \"statements\" incited protests is unsupported; the filing attributes them to media coverage of the CEO.",
+          "error": null,
+          "input_tokens": 533,
+          "output_tokens": 69
+        }
+      ]
+    },
+    {
+      "name": "outside-knowledge",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The source does not say Acme is turning to India because “its sales in China declined.”",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 64
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme is turning to India “after its sales in China declined” is not in the source.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 62
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme is turning to India “after its sales in China declined” is not supported by the source.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 55
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme is turning to India “after its sales in China declined” is not supported by the source.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 57
+        }
+      ]
+    },
+    {
+      "name": "contradicts-filing",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme \"expects the new federal emissions rules to have a material impact\" contradicts the filing.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “expects the new federal emissions rules to have a material impact” contradicts the filing.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “expects the new federal emissions rules to have a material impact” contradicts the filing, which says it does not expect a material impact.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 53
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme expects the rules “to have a material impact on its results” contradicts the filing.",
+          "error": null,
+          "input_tokens": 523,
+          "output_tokens": 43
+        }
+      ]
+    },
+    {
+      "name": "removed-described-as-added",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “added a risk” contradicts the source, which identifies the paragraph as removed.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 64
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “added a risk” contradicts the source: the paragraph was removed.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 59
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that “Acme added a risk” contradicts the source, which identifies the paragraph as removed.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 64
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that “Acme added a risk” contradicts the source: the paragraph was removed.",
+          "error": null,
+          "input_tokens": 529,
+          "output_tokens": 58
+        }
+      ]
+    }
+  ],
+  "passed": 12,
+  "total_runs": 48,
+  "judge_failures": 0,
+  "gate_right": 48,
+  "wrongly_gated": 0,
+  "let_through": 0,
+  "mixed_up": 0,
+  "input_tokens": 25748,
+  "output_tokens": 2762,
+  "cost_usd": "0.039558",
+  "usage_complete": true
+}

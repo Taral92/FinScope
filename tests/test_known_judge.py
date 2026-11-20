@@ -89,7 +89,7 @@ def ran(name: str, expected: JudgeVerdict, *verdicts: JudgeVerdict | None) -> Ju
 # --- the committed case file --------------------------------------------------------------------
 
 
-def test_judge_case_file_has_four_cases_per_verdict() -> None:
+def test_judge_case_file_has_every_verdict() -> None:
     cases = load_judge_cases(JUDGE_CASES_PATH)
 
     by_verdict: dict[str, set[str]] = {
@@ -110,13 +110,13 @@ def test_judge_case_file_has_four_cases_per_verdict() -> None:
             "may-becomes-will",
             "possibility-as-fact",
             "may-harm-becomes-has-harmed",
-            "small-risk-made-big",
         },
         "unsupported": {
             "wrong-attribution",
             "outside-knowledge",
             "contradicts-filing",
             "removed-described-as-added",
+            "small-risk-made-big",  # widening the scope reads as a new claim, not a stronger one
         },
     }
     by_name = {c.name: c for c in cases}

@@ -34,7 +34,10 @@ You get the sources exactly as the explainer saw them: the changed paragraph (ol
 version when both exist) and any tool results it looked at. Then you get the explanation,
 two lines: WHAT CHANGED and WHY IT MATTERS. The "Change" line says what kind of change it
 is: an added paragraph has no previous version, so "the company added ..." is correct for it
-and needs no old text to check against; a removed paragraph has no new version.
+and needs no old text to check against; a removed paragraph has no new version. Anything that
+follows from the Change line itself counts as supported: for an added paragraph, that it is
+new or that the previous filing did not include it; for a removed one, that the filing
+dropped it.
 
 Verdict:
 - supported: every claim in both lines follows from the sources, with the same strength the
