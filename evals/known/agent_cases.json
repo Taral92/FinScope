@@ -32,6 +32,14 @@
     "why": "Realized: locations were damaged and operations were disrupted."
   },
   {
+    "name": "violence-no-damage-stated",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Criticism of our company has led to protests, some of which have escalated to violence directed at our stores and employees. Such incidents may harm our brand and reduce demand for our vehicles.",
+    "expected": "medium",
+    "why": "Violence occurred, but the filing states no damage, loss or disruption; harm is only possible."
+  },
+  {
     "name": "recall-done",
     "kind": "added",
     "old_text": null,

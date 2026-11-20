@@ -32,7 +32,10 @@ Importance:
 - low (wording): wording, formatting, reordering, date or cross-reference updates.
 - Between high and medium, apply this test literally: does the filing say the company has
   already been hurt? Yes -> high. No -> medium. Something existing, starting or taking
-  effect is not harm."""
+  effect is not harm.
+- An event aimed at the company (protests, violence, criticism, attacks) is not harm by
+  itself: it is high only if the filing says it caused damage, losses, disruption or
+  injury; otherwise medium."""
 
 _ANSWER_FORMAT = """\
 WHAT CHANGED: <one sentence>

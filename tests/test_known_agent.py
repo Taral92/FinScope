@@ -109,7 +109,7 @@ def answer(importance: str, quote: str) -> list[AgentStep]:
 # --- the committed case file --------------------------------------------------------------------
 
 
-def test_agent_case_file_loads_with_the_eleven_cases() -> None:
+def test_agent_case_file_loads_with_the_twelve_cases() -> None:
     cases = load_agent_cases(AGENT_CASES_FILE)
 
     by_level: dict[str, set[str]] = {"high": set(), "medium": set(), "low": set()}
@@ -128,6 +128,7 @@ def test_agent_case_file_loads_with_the_eleven_cases() -> None:
             "law-in-effect-may-cost",
             "new-product-may-not-sell",
             "award-may-misdirect",
+            "violence-no-damage-stated",  # pairs with violence-occurred: no damage stated
         },
         "low": {"wording", "reordered-list"},
     }

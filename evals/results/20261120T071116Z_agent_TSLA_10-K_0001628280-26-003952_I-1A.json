@@ -1,0 +1,240 @@
+{
+  "created_at": "2026-11-20T07:11:16.348445Z",
+  "company": "TSLA",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0001628280-26-003952",
+  "old_accession": "0001628280-25-003063",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "303abb25aeb8",
+  "runs": 5,
+  "picked_by": "ids",
+  "changes": [
+    {
+      "id": "~19",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added that third-party commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded the risk to mention autonomous solutions, its brand and sales.\nWHY IT MATTERS: The filing warns that negative perceptions may harm Tesla’s brand and business and make fundraising more difficult. It does not say the protests or violence caused damage, disruption or injury.\nIMPORTANCE: medium - potential: Expanded risk and protests without stated harm.\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that third-party commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded the risk to mention autonomous solutions, its brand and sales.",
+              "why_it_matters": "The filing warns that negative perceptions may harm Tesla’s brand and business and make fundraising more difficult. It does not say the protests or violence caused damage, disruption or injury.",
+              "importance": "medium",
+              "importance_reason": "potential: Expanded risk and protests without stated harm.",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4356,
+            "output_tokens": 217,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "Both lines accurately reflect the filing and preserve its stated uncertainty.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1323,
+              "output_tokens": 32
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 2,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added that criticism has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded its discussion of potential reputational risks.\n\nWHY IT MATTERS: Tesla says negative perceptions may harm its brand, business and sales, and make fundraising harder. The paragraph does not say the protests or violence caused damage, injury or disruption.\n\nIMPORTANCE: medium - potential: protests and violence reported, but harm remains uncertain.\n\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that criticism has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded its discussion of potential reputational risks.",
+              "why_it_matters": "Tesla says negative perceptions may harm its brand, business and sales, and make fundraising harder. The paragraph does not say the protests or violence caused damage, injury or disruption.",
+              "importance": "medium",
+              "importance_reason": "potential: protests and violence reported, but harm remains uncertain.",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4350,
+            "output_tokens": 338,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "unsupported",
+              "reason": "The filing says third-party attention incited protests, not specifically that “criticism has incited protests.”",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1317,
+              "output_tokens": 157
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 3,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added that third-party commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded its discussion of confidence risks.\nWHY IT MATTERS: Tesla says negative perceptions may harm its brand, business and sales, and make fundraising more difficult. The paragraph does not state that the protests or violence caused damage, losses, disruption or injury.\nIMPORTANCE: medium - potential: broader reputational and business risk\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that third-party commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and expanded its discussion of confidence risks.",
+              "why_it_matters": "Tesla says negative perceptions may harm its brand, business and sales, and make fundraising more difficult. The paragraph does not state that the protests or violence caused damage, losses, disruption or injury.",
+              "importance": "medium",
+              "importance_reason": "potential: broader reputational and business risk",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4354,
+            "output_tokens": 213,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "Both lines accurately reflect the revised paragraph and its limitations.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1321,
+              "output_tokens": 31
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 4,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added that commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and broadened its discussion of reputation risks.\nWHY IT MATTERS: Tesla says negative perceptions may harm its brand, business and sales and make fundraising harder. The paragraph does not say the protests or violence caused damage, injury or disruption.\nIMPORTANCE: medium - potential: Violence reported, but harm not stated.\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that commentary has incited protests, some escalating to violence targeting its operations, products and personnel, and broadened its discussion of reputation risks.",
+              "why_it_matters": "Tesla says negative perceptions may harm its brand, business and sales and make fundraising harder. The paragraph does not say the protests or violence caused damage, injury or disruption.",
+              "importance": "medium",
+              "importance_reason": "potential: Violence reported, but harm not stated.",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4348,
+            "output_tokens": 224,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The changes and their potential implications are stated in the filing, which does not attribute damage, injury or disruption to the protests or violence.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1315,
+              "output_tokens": 47
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 5,
+          "importance": "medium",
+          "tier": "digest",
+          "tier_reason": "agent rated medium",
+          "fact_check_passed": true,
+          "item": {
+            "id": "~19",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Tesla added that third-party attention has incited protests, some escalating to violence targeting its operations, products and personnel, and broadened its discussion of reputational risks.\nWHY IT MATTERS: Tesla warns that negative perceptions may harm its brand, business and sales. The paragraph does not state that the protests or violence caused damage, losses, disruption or injury.\nIMPORTANCE: medium - potential: Events occurred, but harm is not stated.\nEVIDENCE: \"has incited protests, some escalating to violence targeting our operations, products and personnel\" \"may harm our brand and our business (including sales)\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Tesla added that third-party attention has incited protests, some escalating to violence targeting its operations, products and personnel, and broadened its discussion of reputational risks.",
+              "why_it_matters": "Tesla warns that negative perceptions may harm its brand, business and sales. The paragraph does not state that the protests or violence caused damage, losses, disruption or injury.",
+              "importance": "medium",
+              "importance_reason": "potential: Events occurred, but harm is not stated.",
+              "evidence": [
+                "has incited protests, some escalating to violence targeting our operations, products and personnel",
+                "may harm our brand and our business (including sales)"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4351,
+            "output_tokens": 221,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The explanation accurately reflects the added protest and reputational-risk language and does not infer unstated consequences.",
+              "model": "gpt-6.1-terra",
+              "input_tokens": 1318,
+              "output_tokens": 40
+            },
+            "judge_error": null
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    }
+  ],
+  "summary": {
+    "changes": 1,
+    "importance_stable": 1,
+    "tier_flips": 0,
+    "total_runs": 5,
+    "fact_check_failures": 0,
+    "agent_failures": 0,
+    "input_tokens": 21759,
+    "output_tokens": 1213,
+    "cost_usd": "0.027824",
+    "usage_complete": true
+  }
+}
