@@ -4,9 +4,11 @@ Plain code, no LLM. Unlike human labels, nobody has to rate anything: each case 
 answer must be ("a going-concern warning is high", "a typo fix is low"). The cases are about a
 made-up company, Acme Motors, so the model can't lean on what it knows about a real one.
 
-Two case files share one format. Triage cases (high or low) are turned into one fake
+Three case files share one format. Triage cases (high or low) are turned into one fake
 SectionDiff, so triage_section runs on them unchanged. Agent cases (high, medium or low) each
 get their own tiny fake section holding just that paragraph, so the agent's tools work on them.
+Judge cases add an explanation to judge and the verdict it should get; several may share a
+paragraph, so the same text can be explained faithfully in one case and overstated in another.
 """
 
 from collections import Counter
@@ -25,11 +27,13 @@ from finscope.diff import (
     similarity,
 )
 from finscope.evals import Importance, Ratings
+from finscope.judge import JudgeVerdict
 from finscope.sections import Section
 
 # Relative to the working directory, like LABELS_DIR. Committed with the code.
 KNOWN_CASES_PATH = Path("evals") / "known" / "triage_cases.json"
 AGENT_CASES_PATH = Path("evals") / "known" / "agent_cases.json"
+JUDGE_CASES_PATH = Path("evals") / "known" / "judge_cases.json"
 
 # What the fake filing claims to be; the company is made up on purpose.
 COMPANY = "Acme Motors"
@@ -39,6 +43,7 @@ ITEM = "1A"
 TITLE = "Risk Factors"
 # The first line of a fake section, as split_sections would find it in a filing.
 _HEADING = f"Item {ITEM}. {TITLE}"
+SECTION_TITLE = f"Part {PART} Item {ITEM}. {TITLE}"  # as _diff_label would write it
 
 
 class KnownCasesError(Exception):
@@ -117,6 +122,19 @@ class AgentCase(BaseCase):
         return self
 
 
+class JudgeCase(BaseCase):
+    """A judge case: the change, an explanation of it, and the judge's only right verdict.
+
+    `extra_sources` stand in for tool results the agent looked at: the judge sees them after
+    the paragraph(s), exactly as it sees real tool outputs.
+    """
+
+    what_changed: str = Field(min_length=1)
+    why_it_matters: str = Field(min_length=1)
+    extra_sources: tuple[str, ...] = ()
+    expected: JudgeVerdict
+
+
 class KnownSections(BaseModel):
     """One case as a filing would hold it: old and new section, and the change with offsets."""
 
@@ -167,6 +185,7 @@ class CaseResult(BaseModel):
 
 _CASES = TypeAdapter(tuple[KnownCase, ...])
 _AGENT_CASES = TypeAdapter(tuple[AgentCase, ...])
+_JUDGE_CASES = TypeAdapter(tuple[JudgeCase, ...])
 
 
 def load_known_cases(path: Path) -> tuple[KnownCase, ...]:
@@ -177,6 +196,11 @@ def load_known_cases(path: Path) -> tuple[KnownCase, ...]:
 def load_agent_cases(path: Path) -> tuple[AgentCase, ...]:
     """The explain-agent cases in the file, or a KnownCasesError saying exactly what's wrong."""
     return _load(path, _AGENT_CASES)
+
+
+def load_judge_cases(path: Path) -> tuple[JudgeCase, ...]:
+    """The judge cases in the file, or a KnownCasesError. Cases may share a change."""
+    return _load(path, _JUDGE_CASES, unique_changes=False)
 
 
 def known_sections(case: BaseCase) -> KnownSections:
@@ -218,7 +242,9 @@ def _fake_section(paragraph: str | None) -> Section:
     return Section(part=PART, item=ITEM, title=TITLE, start=0, end=len(text), text=text)
 
 
-def _load[C: BaseCase](path: Path, adapter: TypeAdapter[tuple[C, ...]]) -> tuple[C, ...]:
+def _load[C: BaseCase](
+    path: Path, adapter: TypeAdapter[tuple[C, ...]], *, unique_changes: bool = True
+) -> tuple[C, ...]:
     try:
         cases = adapter.validate_json(path.read_text(encoding="utf-8"))
     except OSError as error:
@@ -234,7 +260,8 @@ def _load[C: BaseCase](path: Path, adapter: TypeAdapter[tuple[C, ...]]) -> tuple
         problems.append(f"duplicated names: {', '.join(duplicates)}")
     # Two identical changes couldn't be told apart when mapping change IDs back to names.
     texts = Counter((case.kind, case.old_text, case.new_text) for case in cases)
-    if same := [case.name for case in cases if texts[case.kind, case.old_text, case.new_text] > 1]:
+    same = [case.name for case in cases if texts[case.kind, case.old_text, case.new_text] > 1]
+    if unique_changes and same:
         problems.append(f"same change in several cases: {', '.join(same)}")
     if problems:
         raise KnownCasesError(f"{path}: " + "; ".join(problems))

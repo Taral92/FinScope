@@ -1,0 +1,136 @@
+[
+  {
+    "name": "faithful-may-risk",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Rising interest rates could reduce demand for our vehicles, because many of our customers finance their purchases.",
+    "what_changed": "Acme added a risk that rising interest rates could reduce demand for its vehicles.",
+    "why_it_matters": "Many Acme customers finance their purchases, so higher rates could make its vehicles harder to afford and lower demand.",
+    "extra_sources": [],
+    "expected": "supported",
+    "why": "Every claim is in the paragraph, and 'could' keeps the filing's hedge."
+  },
+  {
+    "name": "realized-harm-stated",
+    "kind": "modified",
+    "old_text": "Tariffs on imported battery cells may increase our costs and reduce our gross margin.",
+    "new_text": "Tariffs on imported battery cells increased our costs in 2025 and may reduce our gross margin.",
+    "what_changed": "Acme now says tariffs on imported battery cells increased its costs in 2025, where the previous filing said they may.",
+    "why_it_matters": "The tariff risk has become an actual cost increase, and Acme says it may also reduce its gross margin.",
+    "extra_sources": [],
+    "expected": "supported",
+    "why": "The new version states the cost increase as a fact; the margin effect stays 'may'."
+  },
+  {
+    "name": "claim-from-tool-result",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Our new battery plant in Ohio may not reach full production on schedule.",
+    "what_changed": "Acme added a risk that its new Ohio battery plant may not reach full production on schedule.",
+    "why_it_matters": "The Ohio plant is to supply battery cells for all of Acme's new models from 2027, so a delay could hold those models back.",
+    "extra_sources": [
+      "The Ohio plant will supply battery cells for all of our new models starting in 2027."
+    ],
+    "expected": "supported",
+    "why": "The 2027 supply role is only in the extra source (a tool result), which the judge must count."
+  },
+  {
+    "name": "added-described-as-added",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We rely on a single supplier for the semiconductors used in our infotainment systems.",
+    "what_changed": "Acme added a disclosure that it relies on a single supplier for the semiconductors in its infotainment systems.",
+    "why_it_matters": "The filing now names a dependency on one supplier for these chips, which the previous filing did not mention.",
+    "extra_sources": [],
+    "expected": "supported",
+    "why": "An added paragraph has no old version, so 'the previous filing did not mention' it is correct, not unsupported."
+  },
+  {
+    "name": "may-becomes-will",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Rising interest rates could reduce demand for our vehicles, because many of our customers finance their purchases.",
+    "what_changed": "Acme added a risk about interest rates and vehicle demand.",
+    "why_it_matters": "Higher interest rates will reduce demand for Acme's vehicles, since many of its customers finance their purchases.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says 'could reduce'; the explanation says 'will reduce'. Same paragraph as faithful-may-risk."
+  },
+  {
+    "name": "possibility-as-fact",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We may face lawsuits from customers who claim that our driver-assistance features did not work as described.",
+    "what_changed": "Acme added that it faces lawsuits from customers over its driver-assistance features.",
+    "why_it_matters": "Customers claim the features did not work as described, which exposes Acme to legal costs.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says Acme 'may face' lawsuits; the explanation says it faces them and that customers claim it."
+  },
+  {
+    "name": "may-harm-becomes-has-harmed",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Negative publicity about our chief executive officer may harm our brand and reduce our sales.",
+    "what_changed": "Acme added a risk about negative publicity concerning its chief executive officer.",
+    "why_it_matters": "Negative publicity about its chief executive officer has harmed Acme's brand and reduced its sales.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says the publicity 'may harm' the brand; the explanation says it has."
+  },
+  {
+    "name": "small-risk-made-big",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Severe winter weather could delay some vehicle deliveries in our northern regions.",
+    "what_changed": "Acme added a risk that severe winter weather could delay vehicle deliveries.",
+    "why_it_matters": "Severe winter weather could delay a large share of Acme's deliveries across all of its markets.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says 'some' deliveries in 'northern regions'; the explanation widens it to a large share of all markets."
+  },
+  {
+    "name": "wrong-attribution",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Media coverage of our chief executive officer has incited protests at several of our stores.",
+    "what_changed": "Acme added that statements by its chief executive officer have incited protests at several of its stores.",
+    "why_it_matters": "Protests at its stores show that the chief executive officer's statements can affect Acme's business.",
+    "extra_sources": [],
+    "expected": "unsupported",
+    "why": "The filing says media coverage incited the protests, not the CEO's statements: the real ~19 slip, made obvious."
+  },
+  {
+    "name": "outside-knowledge",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We plan to begin selling vehicles in India in 2027.",
+    "what_changed": "Acme added that it plans to begin selling vehicles in India in 2027.",
+    "why_it_matters": "Acme is turning to India after its sales in China declined, and the new market could add revenue.",
+    "extra_sources": [],
+    "expected": "unsupported",
+    "why": "Nothing in the sources mentions China or declining sales."
+  },
+  {
+    "name": "contradicts-filing",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We do not expect the new federal emissions rules to have a material impact on our results.",
+    "what_changed": "Acme added a statement about the new federal emissions rules.",
+    "why_it_matters": "Acme expects the new federal emissions rules to have a material impact on its results.",
+    "extra_sources": [],
+    "expected": "unsupported",
+    "why": "The filing says the opposite: it does NOT expect a material impact."
+  },
+  {
+    "name": "removed-described-as-added",
+    "kind": "removed",
+    "old_text": "We depend on a single factory in Texas for all of our vehicle production.",
+    "new_text": null,
+    "what_changed": "Acme added a risk that it depends on a single factory in Texas for all of its vehicle production.",
+    "why_it_matters": "A disruption at that one factory could stop all of Acme's vehicle production.",
+    "extra_sources": [],
+    "expected": "unsupported",
+    "why": "The paragraph was removed from the filing, not added: WHAT CHANGED gets the change backwards."
+  }
+]

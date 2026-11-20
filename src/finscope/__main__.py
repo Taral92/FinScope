@@ -16,6 +16,7 @@ python -m finscope eval-triage TSLA --item 1A [--runs 3]   score AI triage again
 python -m finscope eval-known [--runs 3]                score AI triage on made-up known cases
 python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
 python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
+python -m finscope eval-known-judge [--runs 2]          score the judge's verdicts on known cases
 python -m finscope eval-pairwise TSLA --item 1A --candidate FILE [--ids '~4'] [--max 5]
                                                     the agent's prompt vs a candidate, judged
                                                     side by side (--aa instead of --candidate:
@@ -126,12 +127,22 @@ from finscope.known_cases import (
     AGENT_CASES_PATH,
     COMPANY,
     FORM,
+    JUDGE_CASES_PATH,
     KNOWN_CASES_PATH,
     KnownCasesError,
     build_known_diff,
     case_results,
     load_agent_cases,
+    load_judge_cases,
     load_known_cases,
+)
+from finscope.known_judge import (
+    JudgeCaseResult,
+    JudgeRun,
+    KnownJudgeEvalResult,
+    build_judge_result,
+    run_judge_cases,
+    save_known_judge_eval,
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider
@@ -323,6 +334,14 @@ def main(argv: list[str] | None = None) -> int:
         "--runs", type=_positive_int, default=2, help="agent runs per case (default 2)"
     )
 
+    known_judge_parser = commands.add_parser(
+        "eval-known-judge",
+        help="score the judge's verdicts on made-up explanations with obvious answers",
+    )
+    known_judge_parser.add_argument(
+        "--runs", type=_positive_int, default=2, help="judge calls per case (default 2)"
+    )
+
     check_parser = commands.add_parser(
         "check", help="run the report on every watched section that has a new filing"
     )
@@ -381,6 +400,8 @@ def main(argv: list[str] | None = None) -> int:
         return _eval_known(args.runs)
     if args.command == "eval-known-agent":
         return _eval_known_agent(args.runs)
+    if args.command == "eval-known-judge":
+        return _eval_known_judge(args.runs)
     # Takes its tickers from the watchlist, not the command line.
     if args.command == "check":
         return _check(
@@ -2094,6 +2115,91 @@ def _print_known_agent_eval(result: KnownAgentEvalResult) -> None:
         result.cost_usd,
         all_succeeded=result.usage_complete,
     )
+
+
+def _eval_known_judge(runs: int) -> int:
+    settings = get_settings()
+    try:
+        provider = OpenAIProvider(settings)  # the same provider the report's judge uses
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    return _run_known_judge_eval(
+        JUDGE_CASES_PATH, provider=provider, settings=settings, runs=runs, results_dir=RESULTS_DIR
+    )
+
+
+def _run_known_judge_eval(
+    cases_path: Path, *, provider: LLMProvider, settings: Settings, runs: int, results_dir: Path
+) -> int:
+    """Judge every known case `runs` times; print PASS/FAIL per case and save the result."""
+    try:
+        cases = load_judge_cases(cases_path)
+    except KnownCasesError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(f"{len(cases)} known judge case(s) from {cases_path} ({COMPANY}, a made-up company)")
+    print(f"Calling the judge {runs} time(s) per case: {len(cases) * runs} call(s).\n")
+
+    def progress(name: str, number: int, run: JudgeRun) -> None:
+        print(f"[{name}] run {number}/{runs}: {run.verdict or run.error}")
+
+    results = run_judge_cases(
+        cases, provider=provider, settings=settings, runs=runs, on_run=progress
+    )
+    result = build_judge_result(
+        results,
+        cases_file=cases_path,
+        runs=runs,
+        settings=settings,
+        created_at=datetime.now(UTC),
+    )
+    saved = save_known_judge_eval(result, results_dir)
+    _print_known_judge_eval(result)
+    print(f"saved:  {saved}")
+    return 0 if result.judge_failures < result.total_runs else 1
+
+
+def _print_known_judge_eval(result: KnownJudgeEvalResult) -> None:
+    print("\n=== CASES: PASS only if every run gave the expected verdict ===")
+    name_width = max(len(case.name) for case in result.cases)
+    for case in result.cases:
+        print(
+            f"{'PASS' if case.passed else 'FAIL'} {case.matches}/{len(case.runs)}  "
+            f"{case.name:<{name_width}}  expected {case.expected:<11}  got {_verdicts(case)}"
+        )
+        indent = " " * len("PASS 0/0  ")
+        for run in case.runs:
+            if run.verdict != case.expected and run.reason is not None:
+                print(f"{indent}judge: {run.reason}")
+
+    answered = result.total_runs - result.judge_failures
+    print(f"\npassed: {result.passed}/{len(result.cases)} case(s)")
+    print(f"gate:   {result.gate_right}/{answered} run(s) right (supported vs not)")
+    print(
+        f"        wrongly gated: {result.wrongly_gated} run(s)  "
+        "(expected supported, got overstated or unsupported)"
+    )
+    print(
+        f"        let through:   {result.let_through} run(s)  "
+        "(expected overstated or unsupported, got supported)"
+    )
+    print(
+        f"overstated vs unsupported mixed up: {result.mixed_up} run(s)  "
+        "(both gate, so this costs nothing)"
+    )
+    print(f"judge failures: {result.judge_failures}/{result.total_runs} run(s)")
+    print(f"\nmodel {result.model}, judge prompt version {result.judge_version}")
+    _print_usage(
+        result.input_tokens,
+        result.output_tokens,
+        result.cost_usd,
+        all_succeeded=result.usage_complete,
+    )
+
+
+def _verdicts(case: JudgeCaseResult) -> str:
+    return ", ".join(run.verdict or "failed" for run in case.runs)
 
 
 def _agent_words(case: AgentCaseResult) -> str:

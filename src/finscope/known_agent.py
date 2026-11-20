@@ -23,9 +23,7 @@ from finscope.evals import Importance, write_json_atomic
 from finscope.known_cases import (
     COMPANY,
     FORM,
-    ITEM,
-    PART,
-    TITLE,
+    SECTION_TITLE,
     AgentCase,
     CaseResult,
     known_sections,
@@ -34,7 +32,6 @@ from finscope.llm import LLMProvider, cost_for_tokens
 from finscope.report import HighItem, explain_and_check
 from finscope.versions import agent_prompt_version
 
-SECTION_TITLE = f"Part {PART} Item {ITEM}. {TITLE}"  # as _diff_label would write it
 # explain_and_check records why a change was picked; here nothing was triaged.
 PICKED_REASON = "known case (triage not run)"
 
