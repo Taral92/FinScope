@@ -149,11 +149,11 @@
     "kind": "added",
     "old_text": null,
     "new_text": "Some of our suppliers have experienced shortages of semiconductors.",
-    "what_changed": "Acme added that its suppliers have experienced semiconductor shortages.",
+    "what_changed": "Acme added that all of its suppliers have experienced semiconductor shortages.",
     "why_it_matters": "Supplier shortages of semiconductors could limit the parts available to Acme.",
     "extra_sources": [],
     "expected": "overstated",
-    "why": "The filing says 'some of our suppliers'; dropping 'some' makes it all of them."
+    "why": "The filing says 'some of our suppliers'; the explanation says 'all of its suppliers'. (The first version only dropped 'some', which reads as ambiguous: every judge model accepted it.)"
   },
   {
     "name": "expected-becomes-recorded",
@@ -181,11 +181,11 @@
     "name": "wording-only-rewrite",
     "kind": "modified",
     "old_text": "We may be adversely affected by rising interest rates, which could increase our borrowing costs.",
-    "new_text": "We may be adversely affected by higher interest rates, which could increase our borrowing costs.",
-    "what_changed": "Acme changed 'rising' to 'higher' in its interest-rate risk; the meaning is the same.",
+    "new_text": "We may be negatively affected by rising interest rates, which could increase our borrowing costs.",
+    "what_changed": "Acme changed 'adversely' to 'negatively' in its interest-rate risk; the meaning is the same.",
     "why_it_matters": "This is a wording change only: the risk that interest rates could increase Acme's borrowing costs is unchanged.",
     "extra_sources": [],
     "expected": "supported",
-    "why": "A wording-only change described as wording-only, with the hedge ('could') kept."
+    "why": "A true synonym swap described as wording-only, with the hedge ('could') kept. (The first version swapped 'rising' for 'higher', which judges fairly read as trend versus level.)"
   }
 ]
