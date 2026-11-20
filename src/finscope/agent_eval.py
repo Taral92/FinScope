@@ -19,8 +19,8 @@ from finscope.config import Settings
 from finscope.decide import Tier, decide_item
 from finscope.diff import SectionDiff, changes_by_id
 from finscope.evals import Importance, write_json_atomic
-from finscope.llm import LLMProvider, cost_for_tokens
-from finscope.report import HighItem, RatedItem, explain_and_check
+from finscope.llm import LLMProvider, split_cost
+from finscope.report import HighItem, RatedItem, explain_and_check, judge_tokens
 from finscope.sections import Section
 from finscope.triage import triage_section
 from finscope.xbrl import MetricValue
@@ -241,8 +241,15 @@ def summarize(
         agent_failures=sum(1 for item in items if item.error is not None),
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        # Price is per token, so the cost of the total is the sum of each call's cost.
-        cost_usd=cost_for_tokens(input_tokens, output_tokens, settings),
+        # Price is per token, so the cost of the total is the sum of each call's cost; the
+        # judge's share is priced separately, since it may run on another model.
+        cost_usd=split_cost(
+            input_tokens,
+            output_tokens,
+            judge_input_tokens=judge_tokens(items)[0],
+            judge_output_tokens=judge_tokens(items)[1],
+            settings=settings,
+        ),
         usage_complete=all(item.input_tokens is not None for item in items),
     )
 

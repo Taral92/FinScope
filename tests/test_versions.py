@@ -52,3 +52,22 @@ def test_editing_the_judge_schema_changes_its_version(monkeypatch: pytest.Monkey
     monkeypatch.setattr(judge, "SCHEMA", {**judge.SCHEMA, "description": "changed"})
 
     assert judge_prompt_version() != before
+
+
+def test_the_judge_model_is_recorded_only_when_it_differs() -> None:
+    own = SETTINGS.model_copy(update={"judge_model": "judge-x"})
+    same = SETTINGS.model_copy(update={"judge_model": SETTINGS.llm_model})
+
+    assert current_versions(own, judged=True).judge_model == "judge-x"
+    assert current_versions(own, judged=False).judge_model is None  # no judge ran
+    assert current_versions(same, judged=True).judge_model is None
+    assert current_versions(SETTINGS, judged=True).judge_model is None
+
+
+def test_the_label_names_a_separate_judge_model() -> None:
+    own = current_versions(SETTINGS.model_copy(update={"judge_model": "judge-x"}), judged=True)
+    shared = current_versions(SETTINGS, judged=True)
+
+    assert own.label.endswith(f"judge {judge_prompt_version()} on judge-x")
+    assert shared.label.endswith(f"judge {judge_prompt_version()}")
+    assert own != shared  # so eval-alerts keeps reports from the two judges apart

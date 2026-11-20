@@ -21,13 +21,14 @@ class PromptVersions(BaseModel):
     triage: str
     agent: str
     judge: str | None  # None when no judge ran
+    judge_model: str | None = None  # None: the judge ran on `model` (or didn't run)
 
     @property
     def label(self) -> str:
         """e.g. 'model gpt-6.1-terra, triage 3d30ad40231e, agent 983848dcbf2b, judge -'."""
         return (
             f"model {self.model}, triage {self.triage}, agent {self.agent}, "
-            f"judge {self.judge or '-'}"
+            f"judge {self.judge or '-'}" + (f" on {self.judge_model}" if self.judge_model else "")
         )
 
 
@@ -55,4 +56,10 @@ def current_versions(settings: Settings, *, judged: bool) -> PromptVersions:
         triage=triage_prompt_version(),
         agent=agent_prompt_version(),
         judge=judge_prompt_version() if judged else None,
+        # Recorded only when it differs, so reports from before this field compare as equal.
+        judge_model=(
+            settings.judge_model
+            if judged and settings.judge_model not in (None, settings.llm_model)
+            else None
+        ),
     )

@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-6.1-terra"
     llm_input_price_per_mtok: Decimal | None = Decimal("1.00")
     llm_output_price_per_mtok: Decimal | None = Decimal("5.00")
+    # The judge (judge.py, and the pairwise judge) may run on another model, so it isn't
+    # grading answers from its own model. None: it uses llm_model and llm_*_price_per_mtok.
+    # When set, give its prices too; without them, costs that include it are None (unknown).
+    judge_model: str | None = None
+    judge_input_price_per_mtok: Decimal | None = None
+    judge_output_price_per_mtok: Decimal | None = None
     # Transient failures (connection errors, timeouts, 429 rate limits, 5xx) are retried by the
     # OpenAI SDK with exponential backoff (0.5s doubling to 8s, plus jitter; honours Retry-After).
     # This is how many retries, on top of the first attempt; 0 disables them.

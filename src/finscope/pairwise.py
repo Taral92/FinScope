@@ -27,7 +27,7 @@ from finscope.config import Settings
 from finscope.evals import prompt_version, write_json_atomic
 from finscope.explain import AGENT_SYSTEM_PROMPT
 from finscope.judge import KIND_DESCRIPTIONS, ChangeKind
-from finscope.llm import LLMError, LLMProvider, cost_for_tokens, parse_json
+from finscope.llm import LLMError, LLMProvider, parse_json, split_cost
 from finscope.prompting import filing_text_block
 from finscope.report import HighItem, explain_and_verify
 from finscope.verify import ParsedExplanation
@@ -158,6 +158,7 @@ class PairwiseEvalResult(BaseModel):
     candidate_file: str | None  # None in an A/A run
     candidate_prompt: str  # B's full text: the file may change after the run
     judge_version: str  # judge_prompt_version()
+    judge_model: str | None = None  # None: the same as `model`
     picked_by: Literal["triage", "ids"]
     results: tuple[PairResult, ...]
     summary: PairwiseSummary
@@ -377,7 +378,14 @@ def summarize_pairs(
         decided_by_judge=sum(1 for result in results if result.decided_by == "judge"),
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        cost_usd=cost_for_tokens(input_tokens, output_tokens, settings),
+        # The pairwise judge's calls are priced separately, since it may run on another model.
+        cost_usd=split_cost(
+            input_tokens,
+            output_tokens,
+            judge_input_tokens=sum(c.input_tokens for r in results for c in r.calls),
+            judge_output_tokens=sum(c.output_tokens for r in results for c in r.calls),
+            settings=settings,
+        ),
         usage_complete=all(result.usage_known for result in results),
     )
 

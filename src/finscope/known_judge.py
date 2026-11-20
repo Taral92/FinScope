@@ -22,7 +22,7 @@ from finscope.config import Settings
 from finscope.evals import write_json_atomic
 from finscope.judge import JudgeVerdict, judge_explanation
 from finscope.known_cases import COMPANY, FORM, SECTION_TITLE, JudgeCase
-from finscope.llm import LLMError, LLMProvider, cost_for_tokens
+from finscope.llm import LLMError, LLMProvider, judge_cost_for_tokens, judge_model
 from finscope.verify import ParsedExplanation, sources_for
 from finscope.versions import judge_prompt_version
 
@@ -65,7 +65,7 @@ class KnownJudgeEvalResult(BaseModel):
     created_at: datetime  # UTC
     cases_file: str
     company: str
-    model: str  # the model that was requested
+    model: str  # the judge model that was requested (llm.judge_model)
     judge_version: str  # versions.judge_prompt_version()
     runs: int  # per case
     cases: tuple[JudgeCaseResult, ...]  # in file order
@@ -147,7 +147,7 @@ def build_judge_result(
         created_at=created_at,
         cases_file=str(cases_file),
         company=COMPANY,
-        model=settings.llm_model,
+        model=judge_model(settings),
         judge_version=judge_prompt_version(),
         runs=runs,
         cases=tuple(cases),
@@ -161,7 +161,7 @@ def build_judge_result(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         # Price is per token, so the cost of the total is the sum of each call's cost.
-        cost_usd=cost_for_tokens(input_tokens, output_tokens, settings),
+        cost_usd=judge_cost_for_tokens(input_tokens, output_tokens, settings),
         usage_complete=all(run.input_tokens is not None for _, run in pairs),
     )
 

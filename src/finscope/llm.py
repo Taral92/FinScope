@@ -135,6 +135,7 @@ class OpenAIProvider:
         client: OpenAI | None = None,
         max_output_tokens: int = 4_000,  # caps cost; includes reasoning tokens
         reasoning_effort: ReasoningEffort = "low",  # short explanations need little reasoning
+        model: str | None = None,  # None: settings.llm_model
     ) -> None:
         if client is None:
             if settings.openai_api_key is None:
@@ -148,7 +149,7 @@ class OpenAIProvider:
             )
         self._client = client
         self._max_retries = settings.llm_max_retries
-        self._model = settings.llm_model
+        self._model = model or settings.llm_model
         self._max_output_tokens = max_output_tokens
         self._reasoning_effort = reasoning_effort
 
@@ -354,14 +355,71 @@ def cost_usd(result: LLMResult, settings: Settings) -> Decimal | None:
     return cost_for_tokens(result.input_tokens, result.output_tokens, settings)
 
 
+def judge_model(settings: Settings) -> str:
+    """The model the judge runs on: settings.judge_model, or the model everything else uses."""
+    return settings.judge_model or settings.llm_model
+
+
+def judge_provider(settings: Settings) -> OpenAIProvider:
+    """The provider every judge uses: the report's, the pairwise one and the known-case eval."""
+    return OpenAIProvider(settings, model=judge_model(settings))
+
+
+def judge_cost_for_tokens(
+    input_tokens: int, output_tokens: int, settings: Settings
+) -> Decimal | None:
+    """Like cost_for_tokens, at the judge's prices when it runs on its own model."""
+    if settings.judge_model is None:
+        return cost_for_tokens(input_tokens, output_tokens, settings)
+    return _cost(
+        input_tokens,
+        output_tokens,
+        settings.judge_input_price_per_mtok,
+        settings.judge_output_price_per_mtok,
+    )
+
+
+def split_cost(
+    input_tokens: int,
+    output_tokens: int,
+    *,
+    judge_input_tokens: int,
+    judge_output_tokens: int,
+    settings: Settings,
+) -> Decimal | None:
+    """The cost of totals of which judge_*_tokens went to the judge: each part at its own
+    prices. None when a part that was used has no prices."""
+    rest = cost_for_tokens(
+        input_tokens - judge_input_tokens, output_tokens - judge_output_tokens, settings
+    )
+    judged: Decimal | None = Decimal(0)  # no judge tokens: nothing to price
+    if judge_input_tokens or judge_output_tokens:
+        judged = judge_cost_for_tokens(judge_input_tokens, judge_output_tokens, settings)
+    if rest is None or judged is None:
+        return None
+    return rest + judged
+
+
 def cost_for_tokens(input_tokens: int, output_tokens: int, settings: Settings) -> Decimal | None:
     """Exact cost from the configured prices, or None if they aren't configured (never guessed).
 
     Cached input tokens are billed at a lower rate; counting them at the full input price
     makes this an upper bound when the provider's prompt cache hits.
     """
-    input_price = settings.llm_input_price_per_mtok
-    output_price = settings.llm_output_price_per_mtok
+    return _cost(
+        input_tokens,
+        output_tokens,
+        settings.llm_input_price_per_mtok,
+        settings.llm_output_price_per_mtok,
+    )
+
+
+def _cost(
+    input_tokens: int,
+    output_tokens: int,
+    input_price: Decimal | None,
+    output_price: Decimal | None,
+) -> Decimal | None:
     if input_price is None or output_price is None:
         return None
     return (input_tokens * input_price + output_tokens * output_price) / _TOKENS_PER_PRICE_UNIT

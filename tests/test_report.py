@@ -736,3 +736,38 @@ def test_printed_report_shows_the_versions(capsys: pytest.CaptureFixture[str]) -
         f"agent {versions.agent}, judge -\n"
     )
     assert out.count(line) == 1  # the old report prints no versions line
+
+
+def test_a_judge_on_its_own_model_is_priced_at_its_own_prices() -> None:
+    settings = SETTINGS.model_copy(
+        update={
+            "judge_model": "judge-x",
+            "judge_input_price_per_mtok": Decimal("10"),
+            "judge_output_price_per_mtok": Decimal("50"),
+        }
+    )
+    judge = FakeJudge([("supported", "the paragraph says so")])
+
+    result = build_section_report(
+        DIFF,
+        old_section=SECTION,
+        new_section=SECTION,
+        metrics=(),
+        company="TSLA",
+        form="10-K",
+        section_title="Part I Item 1A. RISK FACTORS",
+        triage_provider=FakeTriage(ratings("high", "low", "low", "low")),
+        agent_provider=FakeAgent([answer("we entered a new market")]),
+        settings=settings,
+        judge_provider=judge,
+    )
+
+    # Totals still count every token, the judge's included.
+    assert (result.input_tokens, result.output_tokens) == (1_000 + 300 + 700, 200 + 50 + 40)
+    # Triage + agent at $2 / $8 per 1M; the judge's 700 / 40 at $10 / $50 per 1M.
+    expected = (Decimal(1_300) * 2 + Decimal(250) * 8 + Decimal(700) * 10 + Decimal(40) * 50) / (
+        1_000_000
+    )
+    assert result.cost_usd == expected
+    assert result.prompt_versions is not None
+    assert result.prompt_versions.judge_model == "judge-x"

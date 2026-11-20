@@ -145,7 +145,7 @@ from finscope.known_judge import (
     save_known_judge_eval,
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
-from finscope.llm import LLMError, LLMProvider, OpenAIProvider
+from finscope.llm import LLMError, LLMProvider, OpenAIProvider, judge_model, judge_provider
 from finscope.mcp_server import run_server
 from finscope.notify import (
     NotifyError,
@@ -833,12 +833,11 @@ def _report(
 def _report_providers(settings: Settings) -> tuple[LLMProvider, LLMProvider, LLMProvider]:
     """Triage, agent and judge providers: the ones triage, explain --agent and the judge use.
 
-    Each fails fast (LLMError) without an API key. The judge is the same model as the agent
-    for now; a model judging its own answers is lenient, so a separate setting may follow
-    once the judge is measured against the user's feedback.
+    Each fails fast (LLMError) without an API key. The judge runs on FINSCOPE_JUDGE_MODEL when
+    it is set (llm.judge_provider), so it needn't grade answers from its own model.
     """
     triage_provider = OpenAIProvider(settings, max_output_tokens=TRIAGE_MAX_OUTPUT_TOKENS)
-    return triage_provider, OpenAIProvider(settings), OpenAIProvider(settings)
+    return triage_provider, OpenAIProvider(settings), judge_provider(settings)
 
 
 def _build_report(
@@ -1869,6 +1868,7 @@ def _run_pairwise_eval(
         candidate_prompt=candidate,
         mode=mode,
         judge_version=judge_prompt_version(),
+        judge_model=settings.judge_model if judge_model(settings) != settings.llm_model else None,
         picked_by=selection.picked_by,
         results=results,
         summary=summary,
@@ -1948,7 +1948,8 @@ def _print_pairwise_summary(result: PairwiseEvalResult) -> None:
     cost = "unknown (no prices configured)"
     if summary.cost_usd is not None:
         cost = f"${summary.cost_usd:.4f}"
-    print(f"\nmodel {result.model}, pairwise judge version {result.judge_version}")
+    judge_on = f" on {result.judge_model}" if result.judge_model else ""
+    print(f"\nmodel {result.model}, pairwise judge version {result.judge_version}{judge_on}")
     print(f"tokens: {summary.input_tokens:,} input, {summary.output_tokens:,} output")
     print(f"cost:   {cost}")
     if not summary.usage_complete:
@@ -2120,7 +2121,7 @@ def _print_known_agent_eval(result: KnownAgentEvalResult) -> None:
 def _eval_known_judge(runs: int) -> int:
     settings = get_settings()
     try:
-        provider = OpenAIProvider(settings)  # the same provider the report's judge uses
+        provider = judge_provider(settings)  # the same provider the report's judge uses
     except LLMError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any, cast
 
 import httpx2
@@ -17,7 +18,18 @@ from openai.types.responses.response import IncompleteDetails
 from openai.types.responses.response_usage import InputTokensDetails, OutputTokensDetails
 
 from finscope.config import Settings
-from finscope.llm import LLMError, OpenAIProvider, ToolCall, ToolResult, ToolSpec
+from finscope.llm import (
+    LLMError,
+    OpenAIProvider,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    cost_for_tokens,
+    judge_cost_for_tokens,
+    judge_model,
+    judge_provider,
+    split_cost,
+)
 
 SETTINGS = Settings(_env_file=None, sec_user_agent="FinScope Test test@example.com")
 
@@ -353,3 +365,88 @@ def test_turn_with_neither_text_nor_tool_calls_raises() -> None:
 
     with pytest.raises(LLMError, match="neither an answer nor tool calls"):
         provider.start("system", "user", [METRICS_TOOL])
+
+
+# --- A judge on its own model (FINSCOPE_JUDGE_MODEL) ---------------------------------------------
+
+PRICED = {"llm_input_price_per_mtok": Decimal("1"), "llm_output_price_per_mtok": Decimal("5")}
+
+
+def judge_settings(**fields: Any) -> Settings:
+    return Settings(_env_file=None, sec_user_agent="FinScope Test test@example.com", **fields)
+
+
+def test_unset_judge_model_means_the_judge_uses_the_main_model() -> None:
+    settings = judge_settings(**PRICED)
+
+    assert settings.judge_model is None
+    assert judge_model(settings) == settings.llm_model
+    # Priced like everything else, so costs are exactly what they were before the setting.
+    assert judge_cost_for_tokens(1_000, 100, settings) == cost_for_tokens(1_000, 100, settings)
+
+
+def test_the_judge_model_is_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FINSCOPE_JUDGE_MODEL", "judge-model-x")
+    monkeypatch.setenv("FINSCOPE_JUDGE_INPUT_PRICE_PER_MTOK", "10")
+
+    settings = judge_settings()
+
+    assert judge_model(settings) == "judge-model-x"
+    assert settings.judge_input_price_per_mtok == Decimal("10")
+
+
+def test_a_provider_requests_the_model_it_was_given() -> None:
+    client = FakeClient(make_response([text("ok")]))
+    provider = OpenAIProvider(SETTINGS, client=cast(OpenAI, client), model="judge-model-x")
+
+    provider.complete("system", "user")
+
+    [call] = client.responses.calls
+    assert call["model"] == "judge-model-x"
+
+
+def test_judge_provider_runs_on_the_judge_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = FakeClient(make_response([text("ok")]), make_response([text("ok")]))
+    monkeypatch.setattr("finscope.llm.OpenAI", lambda **kwargs: client)
+
+    judge_provider(judge_settings(OPENAI_API_KEY="sk-test", judge_model="judge-x")).complete(
+        "system", "user"
+    )
+    judge_provider(judge_settings(OPENAI_API_KEY="sk-test")).complete("system", "user")
+
+    assert [call["model"] for call in client.responses.calls] == ["judge-x", SETTINGS.llm_model]
+
+
+def test_judge_tokens_are_priced_at_the_judges_prices() -> None:
+    settings = judge_settings(
+        **PRICED,
+        judge_model="judge-x",
+        judge_input_price_per_mtok=Decimal("10"),
+        judge_output_price_per_mtok=Decimal("50"),
+    )
+
+    # 1M input + 100k output in total, of which 200k input + 10k output went to the judge.
+    cost = split_cost(
+        1_000_000,
+        100_000,
+        judge_input_tokens=200_000,
+        judge_output_tokens=10_000,
+        settings=settings,
+    )
+
+    # Rest: 800k x $1 + 90k x $5 per 1M = 0.80 + 0.45; judge: 200k x $10 + 10k x $50 = 2 + 0.5
+    assert cost == Decimal("0.80") + Decimal("0.45") + Decimal("2") + Decimal("0.5")
+
+
+def test_a_judge_model_without_prices_makes_its_cost_unknown_but_only_when_used() -> None:
+    settings = judge_settings(**PRICED, judge_model="judge-x")
+
+    assert judge_cost_for_tokens(1_000, 100, settings) is None
+    assert (
+        split_cost(1_000, 100, judge_input_tokens=200, judge_output_tokens=10, settings=settings)
+        is None
+    )
+    # No judge call, nothing to price at the missing rate: the rest is still known.
+    assert split_cost(
+        1_000, 100, judge_input_tokens=0, judge_output_tokens=0, settings=settings
+    ) == cost_for_tokens(1_000, 100, settings)

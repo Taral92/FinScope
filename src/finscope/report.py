@@ -8,6 +8,7 @@ explain_change_with_agent and the fact-checker, and returns plain data a later a
 can use.
 """
 
+from collections.abc import Sequence
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -18,7 +19,7 @@ from finscope.config import Settings
 from finscope.diff import SectionDiff, changes_by_id
 from finscope.explain import AGENT_SYSTEM_PROMPT, explain_change_with_agent
 from finscope.judge import Judgment, judge_explanation
-from finscope.llm import LLMError, LLMProvider, cost_for_tokens
+from finscope.llm import LLMError, LLMProvider, split_cost
 from finscope.sections import Section
 from finscope.triage import Importance, triage_section_votes
 from finscope.verify import (
@@ -182,12 +183,28 @@ def build_section_report(
         triage_errors=triage.errors,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        # Price is per token, so the cost of the total is the sum of each call's cost.
-        cost_usd=cost_for_tokens(input_tokens, output_tokens, settings),
+        # Price is per token, so the cost of the total is the sum of each call's cost; the
+        # judge's share is priced separately, since it may run on another model.
+        cost_usd=split_cost(
+            input_tokens,
+            output_tokens,
+            judge_input_tokens=judge_tokens(explained)[0],
+            judge_output_tokens=judge_tokens(explained)[1],
+            settings=settings,
+        ),
         # A failed triage run's usage is lost with it, like a failed agent call's.
         usage_complete=triage.succeeded == triage.runs
         and all(item.input_tokens is not None for item in explained),
         prompt_versions=current_versions(settings, judged=judge_provider is not None),
+    )
+
+
+def judge_tokens(items: Sequence[HighItem]) -> tuple[int, int]:
+    """Input and output tokens the judge used over these items: part of their own totals."""
+    judged = [item.judgment for item in items if item.judgment is not None]
+    return (
+        sum(judgment.input_tokens for judgment in judged),
+        sum(judgment.output_tokens for judgment in judged),
     )
 
 
