@@ -1,0 +1,599 @@
+{
+  "created_at": "2026-11-20T09:39:18.753991Z",
+  "cases_file": "evals/known/judge_cases.json",
+  "company": "Acme Motors",
+  "model": "gpt-6.2-sol",
+  "judge_version": "47e9614aaa94",
+  "runs": 4,
+  "cases": [
+    {
+      "name": "faithful-may-risk",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph links higher rates to potentially lower vehicle demand because many customers finance their purchases, and the explanation preserves that uncertainty.",
+          "error": null,
+          "input_tokens": 547,
+          "output_tokens": 45
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph links the possibility of lower demand to customers’ reliance on financing, and the explanation preserves that uncertainty.",
+          "error": null,
+          "input_tokens": 547,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "supported",
+          "reason": "The explanation accurately describes the added risk and preserves the filing’s uncertainty about how higher rates could affect customers who finance their purchases and reduce demand.",
+          "error": null,
+          "input_tokens": 547,
+          "output_tokens": 48
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph links higher rates to potentially lower vehicle demand because many customers finance their purchases.",
+          "error": null,
+          "input_tokens": 547,
+          "output_tokens": 38
+        }
+      ]
+    },
+    {
+      "name": "realized-harm-stated",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The old filing described a possible cost increase, while the new filing confirms that tariffs increased costs in 2025 and still describes a lower gross margin as a possibility.",
+          "error": null,
+          "input_tokens": 589,
+          "output_tokens": 53
+        },
+        {
+          "verdict": "supported",
+          "reason": "The new filing confirms that tariffs increased costs in 2025 while still describing a reduction in gross margin as possible.",
+          "error": null,
+          "input_tokens": 589,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "supported",
+          "reason": "The revised filing confirms that tariffs increased costs in 2025 while still describing a lower gross margin as a possibility.",
+          "error": null,
+          "input_tokens": 589,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "supported",
+          "reason": "The old filing described a possible cost increase, while the new filing confirms costs rose in 2025 and still describes a lower gross margin as only a possibility.",
+          "error": null,
+          "input_tokens": 589,
+          "output_tokens": 52
+        }
+      ]
+    },
+    {
+      "name": "claim-from-tool-result",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The filing adds the production-schedule risk, and the plant’s role as cell supplier for all new models starting in 2027 supports the possibility of model delays.",
+          "error": null,
+          "input_tokens": 584,
+          "output_tokens": 53
+        },
+        {
+          "verdict": "supported",
+          "reason": "The sources support the added production risk and the plant’s role supplying all new models from 2027, making model delays a plausible consequence.",
+          "error": null,
+          "input_tokens": 584,
+          "output_tokens": 48
+        },
+        {
+          "verdict": "supported",
+          "reason": "The filing adds the Ohio plant’s production timing risk, and its role supplying all new models starting in 2027 supports the possibility that a delay could hold those models back.",
+          "error": null,
+          "input_tokens": 584,
+          "output_tokens": 55
+        },
+        {
+          "verdict": "supported",
+          "reason": "The sources support the added production risk and the plant’s role in supplying all new models from 2027, so a model delay is a plausible consequence, not a certainty.",
+          "error": null,
+          "input_tokens": 584,
+          "output_tokens": 61
+        }
+      ]
+    },
+    {
+      "name": "added-described-as-added",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph explicitly discloses Acme’s reliance on one supplier for its infotainment semiconductors.",
+          "error": null,
+          "input_tokens": 551,
+          "output_tokens": 42
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph explicitly discloses Acme’s reliance on a single supplier for its infotainment semiconductors.",
+          "error": null,
+          "input_tokens": 551,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph explicitly discloses Acme’s reliance on one supplier for its infotainment semiconductors.",
+          "error": null,
+          "input_tokens": 551,
+          "output_tokens": 42
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph explicitly discloses Acme’s reliance on one supplier for its infotainment semiconductors, and the change record confirms the disclosure is new.",
+          "error": null,
+          "input_tokens": 551,
+          "output_tokens": 52
+        }
+      ]
+    },
+    {
+      "name": "may-becomes-will",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says higher interest rates “will reduce demand,” but the filing says they “could reduce demand.”",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 50
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says higher interest rates “will reduce demand,” but the filing says they “could reduce demand.”",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says higher interest rates “will reduce demand,” but the filing says they “could reduce demand.”",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says higher interest rates “will reduce demand,” but the filing says they “could reduce demand.”",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        }
+      ]
+    },
+    {
+      "name": "possibility-as-fact",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” and “Customers claim” present a potential risk as an existing dispute, while the filing says Acme “may face lawsuits.”",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 52
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” and “Customers claim” present lawsuits and allegations as existing, while the filing says only that Acme may face such lawsuits.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 52
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” and “Customers claim” present lawsuits and complaints as facts, while the filing says only that Acme “may face lawsuits” from customers making such claims.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 58
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“It faces lawsuits” and “Customers claim” present lawsuits and customer allegations as facts, while the filing says Acme “may face” such lawsuits.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 53
+        }
+      ]
+    },
+    {
+      "name": "may-harm-becomes-has-harmed",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The claim that negative publicity “has harmed Acme's brand and reduced its sales” presents as fact what the filing describes only as a possibility.",
+          "error": null,
+          "input_tokens": 537,
+          "output_tokens": 51
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says negative publicity “has harmed Acme's brand and reduced its sales,” but the filing says only that it may do so.",
+          "error": null,
+          "input_tokens": 537,
+          "output_tokens": 50
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The claim that negative publicity “has harmed Acme's brand and reduced its sales” presents a possible outcome as something that already happened.",
+          "error": null,
+          "input_tokens": 537,
+          "output_tokens": 49
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says negative publicity “has harmed Acme's brand and reduced its sales,” but the filing says it may do so.",
+          "error": null,
+          "input_tokens": 537,
+          "output_tokens": 48
+        }
+      ]
+    },
+    {
+      "name": "small-risk-made-big",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The filing says delays could affect some deliveries in northern regions, not “a large share of Acme's deliveries across all of its markets.”",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 50
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing says only that delays could affect some deliveries in northern regions, not “a large share” of deliveries “across all of its markets.”",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 50
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The explanation expands the risk to “a large share of Acme's deliveries across all of its markets,” while the filing says only “some vehicle deliveries in our northern regions.”",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 57
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing says delays could affect some deliveries in northern regions, not “a large share of Acme's deliveries across all of its markets.”",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 48
+        }
+      ]
+    },
+    {
+      "name": "wrong-attribution",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media coverage of the CEO, not to “statements by its chief executive officer.”",
+          "error": null,
+          "input_tokens": 546,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media coverage of the CEO, not to “statements by its chief executive officer.”",
+          "error": null,
+          "input_tokens": 546,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media coverage of the CEO, not to “statements by its chief executive officer.”",
+          "error": null,
+          "input_tokens": 546,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media coverage of the CEO, not to “statements by its chief executive officer.”",
+          "error": null,
+          "input_tokens": 546,
+          "output_tokens": 43
+        }
+      ]
+    },
+    {
+      "name": "outside-knowledge",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The filing states the India sales plan but does not support the claim that “Acme is turning to India after its sales in China declined.”",
+          "error": null,
+          "input_tokens": 540,
+          "output_tokens": 48
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing supports the India sales plan but does not support the claim that Acme is “turning to India after its sales in China declined.”",
+          "error": null,
+          "input_tokens": 540,
+          "output_tokens": 49
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing supports the India sales plan but does not substantiate the claim that “Acme is turning to India after its sales in China declined.”",
+          "error": null,
+          "input_tokens": 540,
+          "output_tokens": 49
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing supports the India sales plan but not the claim that “Acme is turning to India after its sales in China declined.”",
+          "error": null,
+          "input_tokens": 540,
+          "output_tokens": 46
+        }
+      ]
+    },
+    {
+      "name": "contradicts-filing",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that “Acme expects the new federal emissions rules to have a material impact on its results” contradicts the filing, which says Acme does not expect a material impact.",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 57
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “expects the new federal emissions rules to have a material impact on its results” contradicts the filing, which says Acme does not expect a material impact.",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 63
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “expects the new federal emissions rules to have a material impact on its results” contradicts the filing, which says Acme does not expect a material impact.",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 63
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “expects the new federal emissions rules to have a material impact on its results” contradicts the filing, which says Acme does not expect a material impact.",
+          "error": null,
+          "input_tokens": 536,
+          "output_tokens": 63
+        }
+      ]
+    },
+    {
+      "name": "removed-described-as-added",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that “Acme added a risk” contradicts the change record, which says the paragraph was removed.",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "“Acme added a risk” contradicts the change record: the filing removed the paragraph disclosing that risk.",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “added a risk” contradicts the change record, which says the paragraph was removed.",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The claim that Acme “added a risk” contradicts the change record, which says the paragraph was removed.",
+          "error": null,
+          "input_tokens": 542,
+          "output_tokens": 43
+        }
+      ]
+    },
+    {
+      "name": "subtle-attribution",
+      "expected": "unsupported",
+      "runs": [
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media attention on the CEO, not specifically to “Criticism of Acme,” and does not say the protests “could hurt its brand.”",
+          "error": null,
+          "input_tokens": 563,
+          "output_tokens": 54
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media attention on the CEO, not to “Criticism of Acme,” and does not say the protests “could hurt its brand.”",
+          "error": null,
+          "input_tokens": 563,
+          "output_tokens": 53
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media attention on the CEO, not to “Criticism of Acme,” and does not say they “could hurt its brand.”",
+          "error": null,
+          "input_tokens": 563,
+          "output_tokens": 52
+        },
+        {
+          "verdict": "unsupported",
+          "reason": "The filing attributes the protests to media attention on the CEO, not to “Criticism of Acme,” and does not say the protests “could hurt its brand.”",
+          "error": null,
+          "input_tokens": 563,
+          "output_tokens": 53
+        }
+      ]
+    },
+    {
+      "name": "quantifier-dropped",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The filing adds a disclosure of supplier semiconductor shortages, and the explanation presents reduced parts availability as a possible consequence, not an observed effect.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 47
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph reports semiconductor shortages at some suppliers, and the explanation frames reduced parts availability as a possible consequence, not an observed impact.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 47
+        },
+        {
+          "verdict": "supported",
+          "reason": "The filing reports semiconductor shortages at some suppliers, and the explanation describes reduced parts availability as a possibility, not an observed effect.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 45
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph reports shortages at some suppliers, and the explanation correctly frames reduced parts availability as a possible consequence.",
+          "error": null,
+          "input_tokens": 527,
+          "output_tokens": 42
+        }
+      ]
+    },
+    {
+      "name": "expected-becomes-recorded",
+      "expected": "overstated",
+      "runs": [
+        {
+          "verdict": "overstated",
+          "reason": "The explanation says Acme “recorded” charges that “reduce Acme's results,” but the filing only says Acme expects to record the charges.",
+          "error": null,
+          "input_tokens": 544,
+          "output_tokens": 53
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The phrases “it recorded restructuring charges” and “brought restructuring charges that reduce Acme's results” treat the charges and their impact as realized, but the filing only says Acme expects to record the charges.",
+          "error": null,
+          "input_tokens": 544,
+          "output_tokens": 65
+        },
+        {
+          "verdict": "overstated",
+          "reason": "The phrases “it recorded” and “brought restructuring charges that reduce Acme's results” treat the charges and their impact as realized, while the filing only says Acme expects to record charges as it closes the offices.",
+          "error": null,
+          "input_tokens": 544,
+          "output_tokens": 67
+        },
+        {
+          "verdict": "overstated",
+          "reason": "“It recorded restructuring charges” and “brought restructuring charges that reduce Acme's results” describe realized events and effects, but the filing only says Acme expects to record the charges.",
+          "error": null,
+          "input_tokens": 544,
+          "output_tokens": 60
+        }
+      ]
+    },
+    {
+      "name": "faithful-inference",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph says Acme still lacks the regulatory approval it needs to operate its ride-hailing service in California.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 43
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph states that Acme has not yet obtained the regulatory approval it needs to operate its ride-hailing service in California.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 46
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph states that Acme has not yet obtained the regulatory approval it needs to operate its ride-hailing service in California.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 46
+        },
+        {
+          "verdict": "supported",
+          "reason": "The added paragraph says Acme has yet to obtain the approval it needs to operate its ride-hailing service in California.",
+          "error": null,
+          "input_tokens": 543,
+          "output_tokens": 44
+        }
+      ]
+    },
+    {
+      "name": "wording-only-rewrite",
+      "expected": "supported",
+      "runs": [
+        {
+          "verdict": "supported",
+          "reason": "The only edit replaces “rising” with “higher,” while both versions say interest rates could increase Acme’s borrowing costs.",
+          "error": null,
+          "input_tokens": 585,
+          "output_tokens": 46
+        },
+        {
+          "verdict": "supported",
+          "reason": "The only edit replaces ‘rising’ with ‘higher,’ and both versions say that interest rates could increase Acme’s borrowing costs.",
+          "error": null,
+          "input_tokens": 585,
+          "output_tokens": 47
+        },
+        {
+          "verdict": "supported",
+          "reason": "Replacing 'rising' with 'higher' leaves the disclosed risk unchanged: higher interest rates could increase Acme’s borrowing costs.",
+          "error": null,
+          "input_tokens": 585,
+          "output_tokens": 52
+        },
+        {
+          "verdict": "supported",
+          "reason": "The only edit replaces “rising” with “higher,” and both versions say interest rates could increase Acme’s borrowing costs.",
+          "error": null,
+          "input_tokens": 585,
+          "output_tokens": 46
+        }
+      ]
+    }
+  ],
+  "passed": 15,
+  "total_runs": 68,
+  "judge_failures": 0,
+  "gate_right": 64,
+  "wrongly_gated": 0,
+  "let_through": 4,
+  "mixed_up": 2,
+  "input_tokens": 37420,
+  "output_tokens": 3348,
+  "cost_usd": "0.10832",
+  "usage_complete": true
+}

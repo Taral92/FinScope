@@ -132,5 +132,60 @@
     "extra_sources": [],
     "expected": "unsupported",
     "why": "The paragraph was removed from the filing, not added: WHAT CHANGED gets the change backwards."
+  },
+  {
+    "name": "subtle-attribution",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Our chief executive officer receives significant media attention. Such attention can include criticism, which may be exaggerated or unfounded, and has incited protests at several of our stores.",
+    "what_changed": "Acme added a risk about media attention on its chief executive officer and protests at its stores.",
+    "why_it_matters": "Criticism of Acme has incited protests at several of its stores, which could hurt its brand.",
+    "extra_sources": [],
+    "expected": "unsupported",
+    "why": "The filing says 'such attention' incited the protests; criticism is only something that attention 'can include'. The real ~19 slip, kept as subtle as it was."
+  },
+  {
+    "name": "quantifier-dropped",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "Some of our suppliers have experienced shortages of semiconductors.",
+    "what_changed": "Acme added that its suppliers have experienced semiconductor shortages.",
+    "why_it_matters": "Supplier shortages of semiconductors could limit the parts available to Acme.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says 'some of our suppliers'; dropping 'some' makes it all of them."
+  },
+  {
+    "name": "expected-becomes-recorded",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We expect to record restructuring charges in the fourth quarter as we close two of our regional offices.",
+    "what_changed": "Acme added that it recorded restructuring charges in the fourth quarter as it closed two regional offices.",
+    "why_it_matters": "Closing two regional offices brought restructuring charges that reduce Acme's results for the quarter.",
+    "extra_sources": [],
+    "expected": "overstated",
+    "why": "The filing says Acme 'expects to record' the charges; the explanation says they were recorded: a plan presented as a fact."
+  },
+  {
+    "name": "faithful-inference",
+    "kind": "added",
+    "old_text": null,
+    "new_text": "We have not yet obtained regulatory approval to operate our ride-hailing service in California.",
+    "what_changed": "Acme added that it has not yet obtained regulatory approval for its ride-hailing service in California.",
+    "why_it_matters": "Without that approval, Acme cannot yet operate its ride-hailing service in California.",
+    "extra_sources": [],
+    "expected": "supported",
+    "why": "'Cannot yet operate' follows directly from lacking approval to operate; a good explanation may say so in its own words."
+  },
+  {
+    "name": "wording-only-rewrite",
+    "kind": "modified",
+    "old_text": "We may be adversely affected by rising interest rates, which could increase our borrowing costs.",
+    "new_text": "We may be adversely affected by higher interest rates, which could increase our borrowing costs.",
+    "what_changed": "Acme changed 'rising' to 'higher' in its interest-rate risk; the meaning is the same.",
+    "why_it_matters": "This is a wording change only: the risk that interest rates could increase Acme's borrowing costs is unchanged.",
+    "extra_sources": [],
+    "expected": "supported",
+    "why": "A wording-only change described as wording-only, with the hedge ('could') kept."
   }
 ]

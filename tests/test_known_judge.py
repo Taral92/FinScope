@@ -105,11 +105,15 @@ def test_judge_case_file_has_every_verdict() -> None:
             "realized-harm-stated",
             "claim-from-tool-result",
             "added-described-as-added",
+            "faithful-inference",  # harder: an inference in its own words
+            "wording-only-rewrite",
         },
         "overstated": {
             "may-becomes-will",
             "possibility-as-fact",
             "may-harm-becomes-has-harmed",
+            "quantifier-dropped",  # harder: "some" dropped
+            "expected-becomes-recorded",
         },
         "unsupported": {
             "wrong-attribution",
@@ -117,6 +121,7 @@ def test_judge_case_file_has_every_verdict() -> None:
             "contradicts-filing",
             "removed-described-as-added",
             "small-risk-made-big",  # widening the scope reads as a new claim, not a stronger one
+            "subtle-attribution",  # harder: the real ~19 slip
         },
     }
     by_name = {c.name: c for c in cases}
@@ -238,16 +243,16 @@ def test_cli_runs_every_committed_case_prints_and_saves(
     assert exit_code == 0
     [path] = tmp_path.iterdir()
     saved = json.loads(path.read_text(encoding="utf-8"))
-    assert (saved["passed"], saved["wrongly_gated"], saved["total_runs"]) == (11, 1, 24)
+    assert (saved["passed"], saved["wrongly_gated"], saved["total_runs"]) == (16, 1, 34)
     assert saved["model"] == "fake-model"
 
     out = capsys.readouterr().out
-    assert "12 known judge case(s)" in out and "24 call(s)" in out
+    assert "17 known judge case(s)" in out and "34 call(s)" in out
     first = cases[0].name
     assert f"FAIL 1/2  {first}" in out
     assert "judge: JUDGE says overstated" in out  # the reason of the run that missed
-    assert "passed: 11/12 case(s)" in out
-    assert "gate:   23/24 run(s) right (supported vs not)" in out
+    assert "passed: 16/17 case(s)" in out
+    assert "gate:   33/34 run(s) right (supported vs not)" in out
     assert "wrongly gated: 1 run(s)" in out
     assert "let through:   0 run(s)" in out
 
