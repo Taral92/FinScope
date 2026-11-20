@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from finscope.__main__ import _run_pairwise_eval
+from finscope.__main__ import _run_pairwise_eval, main
 from finscope.agent_tools import ExplainContext
 from finscope.config import Settings
 from finscope.diff import ParagraphChange, SectionDiff
@@ -22,6 +22,7 @@ from finscope.llm import (
 from finscope.pairwise import (
     PairResult,
     PairwiseError,
+    PairwiseEvalResult,
     combine,
     compare_pair,
     judge_prompt_version,
@@ -418,6 +419,8 @@ def run_cli(
     *,
     ids: list[str] | None = None,
     max_changes: int = 5,
+    candidate_file: str | None = "evals/prompts/agent_b.txt",
+    candidate: str = PROMPT_B,
 ) -> int:
     return _run_pairwise_eval(
         DIFF,
@@ -432,8 +435,8 @@ def run_cli(
         agent_provider=agent,
         judge_provider=judge,
         settings=SETTINGS,
-        candidate_file="evals/prompts/agent_b.txt",
-        candidate=PROMPT_B,
+        candidate_file=candidate_file,
+        candidate=candidate,
         ids=ids,
         max_changes=max_changes,
         results_dir=tmp_path / "results",
@@ -474,7 +477,8 @@ def test_cli_compares_triage_picks_up_to_max_prints_and_saves(
     assert "   IMPORTANCE: medium - potential: new market\n" in out
     assert "judge, A first: picked B - picked 2\njudge, B first: picked B - picked 1" in out
     assert "A wins: 0   B wins: 1   ties: 0   inconsistent: 0   failed: 0" in out
-    assert "judge asked on 1/1 change(s)" in out
+    assert "judge asked on 1/1 change(s)\n" in out  # no "the others": there are none
+    assert "noise floor" not in out  # only A/A runs have one
     assert "(1 change: too few for the count to mean much)" in out
 
 
@@ -500,7 +504,7 @@ def test_cli_with_ids_skips_triage_and_the_cap(
     assert "=== [+2] A wins (only one answer usable) ===" in out
     assert "B: not usable: failed the fact-check (quote)" in out
     assert "=== [+1] INCONSISTENT: each order picked differently (judge, both orders) ===" in out
-    assert "judge asked on 1/2 change(s)" in out
+    assert "judge asked on 1/2 change(s); the others were settled by the fact-check" in out
 
 
 def test_cli_rejects_unknown_ids_without_calling_or_saving(
@@ -527,3 +531,68 @@ def test_cli_fails_when_every_judge_call_failed(
     assert "judge: judge call failed: down" in out
     assert "(a failed model call isn't included" in out
     assert len(list((tmp_path / "results").iterdir())) == 1  # still saved, for the record
+
+
+def test_cli_aa_run_uses_the_agent_prompt_on_both_sides_and_reports_the_noise_floor(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    agent = FakeAgent(
+        [
+            steps(answer("Same prompt, first run.")),
+            steps(answer("Same prompt, second run.")),
+            steps(answer("Again.", quote="New tariffs")),
+            steps(answer("Again.", quote="New tariffs")),
+        ]
+    )
+    judge = FakeJudge(["2", "1", "tie", "tie"])  # +1: B in both orders; +2: tie
+
+    exit_code = run_cli(
+        tmp_path,
+        FakeTriage(),
+        agent,
+        judge,
+        ids=["+1", "+2"],
+        candidate_file=None,
+        candidate=AGENT_SYSTEM_PROMPT,
+    )
+
+    assert exit_code == 0
+    assert agent.systems == [AGENT_SYSTEM_PROMPT] * 4
+    [path] = (tmp_path / "results").iterdir()
+    assert path.name.endswith("Z_pairwise-aa_TSLA_10-K_0001628280-26-003952_I-1A.json")
+    result = PairwiseEvalResult.model_validate_json(path.read_text(encoding="utf-8"))
+    assert (result.mode, result.candidate_file) == ("aa", None)
+    assert result.prompt_a == result.prompt_b == agent_prompt_version()
+    assert result.summary.non_ties == 1
+
+    out = capsys.readouterr().out
+    assert f"A/A run: both sides use the agent's prompt ({agent_prompt_version()})" in out
+    assert f"=== PAIRWISE A/A: both sides {agent_prompt_version()} ===" in out
+    assert "noise floor: 1/2 change(s) not a tie (A wins + B wins + inconsistent)" in out
+
+
+def test_a_result_saved_before_aa_runs_loads_as_ab(tmp_path: Path) -> None:
+    agent = FakeAgent([steps(answer("A says so.")), steps(answer("B says so."))])
+    run_cli(tmp_path, FakeTriage(), agent, FakeJudge(["tie", "tie"]), ids=["+1"])
+    [path] = (tmp_path / "results").iterdir()
+    old_format = json.loads(path.read_text(encoding="utf-8"))
+    del old_format["mode"]
+
+    loaded = PairwiseEvalResult.model_validate(old_format)
+
+    assert loaded.mode == "ab"
+    assert "_pairwise_" in loaded.file_name
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [["--aa", "--candidate", "evals/prompts/agent_b.txt"], []],  # both, or neither
+)
+def test_cli_needs_exactly_one_of_aa_and_candidate(
+    extra: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        main(["eval-pairwise", "TSLA", "--form", "10-K", "--item", "1A", *extra])
+
+    assert stopped.value.code == 2  # argparse's usage error, before any network or AI call
+    assert "--candidate" in capsys.readouterr().err

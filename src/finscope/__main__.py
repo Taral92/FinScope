@@ -18,7 +18,8 @@ python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent 
 python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
 python -m finscope eval-pairwise TSLA --item 1A --candidate FILE [--ids '~4'] [--max 5]
                                                     the agent's prompt vs a candidate, judged
-                                                    side by side
+                                                    side by side (--aa instead of --candidate:
+                                                    the prompt vs itself, the noise floor)
 python -m finscope check [--dry-run] [--include-unseen] [--triage-runs 1] [--no-notify]
                                                     report on newly filed watched sections
 python -m finscope feedback [--report NAME] [--redo]   rate a report's alerts (feeds evals)
@@ -140,6 +141,9 @@ from finscope.notify import (
     TelegramNotifier,
     format_alert_message,
     telegram_configured,
+)
+from finscope.pairwise import (
+    Mode as PairwiseMode,
 )
 from finscope.pairwise import (
     PairResult,
@@ -283,8 +287,14 @@ def main(argv: list[str] | None = None) -> int:
     pairwise_parser.add_argument("--form", default="10-Q", choices=["10-Q", "10-K"])
     pairwise_parser.add_argument("--item", required=True, help="the Item, e.g. 1A")
     pairwise_parser.add_argument("--part", help="which Part, if the Item exists in several")
-    pairwise_parser.add_argument(
-        "--candidate", required=True, type=Path, help="text file with prompt B, a full agent prompt"
+    prompt_b = pairwise_parser.add_mutually_exclusive_group(required=True)
+    prompt_b.add_argument(
+        "--candidate", type=Path, help="text file with prompt B, a full agent prompt"
+    )
+    prompt_b.add_argument(
+        "--aa",
+        action="store_true",
+        help="A/A run: the agent's prompt on both sides; every win is noise (the noise floor)",
     )
     pairwise_parser.add_argument(
         "--ids",
@@ -1682,13 +1692,16 @@ def _eval_pairwise(
     item: str,
     part: str | None,
     *,
-    candidate_file: Path,
+    candidate_file: Path | None,
     ids: list[str] | None,
     max_changes: int,
 ) -> int:
+    """`candidate_file` None is an A/A run: the agent's own prompt on both sides."""
     settings = get_settings()
     try:
-        candidate = load_candidate(candidate_file)
+        candidate = (
+            AGENT_SYSTEM_PROMPT if candidate_file is None else load_candidate(candidate_file)
+        )
         triage_provider, agent_provider, judge_provider = _report_providers(settings)
     except (PairwiseError, LLMError) as error:
         print(f"error: {error}", file=sys.stderr)
@@ -1712,7 +1725,7 @@ def _eval_pairwise(
         agent_provider=agent_provider,
         judge_provider=judge_provider,
         settings=settings,
-        candidate_file=str(candidate_file),
+        candidate_file=None if candidate_file is None else str(candidate_file),
         candidate=candidate,
         ids=ids,
         max_changes=max_changes,
@@ -1734,13 +1747,17 @@ def _run_pairwise_eval(
     agent_provider: LLMProvider,
     judge_provider: LLMProvider,
     settings: Settings,
-    candidate_file: str,
+    candidate_file: str | None,
     candidate: str,
     ids: list[str] | None,
     max_changes: int,
     results_dir: Path,
 ) -> int:
-    """Pick the changes, compare prompt A and the candidate on each, print and save."""
+    """Pick the changes, compare prompt A and the candidate on each, print and save.
+
+    `candidate_file` None marks an A/A run; `candidate` is then the agent's own prompt.
+    """
+    mode: PairwiseMode = "ab" if candidate_file is not None else "aa"
     section_title = _diff_label(diff)
     try:
         selection = select_changes(
@@ -1770,7 +1787,10 @@ def _run_pairwise_eval(
     ids_text = ", ".join(change.id for change in picked)
     print(f"{section_title}: {_count(len(picked), 'change')} ({source}): {ids_text}")
     prompt_a, prompt_b = agent_prompt_version(), agent_prompt_version(candidate)
-    print(f"A = the agent's prompt ({prompt_a}), B = {candidate_file} ({prompt_b})")
+    if mode == "aa":
+        print(f"A/A run: both sides use the agent's prompt ({prompt_a}); every win below is noise")
+    else:
+        print(f"A = the agent's prompt ({prompt_a}), B = {candidate_file} ({prompt_b})")
     print(
         "Per change: 2 agent runs, then 2 judge calls (one in each order) if both "
         "answers pass the fact-check.\n"
@@ -1820,6 +1840,7 @@ def _run_pairwise_eval(
         prompt_b=prompt_b,
         candidate_file=candidate_file,
         candidate_prompt=candidate,
+        mode=mode,
         judge_version=judge_prompt_version(),
         picked_by=selection.picked_by,
         results=results,
@@ -1876,15 +1897,24 @@ def _unusable_reason(item: HighItem) -> str:
 
 def _print_pairwise_summary(result: PairwiseEvalResult) -> None:
     summary = result.summary
-    print(f"=== PAIRWISE: A = {result.prompt_a}, B = {result.prompt_b} ===")
+    settled = summary.changes - summary.decided_by_judge  # without the judge
+    if result.mode == "aa":
+        print(f"=== PAIRWISE A/A: both sides {result.prompt_a} ===")
+    else:
+        print(f"=== PAIRWISE: A = {result.prompt_a}, B = {result.prompt_b} ===")
     print(
         f"A wins: {summary.a_wins}   B wins: {summary.b_wins}   ties: {summary.ties}   "
         f"inconsistent: {summary.inconsistent}   failed: {summary.failed}"
     )
     print(
-        f"judge asked on {summary.decided_by_judge}/{summary.changes} change(s); "
-        "the others were settled by the fact-check"
+        f"judge asked on {summary.decided_by_judge}/{summary.changes} change(s)"
+        + ("; the others were settled by the fact-check" if settled else "")
     )
+    if result.mode == "aa":
+        print(
+            f"noise floor: {summary.non_ties}/{summary.changes} change(s) not a tie "
+            "(A wins + B wins + inconsistent)"
+        )
     if summary.changes < 10:
         print(f"({_count(summary.changes, 'change')}: too few for the count to mean much)")
 

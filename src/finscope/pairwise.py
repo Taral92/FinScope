@@ -8,6 +8,10 @@ Only when both are usable does the pairwise judge decide. LLM judges tend to fav
 answer they read first, so it is asked twice, once in each order. Both calls naming the same
 answer (or both a tie) decide; calls that disagree make the change "inconsistent", which is
 counted on its own: it is a measure of the judge, not of the prompts.
+
+Each side is one agent run, so a win can also come from the agent answering differently from
+run to run. An A/A run (prompt A on both sides) measures that: every non-tie in it is noise,
+the bar a real candidate has to clear.
 """
 
 from collections.abc import Callable, Sequence
@@ -31,6 +35,7 @@ from finscope.verify import ParsedExplanation
 Side = Literal["a", "b"]
 Pick = Literal["a", "b", "tie"]
 Outcome = Literal["a", "b", "tie", "inconsistent", "failed"]
+Mode = Literal["ab", "aa"]  # a candidate against prompt A, or prompt A against itself
 DecidedBy = Literal["one_usable", "neither_usable", "judge"]
 
 SYSTEM_PROMPT = """\
@@ -129,6 +134,11 @@ class PairwiseSummary(BaseModel):
     cost_usd: Decimal | None  # None when no prices are configured
     usage_complete: bool  # False when a failed call's usage is unknown (totals undercount)
 
+    @property
+    def non_ties(self) -> int:
+        """Changes where the sides came out different; in an A/A run, all of them are noise."""
+        return self.a_wins + self.b_wins + self.inconsistent
+
 
 class PairwiseEvalResult(BaseModel):
     """One eval-pairwise run, saved to evals/results/."""
@@ -144,19 +154,21 @@ class PairwiseEvalResult(BaseModel):
     old_accession: str
     model: str
     prompt_a: str  # agent_prompt_version() of the agent's own prompt
-    prompt_b: str  # agent_prompt_version(candidate)
-    candidate_file: str
+    prompt_b: str  # agent_prompt_version(candidate); the same as prompt_a in an A/A run
+    candidate_file: str | None  # None in an A/A run
     candidate_prompt: str  # B's full text: the file may change after the run
     judge_version: str  # judge_prompt_version()
     picked_by: Literal["triage", "ids"]
     results: tuple[PairResult, ...]
     summary: PairwiseSummary
+    mode: Mode = "ab"  # results saved before A/A runs existed were all A/B
 
     @property
     def file_name(self) -> str:
         section = f"{self.part}-{self.item}" if self.part else self.item
+        kind = "pairwise-aa" if self.mode == "aa" else "pairwise"
         return (
-            f"{self.created_at:%Y%m%dT%H%M%SZ}_pairwise_{self.company}_{self.form}_"
+            f"{self.created_at:%Y%m%dT%H%M%SZ}_{kind}_{self.company}_{self.form}_"
             f"{self.new_accession}_{section}.json"
         )
 
