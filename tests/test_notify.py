@@ -284,3 +284,12 @@ def test_chats_lists_each_chat_that_messaged_the_bot_once() -> None:
 
     assert chats == [("42", "Jane @jane (private)"), ("-100", "Investors (group)")]
     assert str(telegram.requests[0].url).endswith("/getUpdates")
+
+
+def test_a_judge_gated_alert_is_sent_as_a_review_with_fixed_words() -> None:
+    message = format_alert_message(check_result(entry("~3", "review", "judge: overstated")))
+
+    assert message is not None
+    assert "FinScope: TSLA 10-K, 1 to review" in message
+    assert "REVIEW [~3]: judge: overstated" in message
+    assert "ALERT" not in message

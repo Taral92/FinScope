@@ -3,7 +3,8 @@ from decimal import Decimal
 import pytest
 
 from finscope.__main__ import _print_report
-from finscope.decide import Decision, DecisionEntry, decide
+from finscope.decide import Decision, DecisionEntry, decide, decide_item
+from finscope.judge import JudgeVerdict, Judgment
 from finscope.report import HighItem, RatedItem, SectionReport
 from finscope.verify import parse_explanation, verify_explanation
 
@@ -216,3 +217,53 @@ def test_printed_empty_tiers_say_none(capsys: pytest.CaptureFixture[str]) -> Non
         "=== REVIEW (1): read these yourself ===\n"
         "[+7] not explained: over the cap | triage: triage reason +7\n"
     ) in out
+
+
+# --- the judge gate ------------------------------------------------------------------------------
+
+JUDGE_WORDS = "JUDGE-ONLY"  # appear only in the judge's reason
+
+
+def judged(item: HighItem, verdict: JudgeVerdict) -> HighItem:
+    judgment = Judgment(
+        verdict=verdict,
+        reason=f"{JUDGE_WORDS} the explanation says more than the filing",
+        model="fake-judge",
+        input_tokens=700,
+        output_tokens=40,
+    )
+    return item.model_copy(update={"judgment": judgment})
+
+
+@pytest.mark.parametrize("verdict", ["overstated", "unsupported"])
+def test_a_high_answer_the_judge_rejects_goes_to_review(verdict: JudgeVerdict) -> None:
+    entry = decide_item(judged(answered("+1", answer_text("high")), verdict))
+
+    assert (entry.tier, entry.reason) == ("review", f"judge: {verdict}")
+    # Neither the agent's text nor the judge's reason (which quotes it) is passed on.
+    shown = entry.model_dump_json()
+    assert AGENT_WORDS not in shown and JUDGE_WORDS not in shown
+
+
+def test_a_supported_high_answer_is_still_an_alert() -> None:
+    entry = decide_item(judged(answered("+1", answer_text("high")), "supported"))
+
+    assert (entry.tier, entry.reason) == ("alert", "agent rated high, fact-check passed")
+
+
+def test_a_failed_judge_call_does_not_stop_the_alert() -> None:
+    item = answered("+1", answer_text("high")).model_copy(
+        update={"judge_error": "judge call failed: timeout"}
+    )
+
+    entry = decide_item(item)
+
+    assert entry.tier == "alert"
+    assert entry.reason == "agent rated high, fact-check passed, judge not available"
+
+
+@pytest.mark.parametrize("level", ["medium", "low"])
+def test_the_judge_does_not_move_a_digest(level: str) -> None:
+    entry = decide_item(judged(answered("+1", answer_text(level)), "unsupported"))
+
+    assert (entry.tier, entry.reason) == ("digest", f"agent rated {level}")

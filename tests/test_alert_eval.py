@@ -440,3 +440,43 @@ def test_command_says_when_there_is_one_version_only(
     out = capsys.readouterr().out
     assert "=== BY VERSION (1) ===\nunknown (saved before versions)" in out
     assert "one set of versions so far: nothing to compare yet" in out
+
+
+def test_the_judge_gate_counts_rated_alerts_it_would_send_to_review() -> None:
+    judgments = {
+        REPORT_A: {
+            "~1": judgment("unsupported"),  # you said useful: a cost of the gate
+            "~5": judgment("supported"),  # stays an alert
+            "~19": judgment("overstated"),  # you said wrong: caught
+        }
+    }
+
+    scores = score_reports(A + B, judgments)
+    result = summarize_alerts(scores, ANSWERED)
+
+    [a, b] = scores
+    assert [alert.id for alert in a.gated] == ["~1", "~19"]
+    assert b.gated == ()  # not judged: the gate doesn't touch it
+    assert (result.gate_demoted, result.gate_caught) == (2, 1)
+
+
+def test_command_prints_the_judge_gate_line(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    feedback, reports, results = tmp_path / "feedback", tmp_path / "reports", tmp_path / "results"
+    write_feedback(feedback, A, B)
+    save_report(
+        reports,
+        REPORT_A,
+        high_item("~1", judgment("supported")),
+        high_item("~5", judgment("supported")),
+        high_item("~19", judgment("overstated", "says violence caused damage")),
+    )
+
+    assert _eval_alerts(feedback, reports, results) == 0
+
+    out = capsys.readouterr().out
+    assert (
+        "judge gate:       demotes 1/5 rated alerts to review: "
+        "1 you marked wrong (caught), 0 useful or not_useful (cost)"
+    ) in out

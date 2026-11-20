@@ -1284,6 +1284,12 @@ def _print_alert_eval(result: AlertEvalResult) -> None:
         f"judge agreement:  {_pct(result.judge_agreement)}  "
         f"({result.judge_agreed}/{result.judge_compared} judged alerts; {not_judged} not judged)"
     )
+    cost = result.gate_demoted - result.gate_caught
+    print(
+        f"judge gate:       demotes {result.gate_demoted}/{result.alerts_rated} rated alerts to "
+        f"review: {result.gate_caught} you marked wrong (caught), "
+        f"{cost} useful or not_useful (cost)"
+    )
     _print_by_version(result.by_version)
 
 

@@ -3,8 +3,14 @@
 Every change triage rated high lands in exactly one tier:
 - review: anything we can't trust. The agent failed, the fact-check failed, the answer had no
   readable IMPORTANCE line, or the change was never explained (over the max_explain cap).
-- alert: the agent also rated it high and its answer passed the fact-check.
+- alert: the agent also rated it high, its answer passed the fact-check, and the judge (if it
+  ran) found it supported.
 - digest: the answer passed the fact-check, but the agent rated it medium or low.
+
+The judge gates alerts only. A high answer it found overstated or unsupported goes to review:
+you still see it, as "read this yourself". A failed judge call doesn't stop an alert (the
+fact-check already passed); a digest entry carries none of the agent's text, so the judge
+doesn't move it.
 
 Review wins over everything, then alert; otherwise digest. Only an alert carries the agent's
 text: a digest or review entry shows the triage reason and why it landed there, so a claim
@@ -107,10 +113,17 @@ def decide_item(item: HighItem) -> DecisionEntry:
         return review("answer has an empty WHAT CHANGED or WHY IT MATTERS")
 
     if parsed.importance == "high":
+        judgment = item.judgment
+        if judgment is not None and judgment.verdict != "supported":
+            # Fixed words: the judge's reason quotes the agent's text, which isn't trusted.
+            return review(f"judge: {judgment.verdict}")
+        reason = "agent rated high, fact-check passed"
+        if item.judge_error is not None:
+            reason += ", judge not available"
         return DecisionEntry(
             id=item.id,
             tier="alert",
-            reason="agent rated high, fact-check passed",
+            reason=reason,
             triage_reason=item.triage_reason,
             triage_votes=item.triage_votes,
             what_changed=parsed.what_changed,

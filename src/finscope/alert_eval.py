@@ -11,7 +11,9 @@ The judge (judge.py) is measured here as well: for every rated alert whose repor
 verdict, does the judge agree with you? You said "wrong" and the judge said overstated or
 unsupported: agreement. You said useful or not_useful (a faithful explanation, whatever its
 importance) and the judge said supported: agreement. Anything else is a disagreement, listed
-by id so it can be looked at.
+by id so it can be looked at. Since the judge gates alerts (decide.py), every rated alert it
+found overstated or unsupported is one the gate would now send to review: caught if you said
+wrong, a cost if you said useful or not_useful.
 
 Reports also record the model and prompt versions that made them (versions.py), so the same
 numbers are given per version: the start of an A/B comparison between prompts. With a handful
@@ -90,6 +92,11 @@ class ReportScore(BaseModel):
         return tuple(alert for alert in self.judged if alert.agrees is False)
 
     @property
+    def gated(self) -> tuple[JudgedAlert, ...]:
+        """Rated alerts the judge gate sends to review: its verdict wasn't supported."""
+        return tuple(a for a in self.judged if a.judge is not None and a.judge != "supported")
+
+    @property
     def alerts_rated(self) -> int:
         return len(self.useful) + len(self.not_useful) + len(self.wrong)
 
@@ -143,6 +150,8 @@ class AlertEvalResult(BaseModel):
     judge_compared: int = 0  # rated alerts that also have a judge verdict
     judge_agreed: int = 0
     judge_agreement: float | None = None  # agreed / compared; None when nothing was compared
+    gate_demoted: int = 0  # rated alerts the judge gate sends to review
+    gate_caught: int = 0  # of those, the ones you marked wrong
     by_version: tuple[VersionScore, ...] = ()  # in the order each set of versions was first used
 
     @property
@@ -229,6 +238,7 @@ def summarize_alerts(scores: Sequence[ReportScore], created_at: datetime) -> Ale
     wrong = sum(len(score.wrong) for score in scores)
     compared = sum(score.judge_compared for score in scores)
     agreed = sum(score.judge_agreed for score in scores)
+    gated = [alert for score in scores for alert in score.gated]
     return AlertEvalResult(
         created_at=created_at,
         reports=tuple(scores),
@@ -244,6 +254,8 @@ def summarize_alerts(scores: Sequence[ReportScore], created_at: datetime) -> Ale
         judge_compared=compared,
         judge_agreed=agreed,
         judge_agreement=agreed / compared if compared else None,
+        gate_demoted=len(gated),
+        gate_caught=sum(1 for alert in gated if alert.human == "wrong"),
         by_version=score_versions(scores),
     )
 
