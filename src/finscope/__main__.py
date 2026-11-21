@@ -151,6 +151,7 @@ from finscope.notify import (
     NotifyError,
     TelegramNotifier,
     format_alert_message,
+    format_failure_message,
     telegram_configured,
 )
 from finscope.pairwise import (
@@ -1065,7 +1066,7 @@ def _run_check(
     # Made on the first report only: a check with nothing new needs no API key.
     providers = cache(make_providers)
 
-    failed = []
+    failed: list[tuple[str, str]] = []  # (entry label, error)
     for entry in entries:
         print(f"\n=== {entry.label} ===")
         try:
@@ -1091,14 +1092,30 @@ def _run_check(
             if result is not None and notify and not dry_run:
                 _send_alert(result, notifier, reports_dir(sec.data_dir) / result.file_name)
         except Exception as error:  # any failure: report it, keep the old state, go on
-            failed.append(entry.label)
+            failed.append((entry.label, f"{type(error).__name__}: {error}"))
             print(f"error: {entry.label}: {type(error).__name__}: {error}", file=sys.stderr)
 
     print(f"\nchecked {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}", end="")
-    print(f", {len(failed)} failed: {', '.join(failed)}" if failed else ", none failed")
+    labels = ", ".join(label for label, _ in failed)
+    print(f", {len(failed)} failed: {labels}" if failed else ", none failed")
     if dry_run:
         print("(dry run: no AI calls, no state changes, no files written)")
+    if failed and notify and not dry_run:
+        _send_failure_notice(format_failure_message(failed, len(entries)), notifier)
     return 1 if failed else 0
+
+
+def _send_failure_notice(message: str, notifier: TelegramNotifier | None) -> None:
+    """Tell the user a check failed; a scheduled check has nobody reading its log."""
+    if notifier is None:
+        print("failure notice not sent: Telegram not configured")
+        return
+    try:
+        notifier.send(message)
+    except NotifyError as error:
+        print(f"warning: failure notice not sent: {error}", file=sys.stderr)
+        return
+    print("failure notice sent to Telegram")
 
 
 def _check_entry(

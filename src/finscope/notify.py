@@ -9,7 +9,7 @@ write ourselves. (httpx also logs request URLs at INFO level; FinScope configure
 so nothing is logged. Keep the "httpx" logger above INFO if that ever changes.)
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from types import TracebackType
 from typing import Any, Self
 
@@ -23,10 +23,25 @@ TELEGRAM_API = "https://api.telegram.org"
 MAX_MESSAGE_CHARS = 4096
 # Room for the "(12/12) " part number put in front of each part of a split message.
 _PART_PREFIX_RESERVE = 16
+# One failed entry's error in a failure notice: enough to see what broke, not a whole dump.
+MAX_ERROR_CHARS = 300
 
 
 class NotifyError(Exception):
     """Sending failed. The message is ours and never contains the bot token."""
+
+
+def format_failure_message(failures: Sequence[tuple[str, str]], checked: int) -> str:
+    """The notice for a check where entries failed: each entry's label and error.
+
+    A scheduled check runs unattended, so a failure that only reached the log would go unseen.
+    """
+    lines = [f"FinScope check: {len(failures)} of {checked} failed"]
+    for label, error in failures:
+        short = error if len(error) <= MAX_ERROR_CHARS else error[: MAX_ERROR_CHARS - 1] + "…"
+        lines.append(f"{label}: {short}")
+    lines.append("The other entries ran; a failed one is retried on the next check.")
+    return "\n".join(lines)
 
 
 def telegram_configured(settings: Settings) -> bool:

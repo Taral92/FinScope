@@ -14,10 +14,12 @@ from finscope.decide import Decision, DecisionEntry, Tier
 from finscope.detect import CheckResult, WatchEntry
 from finscope.edgar import Filing
 from finscope.notify import (
+    MAX_ERROR_CHARS,
     MAX_MESSAGE_CHARS,
     NotifyError,
     TelegramNotifier,
     format_alert_message,
+    format_failure_message,
     split_message,
 )
 from finscope.report import SectionReport
@@ -293,3 +295,23 @@ def test_a_judge_gated_alert_is_sent_as_a_review_with_fixed_words() -> None:
     assert "FinScope: TSLA 10-K, 1 to review" in message
     assert "REVIEW [~3]: judge: overstated" in message
     assert "ALERT" not in message
+
+
+def test_a_failure_notice_lists_every_failed_entry_and_cuts_long_errors() -> None:
+    long_error = "HTTPError: " + "x" * 1_000
+
+    message = format_failure_message(
+        [
+            ("TSLA 10-K Part I Item 1A", "LLMError: rate limited"),
+            ("DIS 10-K Part I Item 1A", long_error),
+        ],
+        checked=4,
+    )
+
+    first, tsla, dis, last = message.split("\n")
+    assert first == "FinScope check: 2 of 4 failed"
+    assert tsla == "TSLA 10-K Part I Item 1A: LLMError: rate limited"
+    assert dis.startswith("DIS 10-K Part I Item 1A: HTTPError: xxx")
+    assert dis.endswith("…")
+    assert len(dis) == len("DIS 10-K Part I Item 1A: ") + MAX_ERROR_CHARS
+    assert last.startswith("The other entries ran")

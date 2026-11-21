@@ -675,3 +675,82 @@ def test_check_command_passes_no_notify_through(
 
     assert cli.main(["check", *flag]) == 0
     assert seen["no_notify"] is expected
+
+
+# --- a notice when entries fail: a scheduled check has nobody reading its log -------------------
+
+
+def test_a_failed_entry_sends_a_failure_notice_after_the_other_alerts(
+    sec: SecClient, edgar: FakeEdgar, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar.set_filings("TSLA", NEW, OLD)
+    edgar.set_filings("AAPL", NEW, OLD)
+    remember(sec, TSLA, OLD)
+    remember(sec, AAPL, OLD)
+    providers = Providers(FakeTriage(errors=[LLMError("rate limited")]))  # TSLA fails
+    telegram = Telegram()
+
+    assert check(sec, providers, (TSLA, AAPL), notify=True, notifier=telegram.notifier()) == 1
+
+    alert, notice = telegram.texts
+    assert alert.startswith("FinScope: AAPL 10-K, 1 alert")
+    assert notice == (
+        "FinScope check: 1 of 2 failed\n"
+        "TSLA 10-K Part I Item 1A: LLMError: rate limited\n"
+        "The other entries ran; a failed one is retried on the next check."
+    )
+    captured = capsys.readouterr()
+    assert "failure notice sent to Telegram" in captured.out
+    assert TELEGRAM_TOKEN not in captured.out + captured.err
+
+
+@pytest.mark.parametrize(
+    ("dry_run", "notify"),
+    [(True, True), (False, False)],  # --dry-run; --no-notify
+)
+def test_no_failure_notice_on_a_dry_run_or_with_no_notify(
+    sec: SecClient, edgar: FakeEdgar, dry_run: bool, notify: bool
+) -> None:
+    unknown = WatchEntry(ticker="NOPE", form="10-K", item="1A", part="I")
+    telegram = Telegram()
+    bot = telegram.notifier()
+
+    assert check(sec, Providers(), (unknown,), dry_run=dry_run, notify=notify, notifier=bot) == 1
+
+    assert telegram.texts == []
+
+
+def test_no_failure_notice_when_nothing_failed(sec: SecClient, edgar: FakeEdgar) -> None:
+    edgar.set_filings("TSLA", NEW, OLD)  # first sight: only remembered, nothing to send
+    telegram = Telegram()
+
+    assert check(sec, Providers(), notify=True, notifier=telegram.notifier()) == 0
+
+    assert telegram.texts == []
+
+
+def test_a_failure_without_telegram_says_the_notice_was_not_sent(
+    sec: SecClient, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unknown = WatchEntry(ticker="NOPE", form="10-K", item="1A", part="I")
+
+    assert check(sec, Providers(), (unknown,), notify=True, notifier=None) == 1
+
+    assert "failure notice not sent: Telegram not configured" in capsys.readouterr().out
+
+
+def test_a_failed_notice_send_only_warns(
+    sec: SecClient, capsys: pytest.CaptureFixture[str]
+) -> None:
+    unknown = WatchEntry(ticker="NOPE", form="10-K", item="1A", part="I")
+
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError(f"connection refused for {request.url}", request=request)
+
+    bot = TelegramNotifier(TELEGRAM_SETTINGS, transport=httpx.MockTransport(refuse))
+
+    assert check(sec, Providers(), (unknown,), notify=True, notifier=bot) == 1
+
+    captured = capsys.readouterr()
+    assert "warning: failure notice not sent: Telegram sendMessage failed" in captured.err
+    assert TELEGRAM_TOKEN not in captured.out + captured.err

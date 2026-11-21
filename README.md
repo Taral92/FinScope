@@ -33,4 +33,20 @@ opening this folder in Claude Code gives Claude five read-only tools: `list_fili
 and SEC XBRL numbers. No model runs inside the server. Start it by hand with
 `uv run python -m finscope mcp`.
 
+## Run the check every day (macOS)
+
+`scripts/scheduled-check.sh` goes to the project folder and runs `check`, appending to
+`data/logs/check.log`. A launchd job runs it every day at 08:00; when the Mac was asleep, it runs
+on wake. Days without a new filing make no AI calls. Alerts, and a notice when an entry fails, go
+to Telegram if it's configured.
+
+```sh
+sed "s|__FINSCOPE_DIR__|$PWD|" scripts/com.finscope.check.plist \
+  > ~/Library/LaunchAgents/com.finscope.check.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.finscope.check.plist
+launchctl kickstart gui/$(id -u)/com.finscope.check   # run once now, then read the log
+```
+
+Stop it with `launchctl bootout gui/$(id -u)/com.finscope.check`.
+
 **Status:** early development.
