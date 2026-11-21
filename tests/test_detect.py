@@ -514,6 +514,10 @@ def test_the_repo_watchlist_loads() -> None:
         "AAPL|10-K|I|1A",
         "SBUX|10-K|I|1A",
         "DIS|10-K|I|1A",
+        "NVDA|10-K|I|1A",
+        "WMT|10-K|I|1A",
+        "NKE|10-K|I|1A",
+        "COST|10-K|I|1A",
     ]
 
 

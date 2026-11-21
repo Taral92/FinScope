@@ -2,5 +2,9 @@
   {"ticker": "TSLA", "form": "10-K", "item": "1A", "part": "I"},
   {"ticker": "AAPL", "form": "10-K", "item": "1A", "part": "I"},
   {"ticker": "SBUX", "form": "10-K", "item": "1A", "part": "I"},
-  {"ticker": "DIS", "form": "10-K", "item": "1A", "part": "I"}
+  {"ticker": "DIS", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "NVDA", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "WMT", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "NKE", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "COST", "form": "10-K", "item": "1A", "part": "I"}
 ]
