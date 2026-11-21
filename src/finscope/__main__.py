@@ -71,15 +71,19 @@ from finscope.detect import (
     WATCHLIST_PATH,
     CheckError,
     CheckResult,
+    FilingResult,
     SeenFiling,
     StateError,
     WatchEntry,
     WatchlistError,
+    filing_reports_dir,
+    group_by_filing,
     load_state,
     load_watchlist,
     plan_entry,
     reports_dir,
     save_check_result,
+    save_filing_result,
     save_state,
     state_path,
 )
@@ -153,8 +157,8 @@ from finscope.memory_store import load_memory
 from finscope.notify import (
     NotifyError,
     TelegramNotifier,
-    format_alert_message,
     format_failure_message,
+    format_filing_message,
     telegram_configured,
 )
 from finscope.pairwise import (
@@ -1090,7 +1094,11 @@ def _run_check(
 ) -> int:
     """Check every entry; one failing entry doesn't stop the others. 1 if any failed.
 
-    With `notify`, each saved report's alerts go to `notifier` (None: Telegram not configured).
+    The orchestrator: entries are grouped by filing (ticker and form), the filing list is
+    fetched once per group, and each section runs as its own worker, the section pipeline,
+    with its own state, report and context. The sections compared in one check are then tied
+    together in one FilingResult and, with `notify`, one message (None notifier: Telegram not
+    configured).
     """
     path = state_path(sec.data_dir)
     try:
@@ -1102,33 +1110,53 @@ def _run_check(
     providers = cache(make_providers)
 
     failed: list[tuple[str, str]] = []  # (entry label, error)
-    for entry in entries:
-        print(f"\n=== {entry.label} ===")
+    for (ticker, form), group in group_by_filing(entries):
         try:
-            seen, result = _check_entry(
-                entry,
-                state.get(entry.key),
-                sec=sec,
-                settings=settings,
-                providers=providers,
-                include_unseen=include_unseen,
-                dry_run=dry_run,
-                max_explain=max_explain,
-                triage_runs=triage_runs,
-            )
-            if seen is not None:
-                # A new dict, saved before it's kept: if the save fails, a later entry's save
-                # must not write this entry's update after all.
-                updated = {**state, entry.key: seen}
-                save_state(updated, path)
-                state = updated
-            # Sent last, once the report is saved and the state updated: a failed send loses
-            # nothing, the report is on disk.
-            if result is not None and notify and not dry_run:
-                _send_alert(result, notifier, reports_dir(sec.data_dir) / result.file_name)
-        except Exception as error:  # any failure: report it, keep the old state, go on
-            failed.append((entry.label, f"{type(error).__name__}: {error}"))
-            print(f"error: {entry.label}: {type(error).__name__}: {error}", file=sys.stderr)
+            cik = sec.get_cik(ticker)
+            # The form filter is an exact match, so amendments (e.g. 10-K/A) are excluded.
+            filings = sec.get_recent_filings(cik, forms={form}, limit=2)
+        except Exception as error:  # every section of this filing fails the same way
+            for entry in group:
+                print(f"\n=== {entry.label} ===")
+                failed.append((entry.label, f"{type(error).__name__}: {error}"))
+                print(f"error: {entry.label}: {type(error).__name__}: {error}", file=sys.stderr)
+            continue
+
+        results: list[CheckResult] = []
+        for entry in group:
+            print(f"\n=== {entry.label} ===")
+            try:
+                seen, result = _check_entry(
+                    entry,
+                    state.get(entry.key),
+                    filings,
+                    sec=sec,
+                    settings=settings,
+                    providers=providers,
+                    include_unseen=include_unseen,
+                    dry_run=dry_run,
+                    max_explain=max_explain,
+                    triage_runs=triage_runs,
+                )
+                if seen is not None:
+                    # A new dict, saved before it's kept: if the save fails, a later entry's
+                    # save must not write this entry's update after all.
+                    updated = {**state, entry.key: seen}
+                    save_state(updated, path)
+                    state = updated
+                if result is not None:
+                    results.append(result)
+            except Exception as error:  # any failure: report it, keep the old state, go on
+                failed.append((entry.label, f"{type(error).__name__}: {error}"))
+                print(f"error: {entry.label}: {type(error).__name__}: {error}", file=sys.stderr)
+
+        if results and not dry_run:
+            try:
+                _finish_filing(results, sec.data_dir, notify=notify, notifier=notifier)
+            except Exception as error:  # the section reports and state are already saved
+                label = f"{ticker} {form} filing record"
+                failed.append((label, f"{type(error).__name__}: {error}"))
+                print(f"error: {label}: {type(error).__name__}: {error}", file=sys.stderr)
 
     print(f"\nchecked {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}", end="")
     labels = ", ".join(label for label, _ in failed)
@@ -1138,6 +1166,33 @@ def _run_check(
     if failed and notify and not dry_run:
         _send_failure_notice(format_failure_message(failed, len(entries)), notifier)
     return 1 if failed else 0
+
+
+def _finish_filing(
+    results: list[CheckResult],
+    data_dir: Path,
+    *,
+    notify: bool,
+    notifier: TelegramNotifier | None,
+) -> None:
+    """Tie the filing's compared sections together, then send them as one message.
+
+    Sent last, once every report, the state and this record are saved: a failed send loses
+    nothing, it's all on disk.
+    """
+    first = results[0]
+    record = FilingResult(
+        checked_at=first.checked_at,
+        ticker=first.entry.ticker,
+        form=first.entry.form,
+        new_filing=first.new_filing,
+        section_reports=tuple(result.file_name for result in results),
+    )
+    saved = save_filing_result(record, filing_reports_dir(data_dir))
+    if len(results) > 1:
+        print(f"\nfiling: {len(results)} sections compared, saved: {saved}")
+    if notify:
+        _send_alert(results, notifier, saved)
 
 
 def _send_failure_notice(message: str, notifier: TelegramNotifier | None) -> None:
@@ -1156,6 +1211,7 @@ def _send_failure_notice(message: str, notifier: TelegramNotifier | None) -> Non
 def _check_entry(
     entry: WatchEntry,
     seen: SeenFiling | None,
+    filings: list[Filing],
     *,
     sec: SecClient,
     settings: Settings,
@@ -1166,10 +1222,8 @@ def _check_entry(
     triage_runs: int,
 ) -> tuple[SeenFiling | None, CheckResult | None]:
     """Check one entry. Returns what to remember now (None: leave the state as it is) and the
-    saved result, if a report was run."""
-    cik = sec.get_cik(entry.ticker)
-    # The form filter is an exact match, so amendments (e.g. 10-K/A) are excluded.
-    filings = sec.get_recent_filings(cik, forms={entry.form}, limit=2)
+    saved result, if a report was run. `filings`: the newest two of the entry's form, fetched
+    once for all sections of the filing."""
     plan = plan_entry(filings, seen, include_unseen=include_unseen)
     new = plan.new
     if plan.action == "unchanged":
@@ -1230,9 +1284,11 @@ def _check_entry(
     return _seen(new), result
 
 
-def _send_alert(result: CheckResult, notifier: TelegramNotifier | None, saved: Path) -> None:
-    """Send the result's alerts, if any. A failure only warns: the report is already saved."""
-    message = format_alert_message(result)
+def _send_alert(
+    results: Sequence[CheckResult], notifier: TelegramNotifier | None, saved: Path
+) -> None:
+    """Send one filing's alerts, if any. A failure only warns: the reports are already saved."""
+    message = format_filing_message(results)
     if message is None:
         return
     if notifier is None:

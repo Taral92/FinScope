@@ -49,4 +49,8 @@ launchctl kickstart gui/$(id -u)/com.finscope.check   # run once now, then read 
 
 Stop it with `launchctl bootout gui/$(id -u)/com.finscope.check`.
 
+To watch more of a filing, add more entries for the same company in `watchlist.json`, e.g.
+`{"ticker": "TSLA", "form": "10-K", "item": "3", "part": "I"}` for Legal Proceedings. `check`
+fetches the filing once, analyzes each section on its own, and sends one message per filing.
+
 **Status:** early development.

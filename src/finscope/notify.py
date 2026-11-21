@@ -56,22 +56,59 @@ def format_alert_message(result: CheckResult) -> str | None:
         return None
 
     entry, filing = result.entry, result.new_filing
-    counts = [f"{len(alerts)} alert{'' if len(alerts) == 1 else 's'}"] if alerts else []
-    counts += [f"{len(reviews)} to review"] if reviews else []
     blocks = [
-        f"FinScope: {entry.ticker} {entry.form}, {', '.join(counts)}\n"
+        f"FinScope: {entry.ticker} {entry.form}, {_counts(len(alerts), len(reviews))}\n"
         f"{result.report.section_title}\n"
         f"Filed {filing.filing_date.isoformat()}, accession {filing.accession_number}"
     ]
-    blocks += [
+    blocks += _entry_blocks(result)
+    blocks.append(f"Also: {len(decision.tier('digest'))} digest")
+    return "\n\n".join(blocks)
+
+
+def format_filing_message(results: Sequence[CheckResult]) -> str | None:
+    """One message for the sections of one filing compared in one check; None if there is
+    nothing to send. A single section with something to send reads exactly as
+    format_alert_message, so a watchlist with one section per company sees no change."""
+    sending = [r for r in results if r.decision.tier("alert") or r.decision.tier("review")]
+    if len(sending) <= 1:
+        return format_alert_message(sending[0]) if sending else None
+
+    first = sending[0]
+    alerts = sum(len(r.decision.tier("alert")) for r in sending)
+    reviews = sum(len(r.decision.tier("review")) for r in sending)
+    digest = sum(len(r.decision.tier("digest")) for r in results)
+    filing = first.new_filing
+    blocks = [
+        f"FinScope: {first.entry.ticker} {first.entry.form}, {_counts(alerts, reviews)} "
+        f"in {len(sending)} sections\n"
+        f"Filed {filing.filing_date.isoformat()}, accession {filing.accession_number}"
+    ]
+    for result in sending:
+        blocks.append(f"== {result.report.section_title} ==")
+        blocks += _entry_blocks(result)
+    blocks.append(f"Also: {digest} digest")
+    return "\n\n".join(blocks)
+
+
+def _counts(alerts: int, reviews: int) -> str:
+    counts = [f"{alerts} alert{'' if alerts == 1 else 's'}"] if alerts else []
+    counts += [f"{reviews} to review"] if reviews else []
+    return ", ".join(counts)
+
+
+def _entry_blocks(result: CheckResult) -> list[str]:
+    """A section's alerts (with the agent's text) then its reviews (fixed reasons only)."""
+    blocks = [
         f"ALERT [{alert.id}]\n"
         f"WHAT CHANGED: {alert.what_changed}\n"
         f"WHY IT MATTERS: {alert.why_it_matters}"
-        for alert in alerts
+        for alert in result.decision.tier("alert")
     ]
-    blocks += [f"REVIEW [{review.id}]: {review.reason}" for review in reviews]
-    blocks.append(f"Also: {len(decision.tier('digest'))} digest")
-    return "\n\n".join(blocks)
+    blocks += [
+        f"REVIEW [{review.id}]: {review.reason}" for review in result.decision.tier("review")
+    ]
+    return blocks
 
 
 def split_message(text: str, limit: int = MAX_MESSAGE_CHARS) -> list[str]:

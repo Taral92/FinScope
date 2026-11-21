@@ -115,6 +115,48 @@ class CheckResult(BaseModel):
         return f"{entry.ticker}_{entry.form}_{self.new_filing.accession_number}_{section}.json"
 
 
+class FilingResult(BaseModel):
+    """One filing checked as a whole: the sections compared in this check, by report file.
+
+    The orchestrator's record. Each section's report stays its own file (feedback, eval-alerts
+    and memory all work per section); this ties together the ones from one filing and one check.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    checked_at: datetime
+    ticker: str
+    form: str
+    new_filing: Filing
+    section_reports: tuple[str, ...]  # CheckResult file names, in watchlist order
+
+    @property
+    def file_name(self) -> str:
+        """e.g. TSLA_10-K_0001628280-26-003952.json"""
+        return f"{self.ticker}_{self.form}_{self.new_filing.accession_number}.json"
+
+
+def group_by_filing(
+    entries: Sequence[WatchEntry],
+) -> list[tuple[tuple[str, str], list[WatchEntry]]]:
+    """Entries grouped by (ticker, form), the sections of one filing, in watchlist order."""
+    groups: dict[tuple[str, str], list[WatchEntry]] = {}
+    for entry in entries:
+        groups.setdefault((entry.ticker, entry.form), []).append(entry)
+    return list(groups.items())
+
+
+def filing_reports_dir(data_dir: Path) -> Path:
+    """Apart from data/reports/, where every file is one section's report."""
+    return data_dir / "filing_reports"
+
+
+def save_filing_result(result: FilingResult, directory: Path) -> Path:
+    path = directory / result.file_name
+    _write_atomic(path, result.model_dump_json(indent=2) + "\n")
+    return path
+
+
 _WATCHLIST = TypeAdapter(tuple[WatchEntry, ...])
 _STATE = TypeAdapter(dict[str, SeenFiling])
 

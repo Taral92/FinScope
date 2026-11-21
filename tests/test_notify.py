@@ -20,6 +20,7 @@ from finscope.notify import (
     TelegramNotifier,
     format_alert_message,
     format_failure_message,
+    format_filing_message,
     split_message,
 )
 from finscope.report import SectionReport
@@ -315,3 +316,35 @@ def test_a_failure_notice_lists_every_failed_entry_and_cuts_long_errors() -> Non
     assert dis.endswith("…")
     assert len(dis) == len("DIS 10-K Part I Item 1A: ") + MAX_ERROR_CHARS
     assert last.startswith("The other entries ran")
+
+
+def test_a_filing_message_puts_each_sections_alerts_under_its_title() -> None:
+    risks = check_result(entry("+1", "alert"), entry("+2", "digest"))
+    legal = check_result(
+        entry("~1", "review", "fact-check failed: quote not found"), entry("+3", "digest")
+    )
+    legal = legal.model_copy(
+        update={"report": legal.report.model_copy(update={"section_title": "Part I Item 3. Legal"})}
+    )
+
+    message = format_filing_message([risks, legal])
+
+    assert message is not None
+    blocks = message.split("\n\n")
+    assert blocks[0] == (
+        "FinScope: TSLA 10-K, 1 alert, 1 to review in 2 sections\n"
+        "Filed 2026-01-29, accession 0001628280-26-000003"
+    )
+    assert blocks[1] == "== Part I Item 1A. RISK FACTORS =="
+    assert blocks[2].startswith("ALERT [+1]\nWHAT CHANGED: Change +1 added.")
+    assert blocks[3] == "== Part I Item 3. Legal =="
+    assert blocks[4] == "REVIEW [~1]: fact-check failed: quote not found"
+    assert blocks[5] == "Also: 2 digest"  # summed over the sections
+    assert "TRIAGE-ONLY" not in message  # digest entries stay counted, never shown
+
+
+def test_a_filing_message_is_none_when_no_section_has_anything_to_send() -> None:
+    quiet = check_result(entry("+2", "digest"))
+
+    assert format_filing_message([quiet, quiet]) is None
+    assert format_filing_message([]) is None

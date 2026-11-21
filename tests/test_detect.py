@@ -17,6 +17,8 @@ from finscope.detect import (
     SeenFiling,
     WatchEntry,
     WatchlistError,
+    filing_reports_dir,
+    group_by_filing,
     load_state,
     load_watchlist,
     plan_entry,
@@ -758,3 +760,108 @@ def test_a_failed_notice_send_only_warns(
     captured = capsys.readouterr()
     assert "warning: failure notice not sent: Telegram sendMessage failed" in captured.err
     assert TELEGRAM_TOKEN not in captured.out + captured.err
+
+
+# --- the orchestrator: the sections of one filing, checked together ------------------------------
+
+TSLA_1B = WatchEntry(ticker="TSLA", form="10-K", item="1B", part="I")
+
+
+def two_section_html(risk_1a: str | None, risk_1b: str | None) -> str:
+    """Items 1A and 1B with content, so both sections have a change to report."""
+    first = "".join(f"<p>{p}</p>" for p in [*BASE, *([risk_1a] if risk_1a else [])])
+    second = "".join(
+        f"<p>{p}</p>" for p in ["We have no unresolved comments.", *([risk_1b] if risk_1b else [])]
+    )
+    return (
+        f"<html><body><p>PART I</p><p>Item 1A. Risk Factors</p>{first}"
+        f"<p>Item 1B. Unresolved Staff Comments</p>{second}"
+        "<p>Item 2. Properties</p><p>Our factories.</p></body></html>"
+    )
+
+
+class CountingEdgar(FakeEdgar):
+    def __init__(self) -> None:
+        super().__init__()
+        self.submissions = 0
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        if "/submissions/" in str(request.url):
+            self.submissions += 1
+        return super().handle(request)
+
+
+def test_entries_are_grouped_by_filing_in_watchlist_order() -> None:
+    groups = group_by_filing([TSLA, AAPL, TSLA_1B])
+
+    assert groups == [(("TSLA", "10-K"), [TSLA, TSLA_1B]), (("AAPL", "10-K"), [AAPL])]
+
+
+def test_two_sections_of_one_filing_send_one_message_and_save_one_record(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar = CountingEdgar()
+    new = (NEW[0], NEW[1], two_section_html(NEW_RISK, NEW_RISK))
+    old = (OLD[0], OLD[1], two_section_html(None, None))
+    edgar.set_filings("TSLA", new, old)
+    settings = SETTINGS.model_copy(update={"data_dir": tmp_path})
+    telegram = Telegram()
+    with SecClient(settings=settings, transport=httpx.MockTransport(edgar.handle)) as sec:
+        remember(sec, TSLA, old)
+        remember(sec, TSLA_1B, old)
+        edgar.submissions = 0
+
+        code = check(sec, Providers(), (TSLA, TSLA_1B), notify=True, notifier=telegram.notifier())
+
+    assert code == 0
+    assert edgar.submissions == 1  # the filing list, fetched once for both sections
+    [text] = telegram.texts  # one message for the filing, not one per section
+    assert text.startswith("FinScope: TSLA 10-K, 2 alerts in 2 sections\n")
+    assert "== Part I Item 1A. Risk Factors ==" in text
+    assert "== Part I Item 1B. Unresolved Staff Comments ==" in text
+    assert text.count("ALERT [+1]") == 2
+    [record] = filing_reports_dir(tmp_path).iterdir()
+    saved = json.loads(record.read_text(encoding="utf-8"))
+    assert record.name == f"TSLA_10-K_{NEW[0]}.json"
+    assert saved["section_reports"] == [
+        f"TSLA_10-K_{NEW[0]}_I-1A.json",
+        f"TSLA_10-K_{NEW[0]}_I-1B.json",
+    ]
+    assert "filing: 2 sections compared" in capsys.readouterr().out
+
+
+def test_a_filing_with_one_section_to_send_reads_as_before(
+    tmp_path: Path,
+) -> None:
+    edgar = CountingEdgar()
+    new = (NEW[0], NEW[1], two_section_html(NEW_RISK, None))  # only 1A changed
+    old = (OLD[0], OLD[1], two_section_html(None, None))
+    edgar.set_filings("TSLA", new, old)
+    settings = SETTINGS.model_copy(update={"data_dir": tmp_path})
+    telegram = Telegram()
+    with SecClient(settings=settings, transport=httpx.MockTransport(edgar.handle)) as sec:
+        remember(sec, TSLA, old)
+        remember(sec, TSLA_1B, old)
+
+        assert (
+            check(sec, Providers(), (TSLA, TSLA_1B), notify=True, notifier=telegram.notifier()) == 0
+        )
+
+    [text] = telegram.texts
+    assert text.startswith("FinScope: TSLA 10-K, 1 alert\nPart I Item 1A. Risk Factors\n")
+    assert "sections" not in text and "==" not in text
+
+
+def test_a_failed_filing_list_fails_every_section_of_that_filing_only(
+    sec: SecClient, edgar: FakeEdgar, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar.set_filings("AAPL", NEW, OLD)
+    remember(sec, AAPL, OLD)
+    unknown = WatchEntry(ticker="NOPE", form="10-K", item="1A", part="I")
+    unknown_1b = WatchEntry(ticker="NOPE", form="10-K", item="1B", part="I")
+
+    assert check(sec, Providers(), (unknown, unknown_1b, AAPL)) == 1
+
+    captured = capsys.readouterr()
+    assert "2 failed: NOPE 10-K Part I Item 1A, NOPE 10-K Part I Item 1B" in captured.out
+    assert remembered(sec, AAPL) == NEW[0]  # the other filing still ran
