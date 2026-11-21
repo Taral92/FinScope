@@ -20,7 +20,8 @@ from finscope.decide import Tier, decide_item
 from finscope.diff import SectionDiff, changes_by_id
 from finscope.evals import Importance, write_json_atomic
 from finscope.llm import LLMProvider, split_cost
-from finscope.report import HighItem, RatedItem, explain_and_check, judge_tokens
+from finscope.memory import PastFinding
+from finscope.report import HighItem, RatedItem, explain_and_check, judge_tokens, section_key
 from finscope.sections import Section
 from finscope.triage import triage_section
 from finscope.xbrl import MetricValue
@@ -186,6 +187,7 @@ def run_stability(
     runs: int,
     on_run: Callable[[str, StabilityRun], None] | None = None,
     judge_provider: LLMProvider | None = None,
+    memory: tuple[PastFinding, ...] = (),
 ) -> tuple[ChangeStability, ...]:
     """Explain and fact-check each selected change `runs` times; a failed run is recorded.
 
@@ -202,6 +204,9 @@ def run_stability(
             old_section=old_section,
             new_section=new_section,
             metrics=metrics,
+            memory=memory,
+            company=company,
+            section=section_key(diff),
         )
         change_runs = []
         for number in range(1, runs + 1):

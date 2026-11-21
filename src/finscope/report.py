@@ -14,12 +14,13 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 
 from finscope.agent import AgentError
-from finscope.agent_tools import ExplainContext
+from finscope.agent_tools import ExplainContext, filing_tool_outputs
 from finscope.config import Settings
 from finscope.diff import SectionDiff, changes_by_id
 from finscope.explain import AGENT_SYSTEM_PROMPT, explain_change_with_agent
 from finscope.judge import Judgment, judge_explanation
 from finscope.llm import LLMError, LLMProvider, split_cost
+from finscope.memory import PastFinding
 from finscope.sections import Section
 from finscope.triage import Importance, triage_section_votes
 from finscope.verify import (
@@ -112,6 +113,7 @@ def build_section_report(
     max_explain: int = 20,
     triage_runs: int = 1,
     judge_provider: LLMProvider | None = None,
+    memory: tuple[PastFinding, ...] = (),
 ) -> SectionReport:
     """Triage the section, then explain and fact-check up to `max_explain` high changes.
 
@@ -119,7 +121,8 @@ def build_section_report(
     triage run is recorded and skipped; if every run fails, its error (LLMError, TriageError)
     is raised: without ratings there is nothing to report on. A failed agent run is recorded
     on its item and the next change still runs. With a `judge_provider`, every answer that
-    passes the fact-check is also judged (see judge.py).
+    passes the fact-check is also judged (see judge.py). `memory` (never this filing's own
+    findings) is what the agent's recall_past_findings tool searches.
     """
     if max_explain < 0:
         raise ValueError("max_explain must be 0 or more")
@@ -144,6 +147,9 @@ def build_section_report(
             old_section=old_section,
             new_section=new_section,
             metrics=metrics,
+            memory=memory,
+            company=company,
+            section=section_key(diff),
         )
         explained.append(
             explain_and_check(
@@ -197,6 +203,11 @@ def build_section_report(
         and all(item.input_tokens is not None for item in explained),
         prompt_versions=current_versions(settings, judged=judge_provider is not None),
     )
+
+
+def section_key(diff: SectionDiff) -> str:
+    """e.g. "I-1A", as report and labels file names write a section."""
+    return f"{diff.part}-{diff.item}" if diff.part else diff.item
 
 
 def judge_tokens(items: Sequence[HighItem]) -> tuple[int, int]:
@@ -322,7 +333,7 @@ def explain_and_verify(
 
     run = explanation.run
     parsed = parse_explanation(run.text, expect_evidence=True)
-    sources = sources_for(context.change, run.tool_outputs)
+    sources = sources_for(context.change, filing_tool_outputs(run))
     verification = verify_explanation(parsed, sources)
     item = HighItem(
         id=change_id,

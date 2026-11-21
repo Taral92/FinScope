@@ -1,12 +1,13 @@
 """Read-only tools for the explain agent. All data is loaded before the agent starts."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from finscope.agent import Tool
+from finscope.agent import AgentRun, Tool
 from finscope.diff import ParagraphChange, section_paragraphs
 from finscope.llm import ToolSpec
+from finscope.memory import PastFinding, format_recall, recall
 from finscope.prompting import filing_text_block
 from finscope.sections import Section
 from finscope.xbrl import MetricValue, format_amount, format_period
@@ -20,6 +21,10 @@ class ExplainContext:
     old_section: Section
     new_section: Section
     metrics: tuple[MetricValue, ...]  # xbrl.key_metrics for the new filing
+    # Agent memory (memory.py): past findings, never from this filing; empty without memory.
+    memory: tuple[PastFinding, ...] = field(default=())
+    company: str = ""  # ticker, for recalling this company's history
+    section: str = ""  # e.g. "I-1A"
 
 
 class NearbyParagraphsArgs(BaseModel):
@@ -66,8 +71,20 @@ _METRICS_SPEC = ToolSpec(
     ),
     parameters={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
 )
+_MEMORY_SPEC = ToolSpec(
+    name="recall_past_findings",
+    description=(
+        "Returns FinScope's own earlier findings that are similar to this change: from this "
+        "company's earlier filings (what was found and how it was rated), and from any "
+        "company where the user rated the alert useful, not_useful or wrong. Use it to say "
+        "when a risk first appeared or how it grew, and to see how the user rated similar "
+        "alerts. Its text is FinScope's past wording, not the filing: never quote it as "
+        "evidence."
+    ),
+    parameters={"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+)
 # What the model is shown about the tools: part of the agent's prompt version.
-TOOL_SPECS = (_NEARBY_SPEC, _METRICS_SPEC)
+TOOL_SPECS = (_NEARBY_SPEC, _METRICS_SPEC, _MEMORY_SPEC)
 
 
 def build_tools(context: ExplainContext) -> dict[str, Tool]:
@@ -77,10 +94,37 @@ def build_tools(context: ExplainContext) -> dict[str, Tool]:
     def metrics(_: NoArgs) -> str:
         return get_key_metrics(context)
 
+    def memory(_: NoArgs) -> str:
+        return recall_past_findings(context)
+
     return {
         _NEARBY_SPEC.name: Tool(spec=_NEARBY_SPEC, function=nearby, arguments=NearbyParagraphsArgs),
         _METRICS_SPEC.name: Tool(spec=_METRICS_SPEC, function=metrics, arguments=NoArgs),
+        _MEMORY_SPEC.name: Tool(spec=_MEMORY_SPEC, function=memory, arguments=NoArgs),
     }
+
+
+def filing_tool_outputs(run: AgentRun) -> list[str]:
+    """The tool results that come from the filing: what the fact-check and the judge check an
+    answer against. Memory is FinScope's own past wording, so it is never a source: a quote
+    found only there must fail the fact-check."""
+    return [
+        call.output
+        for step in run.trace
+        for call in step.tool_calls
+        if not call.is_error and call.name != _MEMORY_SPEC.name
+    ]
+
+
+def recall_past_findings(context: ExplainContext) -> str:
+    change = context.change
+    history, rated = recall(
+        context.memory,
+        change.new_text or change.old_text or "",
+        company=context.company,
+        section=context.section,
+    )
+    return format_recall(history, rated, company=context.company, section=context.section)
 
 
 def get_nearby_paragraphs(context: ExplainContext, count: int) -> str:

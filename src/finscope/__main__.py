@@ -52,7 +52,7 @@ from finscope.agent_eval import (
     select_changes,
     summarize,
 )
-from finscope.agent_tools import ExplainContext
+from finscope.agent_tools import ExplainContext, filing_tool_outputs
 from finscope.alert_eval import (
     AlertEvalResult,
     VersionScore,
@@ -147,6 +147,8 @@ from finscope.known_judge import (
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider, judge_model, judge_provider
 from finscope.mcp_server import run_server
+from finscope.memory import PastFinding
+from finscope.memory_store import load_memory
 from finscope.notify import (
     NotifyError,
     TelegramNotifier,
@@ -726,7 +728,7 @@ def _explain_with_agent(
     print()
     print(run.text)
     print()
-    sources = sources_for(context.change, run.tool_outputs)
+    sources = sources_for(context.change, filing_tool_outputs(run))
     _print_fact_check(run.text, sources, expect_evidence=True)
     print()
     cost = "unknown (no prices configured)"
@@ -832,6 +834,9 @@ def _report(
     except (LLMError, TriageError) as error:
         print(f"error: triage failed, nothing to report: {error}", file=sys.stderr)
         return 1
+    except FeedbackError as error:
+        print(f"error: can't load the agent's memory: {error}", file=sys.stderr)
+        return 1
     if built is None:
         return 1
     report, _ = built
@@ -867,13 +872,15 @@ def _build_report(
     """The report for one section and what to do with it; shared by `report` and `check`.
 
     None when the Item isn't found (the error is already printed). When every triage run
-    fails, LLMError or TriageError is raised, as build_section_report does.
+    fails, LLMError or TriageError is raised, as build_section_report does; a saved report or
+    feedback file that can't be read for the agent's memory raises FeedbackError.
     """
     sections = _section_pair(sec, old, new, item, part)
     if sections is None:
         return None
     old_section, new_section = sections
     diff = diff_sections(old_section, new_section)
+    memory = _memory(sec.data_dir, new)
     report = build_section_report(
         diff,
         old_section=old_section,
@@ -888,8 +895,20 @@ def _build_report(
         max_explain=max_explain,
         triage_runs=triage_runs,
         judge_provider=judge_provider,
+        memory=memory,
     )
     return report, decide(report)
+
+
+def _memory(data_dir: Path, new: Filing) -> tuple[PastFinding, ...]:
+    """The agent's memory for explaining `new`: every earlier finding, none from `new` itself
+    (a re-run must not recall its own answers or your verdicts on them). Prints its size."""
+    memory = load_memory(
+        reports_dir(data_dir), feedback_dir(data_dir), exclude_accession=new.accession_number
+    )
+    rated = sum(1 for finding in memory if finding.verdict is not None)
+    print(f"memory: {_count(len(memory), 'earlier finding')}, {rated} rated by you")
+    return memory
 
 
 def _print_report(report: SectionReport) -> None:
@@ -1627,6 +1646,11 @@ def _eval_agent(
     if sections is None:
         return 1
     old_section, new_section = sections
+    try:
+        memory = _memory(sec.data_dir, new)
+    except FeedbackError as error:
+        print(f"error: can't load the agent's memory: {error}", file=sys.stderr)
+        return 1
     return _run_agent_eval(
         diff_sections(old_section, new_section),
         old_section=old_section,
@@ -1643,6 +1667,7 @@ def _eval_agent(
         runs=runs,
         ids=ids,
         results_dir=RESULTS_DIR,
+        memory=memory,
     )
 
 
@@ -1663,6 +1688,7 @@ def _run_agent_eval(
     runs: int,
     ids: list[str] | None,
     results_dir: Path,
+    memory: tuple[PastFinding, ...] = (),
 ) -> int:
     """Pick the changes, run the agent `runs` times on each, print and save the result."""
     section_title = _diff_label(diff)
@@ -1712,6 +1738,7 @@ def _run_agent_eval(
         runs=runs,
         on_run=progress,
         judge_provider=judge_provider,
+        memory=memory,
     )
     summary = summarize(changes, selection, settings)
     result = AgentEvalResult(
