@@ -5,7 +5,7 @@ from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Deliberately loose: we only need to confirm a contact email is present, not validate it fully.
@@ -67,7 +67,30 @@ class Settings(BaseSettings):
         return value
 
 
+class SettingsError(Exception):
+    """The settings can't be loaded; the message says why and what to do."""
+
+
 @lru_cache
 def get_settings() -> Settings:
-    """Return the process-wide settings, loading them on first call."""
-    return Settings()
+    """Return the process-wide settings, loading them on first call.
+
+    Raises SettingsError instead of pydantic's ValidationError, with a plain message.
+    """
+    try:
+        return Settings()
+    except ValidationError as error:
+        raise SettingsError(settings_problem(error, Path.cwd())) from error
+
+
+def settings_problem(error: ValidationError, cwd: Path) -> str:
+    """Why the settings didn't load. .env and data/ are read from the folder FinScope runs in,
+    so a missing .env almost always means it was started from the wrong folder."""
+    env_file = cwd / ".env"
+    if not env_file.exists():
+        return (
+            f"no .env in {cwd}. FinScope reads .env and data/ from the folder it runs in: "
+            "start it from the project folder (the one with .env and watchlist.json), "
+            "or copy .env.example to .env there and fill it in."
+        )
+    return f"the settings in {env_file} are not valid:\n{error}"

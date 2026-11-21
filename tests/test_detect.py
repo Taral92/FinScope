@@ -508,8 +508,13 @@ def test_only_one_filing_cannot_be_compared() -> None:
 
 def test_the_repo_watchlist_loads() -> None:
     entries = load_watchlist(Path(__file__).parents[1] / "watchlist.json")
-    assert entries == (TSLA, AAPL)
-    assert [entry.key for entry in entries] == ["TSLA|10-K|I|1A", "AAPL|10-K|I|1A"]
+    assert entries[:2] == (TSLA, AAPL)
+    assert [entry.key for entry in entries] == [
+        "TSLA|10-K|I|1A",
+        "AAPL|10-K|I|1A",
+        "SBUX|10-K|I|1A",
+        "DIS|10-K|I|1A",
+    ]
 
 
 def test_watchlist_entries_are_normalized(tmp_path: Path) -> None:

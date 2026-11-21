@@ -1,0 +1,162 @@
+{
+  "created_at": "2026-11-20T14:20:49.829305Z",
+  "reports": [
+    {
+      "report": "TSLA_10-K_0001628280-26-003952_I-1A.json",
+      "checked_at": "2026-11-07T18:19:39.469402Z",
+      "useful": [
+        "~1",
+        "~19"
+      ],
+      "not_useful": [
+        "~5"
+      ],
+      "wrong": [],
+      "reviews_rated": 0,
+      "reviews_useful": 0,
+      "missed": [],
+      "notes": {},
+      "judged": [
+        {
+          "id": "~1",
+          "human": "useful",
+          "judge": null,
+          "judge_reason": null
+        },
+        {
+          "id": "~5",
+          "human": "not_useful",
+          "judge": null,
+          "judge_reason": null
+        },
+        {
+          "id": "~19",
+          "human": "useful",
+          "judge": null,
+          "judge_reason": null
+        }
+      ],
+      "versions": null
+    },
+    {
+      "report": "AAPL_10-K_0000320193-26-000026_I-1A.json",
+      "checked_at": "2026-11-15T11:33:00.463318Z",
+      "useful": [
+        "+30",
+        "~6"
+      ],
+      "not_useful": [
+        "+9"
+      ],
+      "wrong": [],
+      "reviews_rated": 4,
+      "reviews_useful": 1,
+      "missed": [],
+      "notes": {},
+      "judged": [
+        {
+          "id": "+9",
+          "human": "not_useful",
+          "judge": "supported",
+          "judge_reason": "The filing discusses product and service defects, past service performance issues, and potential AI-related harms and vulnerabilities."
+        },
+        {
+          "id": "+30",
+          "human": "useful",
+          "judge": "supported",
+          "judge_reason": "The explanation accurately reflects the disclosed compliance changes, past effects, and uncertain competitive risks."
+        },
+        {
+          "id": "~6",
+          "human": "useful",
+          "judge": "supported",
+          "judge_reason": "Both lines accurately reflect the added restrictions and potential consequences, while preserving the filing’s distinction between current costs and possible effects."
+        }
+      ],
+      "versions": null
+    },
+    {
+      "report": "DIS_10-K_0001744489-26-000066_I-1A.json",
+      "checked_at": "2026-11-20T10:36:26.835461Z",
+      "useful": [
+        "+3"
+      ],
+      "not_useful": [
+        "+9"
+      ],
+      "wrong": [],
+      "reviews_rated": 0,
+      "reviews_useful": 0,
+      "missed": [],
+      "notes": {},
+      "judged": [
+        {
+          "id": "+3",
+          "human": "useful",
+          "judge": "supported",
+          "judge_reason": "The added paragraph gives examples and warns of execution risk and uncertain benefits, while the surrounding text ties impairments to past strategy changes, not to the newly announced plans."
+        },
+        {
+          "id": "+9",
+          "human": "not_useful",
+          "judge": "supported",
+          "judge_reason": "The added paragraph identifies streaming-related patent litigation, says developing alternatives increases costs, and describes payments or service restrictions as possible adverse outcomes."
+        }
+      ],
+      "versions": {
+        "model": "gpt-6.1-terra",
+        "triage": "3d30ad40231e",
+        "agent": "303abb25aeb8",
+        "judge": "47e9614aaa94",
+        "judge_model": "gpt-6.2-sol"
+      }
+    }
+  ],
+  "alerts_rated": 8,
+  "useful": 5,
+  "not_useful": 3,
+  "wrong": 0,
+  "reviews_rated": 4,
+  "reviews_useful": 1,
+  "missed": 0,
+  "precision": 0.625,
+  "wrong_rate": 0.0,
+  "judge_compared": 5,
+  "judge_agreed": 5,
+  "judge_agreement": 1.0,
+  "gate_demoted": 0,
+  "gate_caught": 0,
+  "by_version": [
+    {
+      "versions": null,
+      "reports": [
+        "TSLA_10-K_0001628280-26-003952_I-1A.json",
+        "AAPL_10-K_0000320193-26-000026_I-1A.json"
+      ],
+      "alerts_rated": 6,
+      "useful": 4,
+      "wrong": 0,
+      "missed": 0,
+      "judge_compared": 3,
+      "judge_agreed": 3
+    },
+    {
+      "versions": {
+        "model": "gpt-6.1-terra",
+        "triage": "3d30ad40231e",
+        "agent": "303abb25aeb8",
+        "judge": "47e9614aaa94",
+        "judge_model": "gpt-6.2-sol"
+      },
+      "reports": [
+        "DIS_10-K_0001744489-26-000066_I-1A.json"
+      ],
+      "alerts_rated": 2,
+      "useful": 1,
+      "wrong": 0,
+      "missed": 0,
+      "judge_compared": 2,
+      "judge_agreed": 2
+    }
+  ]
+}

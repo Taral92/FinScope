@@ -64,7 +64,7 @@ from finscope.alert_eval import (
     summarize_alerts,
     versions_in,
 )
-from finscope.config import Settings, get_settings
+from finscope.config import Settings, SettingsError, get_settings
 from finscope.decide import Decision, Tier, borderline_mark, decide, entry_line
 from finscope.detect import (
     WATCHLIST_PATH,
@@ -196,6 +196,14 @@ TRIAGE_MAX_OUTPUT_TOKENS = 16_000
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        return _main(argv)
+    except SettingsError as error:  # a plain message, not a pydantic traceback
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+
+def _main(argv: list[str] | None) -> int:
     parser = argparse.ArgumentParser(prog="finscope", description="Explore SEC EDGAR filings.")
     commands = parser.add_subparsers(dest="command", required=True)
 
