@@ -1,0 +1,205 @@
+{
+  "created_at": "2026-11-21T09:13:58.025595Z",
+  "company": "SBUX",
+  "form": "10-K",
+  "part": "I",
+  "item": "1A",
+  "new_accession": "0000829224-26-000162",
+  "old_accession": "0000829224-25-000114",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "d024b7999c60",
+  "runs": 2,
+  "picked_by": "ids",
+  "changes": [
+    {
+      "id": "+5",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Starbucks added a discussion of increasingly complex and divergent regulatory requirements affecting its responsible business initiatives and reporting.\nWHY IT MATTERS: The company says these obligations have already increased compliance complexity and costs and may continue to do so. They also raise the risk of actual or perceived noncompliance.\nIMPORTANCE: high - realized: Increased compliance costs\nEVIDENCE: \"have and may continue to increase compliance complexity, costs and the risk of actual or perceived noncompliance\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Starbucks added a discussion of increasingly complex and divergent regulatory requirements affecting its responsible business initiatives and reporting.",
+              "why_it_matters": "The company says these obligations have already increased compliance complexity and costs and may continue to do so. They also raise the risk of actual or perceived noncompliance.",
+              "importance": "high",
+              "importance_reason": "realized: Increased compliance costs",
+              "evidence": [
+                "have and may continue to increase compliance complexity, costs and the risk of actual or perceived noncompliance"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 1,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4356,
+            "output_tokens": 236,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The added paragraph describes increasingly complex and divergent requirements for responsible business initiatives and reporting, and says they have increased and may continue to increase compliance complexity, costs, and the risk of actual or perceived noncompliance.",
+              "model": "gpt-6.2-sol",
+              "input_tokens": 1249,
+              "output_tokens": 68
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+5",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Starbucks added a disclosure that diverging regulations have increased compliance complexity and costs, particularly for responsible business reporting and product packaging.\nWHY IT MATTERS: The company says regulatory differences across jurisdictions may continue to raise costs and increase the risk of actual or perceived noncompliance.\nIMPORTANCE: high - realized: Compliance costs have increased.\nEVIDENCE: \"have and may continue to increase compliance complexity, costs and the risk of actual or perceived noncompliance\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Starbucks added a disclosure that diverging regulations have increased compliance complexity and costs, particularly for responsible business reporting and product packaging.",
+              "why_it_matters": "The company says regulatory differences across jurisdictions may continue to raise costs and increase the risk of actual or perceived noncompliance.",
+              "importance": "high",
+              "importance_reason": "realized: Compliance costs have increased.",
+              "evidence": [
+                "have and may continue to increase compliance complexity, costs and the risk of actual or perceived noncompliance"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 1,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4353,
+            "output_tokens": 232,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The added paragraph cites responsible business reporting and packaging as examples of growing compliance complexity and says diverging rules have increased costs and may continue to raise costs and the risk of actual or perceived noncompliance.",
+              "model": "gpt-6.2-sol",
+              "input_tokens": 1246,
+              "output_tokens": 66
+            },
+            "judge_error": null
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    },
+    {
+      "id": "+1",
+      "triage_reason": "picked with --ids (triage not run)",
+      "runs": [
+        {
+          "number": 1,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+1",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Starbucks added a warning that strategic initiatives, including restructuring and the China retail divestiture, can make results harder to compare across periods.\nWHY IT MATTERS: The company says its restructuring plans have already resulted in restructuring and impairment charges. It also expects the China joint venture transition to lower revenue and raise operating margin compared with the historical company-operated model.\nIMPORTANCE: high - realized: Restructuring and impairment charges have occurred.\nEVIDENCE: \"have resulted in, and may continue to result in, restructuring and impairment charges\" \"we expect to continue to drive lower revenues and higher operating margin\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Starbucks added a warning that strategic initiatives, including restructuring and the China retail divestiture, can make results harder to compare across periods.",
+              "why_it_matters": "The company says its restructuring plans have already resulted in restructuring and impairment charges. It also expects the China joint venture transition to lower revenue and raise operating margin compared with the historical company-operated model.",
+              "importance": "high",
+              "importance_reason": "realized: Restructuring and impairment charges have occurred.",
+              "evidence": [
+                "have resulted in, and may continue to result in, restructuring and impairment charges",
+                "we expect to continue to drive lower revenues and higher operating margin"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4917,
+            "output_tokens": 254,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The added paragraph warns about comparability, confirms restructuring and impairment charges, and says the China joint venture transition is expected to lower revenue and raise operating margin relative to the historical company-operated model.",
+              "model": "gpt-6.2-sol",
+              "input_tokens": 1486,
+              "output_tokens": 58
+            },
+            "judge_error": null
+          }
+        },
+        {
+          "number": 2,
+          "importance": "high",
+          "tier": "alert",
+          "tier_reason": "agent rated high, fact-check passed",
+          "fact_check_passed": true,
+          "item": {
+            "id": "+1",
+            "triage_reason": "picked with --ids (triage not run)",
+            "explanation": "WHAT CHANGED: Starbucks added a warning that strategic initiatives can make results difficult to compare across periods, citing its China joint venture and restructuring plans.\nWHY IT MATTERS: Restructuring plans have already resulted in charges, while the China transition is expected to continue lowering reported revenue and raising operating margin compared with the historical model. These changes may obscure comparisons of underlying business performance.\nIMPORTANCE: high - realized: restructuring and impairment charges incurred\nEVIDENCE: \"have resulted in, and may continue to result in, restructuring and impairment charges\" \"we expect to continue to drive lower revenues and higher operating margin\"",
+            "error": null,
+            "parsed": {
+              "what_changed": "Starbucks added a warning that strategic initiatives can make results difficult to compare across periods, citing its China joint venture and restructuring plans.",
+              "why_it_matters": "Restructuring plans have already resulted in charges, while the China transition is expected to continue lowering reported revenue and raising operating margin compared with the historical model. These changes may obscure comparisons of underlying business performance.",
+              "importance": "high",
+              "importance_reason": "realized: restructuring and impairment charges incurred",
+              "evidence": [
+                "have resulted in, and may continue to result in, restructuring and impairment charges",
+                "we expect to continue to drive lower revenues and higher operating margin"
+              ],
+              "issues": []
+            },
+            "verification": {
+              "passed": true,
+              "issues": [],
+              "quotes_checked": 2,
+              "numbers_checked": 0
+            },
+            "input_tokens": 4550,
+            "output_tokens": 252,
+            "triage_votes": [],
+            "judgment": {
+              "verdict": "supported",
+              "reason": "The added paragraph confirms that restructuring has already resulted in charges and says the China transition is expected to continue lowering reported revenue and raising operating margin relative to the historical model, making period comparisons harder.",
+              "model": "gpt-6.2-sol",
+              "input_tokens": 1301,
+              "output_tokens": 58
+            },
+            "judge_error": null
+          }
+        }
+      ],
+      "importance_stable": true,
+      "tier_flips": false
+    }
+  ],
+  "summary": {
+    "changes": 2,
+    "importance_stable": 2,
+    "tier_flips": 0,
+    "total_runs": 4,
+    "fact_check_failures": 0,
+    "agent_failures": 0,
+    "input_tokens": 18176,
+    "output_tokens": 974,
+    "cost_usd": "0.029578",
+    "usage_complete": true
+  }
+}
