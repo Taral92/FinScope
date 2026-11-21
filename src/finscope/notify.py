@@ -17,6 +17,7 @@ import httpx
 
 from finscope.config import Settings
 from finscope.detect import CheckResult
+from finscope.synthesis import FilingSummary
 
 TELEGRAM_API = "https://api.telegram.org"
 # Telegram's limit for one message, counted in UTF-16 code units.
@@ -66,10 +67,13 @@ def format_alert_message(result: CheckResult) -> str | None:
     return "\n\n".join(blocks)
 
 
-def format_filing_message(results: Sequence[CheckResult]) -> str | None:
+def format_filing_message(
+    results: Sequence[CheckResult], *, summary: FilingSummary | None = None
+) -> str | None:
     """One message for the sections of one filing compared in one check; None if there is
     nothing to send. A single section with something to send reads exactly as
-    format_alert_message, so a watchlist with one section per company sees no change."""
+    format_alert_message, so a watchlist with one section per company sees no change. The
+    summary's kept points, if any, come first; dropped points are never shown."""
     sending = [r for r in results if r.decision.tier("alert") or r.decision.tier("review")]
     if len(sending) <= 1:
         return format_alert_message(sending[0]) if sending else None
@@ -84,6 +88,12 @@ def format_filing_message(results: Sequence[CheckResult]) -> str | None:
         f"in {len(sending)} sections\n"
         f"Filed {filing.filing_date.isoformat()}, accession {filing.accession_number}"
     ]
+    if summary is not None and summary.kept:
+        lines = [
+            f"{number}. {point.text} [{'; '.join(point.refs)}]"
+            for number, point in enumerate(summary.kept, start=1)
+        ]
+        blocks.append("SUMMARY\n" + "\n".join(lines))
     for result in sending:
         blocks.append(f"== {result.report.section_title} ==")
         blocks += _entry_blocks(result)

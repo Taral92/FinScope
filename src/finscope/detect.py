@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError,
 from finscope.decide import Decision
 from finscope.edgar import Filing
 from finscope.report import SectionReport
+from finscope.synthesis import FilingSummary
 
 # Relative to the working directory, like KNOWN_CASES_PATH. Committed with the code.
 WATCHLIST_PATH = Path("watchlist.json")
@@ -129,6 +130,9 @@ class FilingResult(BaseModel):
     form: str
     new_filing: Filing
     section_reports: tuple[str, ...]  # CheckResult file names, in watchlist order
+    # The cross-section summary (synthesis.py): None when fewer than two sections alerted.
+    summary: FilingSummary | None = None
+    summary_error: str | None = None  # why the summary call failed; the alerts still went out
 
     @property
     def file_name(self) -> str:

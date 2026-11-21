@@ -150,7 +150,15 @@ from finscope.known_judge import (
     save_known_judge_eval,
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
-from finscope.llm import LLMError, LLMProvider, OpenAIProvider, judge_model, judge_provider
+from finscope.llm import (
+    LLMError,
+    LLMProvider,
+    OpenAIProvider,
+    cost_for_tokens,
+    judge_cost_for_tokens,
+    judge_model,
+    judge_provider,
+)
 from finscope.mcp_server import run_server
 from finscope.memory import MIN_SIMILARITY, PastFinding
 from finscope.memory_store import load_memory
@@ -192,6 +200,7 @@ from finscope.sections import (
     section_label,
     split_sections,
 )
+from finscope.synthesis import FilingSummary, findings_of, needs_summary, summarize_filing
 from finscope.triage import (
     TriageError,
     TriageReport,
@@ -1152,7 +1161,14 @@ def _run_check(
 
         if results and not dry_run:
             try:
-                _finish_filing(results, sec.data_dir, notify=notify, notifier=notifier)
+                _finish_filing(
+                    results,
+                    sec.data_dir,
+                    settings=settings,
+                    providers=providers,
+                    notify=notify,
+                    notifier=notifier,
+                )
             except Exception as error:  # the section reports and state are already saved
                 label = f"{ticker} {form} filing record"
                 failed.append((label, f"{type(error).__name__}: {error}"))
@@ -1172,27 +1188,62 @@ def _finish_filing(
     results: list[CheckResult],
     data_dir: Path,
     *,
+    settings: Settings,
+    providers: Callable[[], tuple[LLMProvider, LLMProvider, LLMProvider]],
     notify: bool,
     notifier: TelegramNotifier | None,
 ) -> None:
-    """Tie the filing's compared sections together, then send them as one message.
+    """Tie the filing's compared sections together, summarize them when alerts came from two
+    or more sections, then send it all as one message.
 
-    Sent last, once every report, the state and this record are saved: a failed send loses
-    nothing, it's all on disk.
+    A failed summary call is recorded and the alerts still go out. Sent last, once every
+    report, the state and this record are saved: a failed send loses nothing.
     """
     first = results[0]
+    findings = findings_of(results)
+    summary, summary_error = None, None
+    if needs_summary(findings):
+        _, agent_provider, judge_provider = providers()
+        try:
+            summary = summarize_filing(
+                findings,
+                company=first.entry.ticker,
+                form=first.entry.form,
+                provider=agent_provider,
+                check_provider=judge_provider,
+            )
+        except LLMError as error:
+            summary_error = f"summary call failed: {error}"
     record = FilingResult(
         checked_at=first.checked_at,
         ticker=first.entry.ticker,
         form=first.entry.form,
         new_filing=first.new_filing,
         section_reports=tuple(result.file_name for result in results),
+        summary=summary,
+        summary_error=summary_error,
     )
     saved = save_filing_result(record, filing_reports_dir(data_dir))
     if len(results) > 1:
         print(f"\nfiling: {len(results)} sections compared, saved: {saved}")
+    if summary is not None:
+        cost = _summary_cost(summary, settings)
+        print(f"summary: {len(summary.kept)} of {len(summary.points)} point(s) kept, cost {cost}")
+    elif summary_error is not None:
+        print(f"warning: {summary_error} (the alerts are sent without it)", file=sys.stderr)
     if notify:
-        _send_alert(results, notifier, saved)
+        _send_alert(results, notifier, saved, summary=summary)
+
+
+def _summary_cost(summary: FilingSummary, settings: Settings) -> str:
+    """The summary call at the main model's prices, the point checks at the judge's."""
+    written = cost_for_tokens(summary.input_tokens, summary.output_tokens, settings)
+    checked = judge_cost_for_tokens(
+        summary.check_input_tokens, summary.check_output_tokens, settings
+    )
+    if written is None or checked is None:
+        return "unknown (no prices configured)"
+    return f"${written + checked:.4f}"
 
 
 def _send_failure_notice(message: str, notifier: TelegramNotifier | None) -> None:
@@ -1285,10 +1336,14 @@ def _check_entry(
 
 
 def _send_alert(
-    results: Sequence[CheckResult], notifier: TelegramNotifier | None, saved: Path
+    results: Sequence[CheckResult],
+    notifier: TelegramNotifier | None,
+    saved: Path,
+    *,
+    summary: FilingSummary | None = None,
 ) -> None:
     """Send one filing's alerts, if any. A failure only warns: the reports are already saved."""
-    message = format_filing_message(results)
+    message = format_filing_message(results, summary=summary)
     if message is None:
         return
     if notifier is None:

@@ -138,6 +138,7 @@ class FakeAgent:
 
     def __init__(self) -> None:
         self.calls = 0
+        self.summaries = 0
 
     def start(
         self, system: str, user: str, tools: list[ToolSpec]
@@ -157,6 +158,15 @@ class FakeAgent:
         self, state: ConversationState, tool_results: list[ToolResult]
     ) -> tuple[AgentStep, ConversationState]:
         raise AssertionError("the fake agent answers in one step")
+
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        """The filing summary: one point joining the robotaxi alerts of both sections."""
+        self.summaries += 1
+        point = {"text": "Robotaxi expansion is a new risk.", "refs": ["I-1A +1", "I-1B +1"]}
+        answer = {"points": [point]}
+        return LLMResult(text=json.dumps(answer), model="fake", input_tokens=800, output_tokens=60)
 
 
 class FakeJudge:
@@ -817,6 +827,7 @@ def test_two_sections_of_one_filing_send_one_message_and_save_one_record(
     assert edgar.submissions == 1  # the filing list, fetched once for both sections
     [text] = telegram.texts  # one message for the filing, not one per section
     assert text.startswith("FinScope: TSLA 10-K, 2 alerts in 2 sections\n")
+    assert "SUMMARY\n1. Robotaxi expansion is a new risk. [I-1A +1; I-1B +1]" in text
     assert "== Part I Item 1A. Risk Factors ==" in text
     assert "== Part I Item 1B. Unresolved Staff Comments ==" in text
     assert text.count("ALERT [+1]") == 2
@@ -827,7 +838,11 @@ def test_two_sections_of_one_filing_send_one_message_and_save_one_record(
         f"TSLA_10-K_{NEW[0]}_I-1A.json",
         f"TSLA_10-K_{NEW[0]}_I-1B.json",
     ]
-    assert "filing: 2 sections compared" in capsys.readouterr().out
+    [point] = saved["summary"]["points"]
+    assert (point["status"], point["refs"]) == ("kept", ["I-1A +1", "I-1B +1"])
+    out = capsys.readouterr().out
+    assert "filing: 2 sections compared" in out
+    assert "summary: 1 of 1 point(s) kept" in out
 
 
 def test_a_filing_with_one_section_to_send_reads_as_before(
@@ -838,15 +853,16 @@ def test_a_filing_with_one_section_to_send_reads_as_before(
     old = (OLD[0], OLD[1], two_section_html(None, None))
     edgar.set_filings("TSLA", new, old)
     settings = SETTINGS.model_copy(update={"data_dir": tmp_path})
+    providers = Providers()
     telegram = Telegram()
     with SecClient(settings=settings, transport=httpx.MockTransport(edgar.handle)) as sec:
         remember(sec, TSLA, old)
         remember(sec, TSLA_1B, old)
+        bot = telegram.notifier()
 
-        assert (
-            check(sec, Providers(), (TSLA, TSLA_1B), notify=True, notifier=telegram.notifier()) == 0
-        )
+        assert check(sec, providers, (TSLA, TSLA_1B), notify=True, notifier=bot) == 0
 
+    assert providers.agent.summaries == 0  # one section alerted: nothing to join, no call
     [text] = telegram.texts
     assert text.startswith("FinScope: TSLA 10-K, 1 alert\nPart I Item 1A. Risk Factors\n")
     assert "sections" not in text and "==" not in text
@@ -865,3 +881,37 @@ def test_a_failed_filing_list_fails_every_section_of_that_filing_only(
     captured = capsys.readouterr()
     assert "2 failed: NOPE 10-K Part I Item 1A, NOPE 10-K Part I Item 1B" in captured.out
     assert remembered(sec, AAPL) == NEW[0]  # the other filing still ran
+
+
+class FailingSummaryAgent(FakeAgent):
+    def complete_json(
+        self, system: str, user: str, schema_name: str, schema: dict[str, Any]
+    ) -> LLMResult:
+        raise LLMError("summary model down")
+
+
+def test_a_failed_summary_call_still_sends_the_alerts_and_records_why(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edgar = CountingEdgar()
+    new = (NEW[0], NEW[1], two_section_html(NEW_RISK, NEW_RISK))
+    old = (OLD[0], OLD[1], two_section_html(None, None))
+    edgar.set_filings("TSLA", new, old)
+    settings = SETTINGS.model_copy(update={"data_dir": tmp_path})
+    providers = Providers()
+    providers.agent = FailingSummaryAgent()
+    telegram = Telegram()
+    with SecClient(settings=settings, transport=httpx.MockTransport(edgar.handle)) as sec:
+        remember(sec, TSLA, old)
+        remember(sec, TSLA_1B, old)
+        bot = telegram.notifier()
+
+        assert check(sec, providers, (TSLA, TSLA_1B), notify=True, notifier=bot) == 0
+
+    [text] = telegram.texts
+    assert "2 alerts in 2 sections" in text and "SUMMARY" not in text
+    [record] = filing_reports_dir(tmp_path).iterdir()
+    saved = json.loads(record.read_text(encoding="utf-8"))
+    assert saved["summary"] is None
+    assert saved["summary_error"] == "summary call failed: summary model down"
+    assert "warning: summary call failed" in capsys.readouterr().err
