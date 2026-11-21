@@ -1,0 +1,236 @@
+{
+  "findings": [
+    {
+      "id": "acme-tariffs",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme added a risk that tariffs on imported battery cells could raise its costs.",
+      "triage_reason": "New tariff exposure on imported components."
+    },
+    {
+      "id": "acme-chip-supplier",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme added a risk about relying on a single supplier for its infotainment semiconductors.",
+      "triage_reason": "Supplier concentration for chips."
+    },
+    {
+      "id": "acme-adas-lawsuit",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme added that a class action lawsuit alleges its driver-assistance claims were misleading.",
+      "triage_reason": "New litigation over driver-assistance marketing."
+    },
+    {
+      "id": "acme-ransomware",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme expanded its cybersecurity risk to include ransomware attacks on its factories.",
+      "triage_reason": "Broader cyberattack risk at its plants."
+    },
+    {
+      "id": "acme-ceo-statements",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme added a risk that its CEO's public statements could hurt its brand.",
+      "triage_reason": "Key-person and reputation risk."
+    },
+    {
+      "id": "acme-interest-demand",
+      "company": "ACME",
+      "section": "I-1A",
+      "what_changed": "Acme added a risk that rising interest rates could reduce demand from customers who finance purchases.",
+      "triage_reason": "Interest rate sensitivity of demand."
+    },
+    {
+      "id": "birch-drought-wheat",
+      "company": "BRCH",
+      "section": "I-1A",
+      "what_changed": "Birch Foods added that drought could raise the cost of the wheat it buys.",
+      "triage_reason": "Commodity input cost risk from weather."
+    },
+    {
+      "id": "birch-packaging-rules",
+      "company": "BRCH",
+      "section": "I-1A",
+      "what_changed": "Birch Foods added new EU rules requiring recyclable packaging.",
+      "triage_reason": "Packaging regulation compliance."
+    },
+    {
+      "id": "birch-snack-recall",
+      "company": "BRCH",
+      "section": "I-1A",
+      "what_changed": "Birch Foods added that it recalled contaminated snack bars, which cut its sales.",
+      "triage_reason": "Food safety recall already occurred."
+    },
+    {
+      "id": "birch-bakery-wages",
+      "company": "BRCH",
+      "section": "I-1A",
+      "what_changed": "Birch Foods added that labor shortages at its bakeries raised wage costs.",
+      "triage_reason": "Labor cost increase realized."
+    },
+    {
+      "id": "birch-loyalty-breach",
+      "company": "BRCH",
+      "section": "I-1A",
+      "what_changed": "Birch Foods expanded its risk on data breaches of its loyalty program.",
+      "triage_reason": "Customer data security."
+    },
+    {
+      "id": "cobalt-subscriber-growth",
+      "company": "CBLT",
+      "section": "I-1A",
+      "what_changed": "Cobalt Media added that streaming subscriber growth may slow.",
+      "triage_reason": "Subscriber growth risk."
+    },
+    {
+      "id": "cobalt-patent-suits",
+      "company": "CBLT",
+      "section": "I-1A",
+      "what_changed": "Cobalt Media added patent infringement lawsuits over its streaming technology.",
+      "triage_reason": "New patent litigation."
+    },
+    {
+      "id": "cobalt-fcc-licenses",
+      "company": "CBLT",
+      "section": "I-1A",
+      "what_changed": "Cobalt Media added that the FCC may not renew its broadcast licenses.",
+      "triage_reason": "License renewal regulatory risk."
+    },
+    {
+      "id": "cobalt-studio-closures",
+      "company": "CBLT",
+      "section": "I-1A",
+      "what_changed": "Cobalt Media added a restructuring plan that closes two studios, with charges.",
+      "triage_reason": "Restructuring charges and studio closures."
+    },
+    {
+      "id": "cobalt-import-duties",
+      "company": "CBLT",
+      "section": "I-1A",
+      "what_changed": "Cobalt Media added a risk that new import duties on electronics raise its device costs.",
+      "triage_reason": "Customs duties on hardware."
+    }
+  ],
+  "queries": [
+    {
+      "name": "tariffs-raised-costs",
+      "company": "ACME",
+      "section": "I-1A",
+      "text": "Tariffs imposed in 2027 on battery cells imported from Asia have increased our costs and reduced our gross margin.",
+      "relevant": [
+        "acme-tariffs",
+        "cobalt-import-duties"
+      ],
+      "kind": "easy",
+      "why": "Acme's own tariff finding shares the words; Cobalt's import duties are the same kind of risk."
+    },
+    {
+      "name": "customs-duties-paraphrase",
+      "company": "BRCH",
+      "section": "I-1A",
+      "text": "Customs duties on the packaging film we buy from overseas suppliers are expected to increase our expenses.",
+      "relevant": [
+        "acme-tariffs",
+        "cobalt-import-duties"
+      ],
+      "kind": "paraphrase",
+      "why": "Duties on imports, like both tariff findings; Birch's packaging-rules finding shares 'packaging' but is about regulation, not duties."
+    },
+    {
+      "name": "customers-sued-paraphrase",
+      "company": "ACME",
+      "section": "I-1A",
+      "text": "Several customers have sued us, claiming that our lane-keeping features did not perform as advertised.",
+      "relevant": [
+        "acme-adas-lawsuit"
+      ],
+      "kind": "paraphrase",
+      "why": "The same lawsuit topic in other words ('sued', 'lane-keeping', 'as advertised'); word overlap is expected to miss it."
+    },
+    {
+      "name": "ransomware-streaming",
+      "company": "CBLT",
+      "section": "I-1A",
+      "text": "Attackers could use ransomware to disrupt our streaming platform and steal subscriber data.",
+      "relevant": [
+        "acme-ransomware",
+        "birch-loyalty-breach"
+      ],
+      "kind": "hard-negative",
+      "why": "Cyberattacks and data theft; Cobalt's subscriber-growth finding shares 'streaming' and 'subscriber' but is about demand."
+    },
+    {
+      "name": "cereal-recall",
+      "company": "BRCH",
+      "section": "I-1A",
+      "text": "We recalled certain cereal products after finding contamination, and the recall reduced our net sales.",
+      "relevant": [
+        "birch-snack-recall"
+      ],
+      "kind": "easy",
+      "why": "Birch's earlier contamination recall."
+    },
+    {
+      "name": "earthquake-nothing",
+      "company": "ACME",
+      "section": "I-1A",
+      "text": "An earthquake could damage our headquarters and research center in California.",
+      "relevant": [],
+      "kind": "nothing-relevant",
+      "why": "No finding is about natural disasters: recall should return nothing."
+    },
+    {
+      "name": "accounting-nothing",
+      "company": "CBLT",
+      "section": "I-1A",
+      "text": "Changes in accounting standards may require us to restate previously reported amounts.",
+      "relevant": [],
+      "kind": "nothing-relevant",
+      "why": "No finding is about accounting standards."
+    },
+    {
+      "name": "insurance-costs-nothing",
+      "company": "BRCH",
+      "section": "I-1A",
+      "text": "Our insurance costs could rise as we open new stores in coastal regions.",
+      "relevant": [],
+      "kind": "nothing-relevant",
+      "why": "A cost increase from a cause no finding is about; sharing 'costs' and 'new' with the tariff, duty and wage findings must not count as similar."
+    },
+    {
+      "name": "ceo-comments-paraphrase",
+      "company": "CBLT",
+      "section": "I-1A",
+      "text": "Public comments by our chief executive officer have drawn criticism and may harm our reputation.",
+      "relevant": [
+        "acme-ceo-statements"
+      ],
+      "kind": "paraphrase",
+      "why": "CEO statements hurting the brand, in other words ('chief executive officer', 'reputation')."
+    },
+    {
+      "name": "plant-restructuring",
+      "company": "ACME",
+      "section": "I-1A",
+      "text": "We are closing one of our assembly plants as part of a restructuring that will result in charges.",
+      "relevant": [
+        "cobalt-studio-closures"
+      ],
+      "kind": "easy",
+      "why": "Closures under a restructuring plan, with charges."
+    },
+    {
+      "name": "fcc-licenses",
+      "company": "CBLT",
+      "section": "I-1A",
+      "text": "The FCC may decline to renew our television broadcast licenses in several markets.",
+      "relevant": [
+        "cobalt-fcc-licenses"
+      ],
+      "kind": "easy",
+      "why": "Cobalt's own earlier FCC license finding."
+    }
+  ]
+}

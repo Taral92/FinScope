@@ -12,6 +12,7 @@ imports none of them: the explain agent's tools import it, and the reports impor
 """
 
 import re
+from collections.abc import Callable
 from datetime import date
 from typing import Literal
 
@@ -42,9 +43,15 @@ _STOPWORDS = frozenset(
         "no", "not", "of", "on", "or", "other", "our", "such", "than", "that", "the", "their",
         "them", "there", "these", "they", "this", "those", "to", "under", "us", "was", "we",
         "were", "what", "when", "which", "while", "who", "will", "with", "would",
+        "over", "across", "among", "against", "between", "before", "during", "including",
+        "through", "within", "without", "some", "certain", "each", "both", "only",
         # words nearly every risk factor uses
         "company", "company's", "companies", "business", "results", "adversely", "affect",
         "affected", "financial", "operations", "risk", "risks", "added", "disclosure",
+        # how a change is described, not what it is about: "costs" and "new" alone matched an
+        # insurance-cost query to the tariff findings (retrieval eval, false recall)
+        "new", "cost", "costs", "expense", "expenses", "raise", "raises", "rise", "rising",
+        "increase", "increases", "increased", "reduce", "reduced", "higher", "lower",
     }
 )  # fmt: skip
 
@@ -73,19 +80,34 @@ def recall(
 ) -> tuple[list[PastFinding], list[PastFinding]]:
     """(this company's earlier findings in this section, rated findings from any company),
     each most similar first and above MIN_SIMILARITY. A finding is shown in one list only."""
-    query = _words(change_text)
+    ranked = [finding for _, finding in rank(memory, change_text)]
+    history = [f for f in ranked if f.company == company and f.section == section][:HISTORY_LIMIT]
+    rated = [f for f in ranked if f.verdict is not None and f not in history][:RATED_LIMIT]
+    return history, rated
+
+
+Similarity = Callable[[frozenset[str], frozenset[str]], float]
+
+
+def rank(
+    memory: tuple[PastFinding, ...],
+    change_text: str,
+    *,
+    min_similarity: float = MIN_SIMILARITY,
+    similarity: Similarity | None = None,
+) -> list[tuple[float, PastFinding]]:
+    """Every finding scoring at least `min_similarity`, most similar first: what recall picks
+    from. `similarity` defaults to overlap_similarity; the retrieval eval tries others."""
+    score_of = similarity or overlap_similarity
+    query = words(change_text)
     scored = [
         (score, finding)
         for finding in memory
-        if (score := _similarity(query, _words(f"{finding.what_changed} {finding.triage_reason}")))
-        >= MIN_SIMILARITY
+        if (score := score_of(query, words(f"{finding.what_changed} {finding.triage_reason}")))
+        >= min_similarity
     ]
     scored.sort(key=lambda pair: (-pair[0], pair[1].filing_date, pair[1].change_id))
-    history = [f for _, f in scored if f.company == company and f.section == section][
-        :HISTORY_LIMIT
-    ]
-    rated = [f for _, f in scored if f.verdict is not None and f not in history][:RATED_LIMIT]
-    return history, rated
+    return scored
 
 
 def format_recall(
@@ -117,12 +139,20 @@ def _line(finding: PastFinding, *, with_company: bool) -> str:
     )
 
 
-def _words(text: str) -> frozenset[str]:
+def words(text: str) -> frozenset[str]:
+    """The text's words that say what it is about: lowercased, stopwords left out."""
     return frozenset(w for w in _WORD.findall(text.lower()) if w not in _STOPWORDS)
 
 
-def _similarity(a: frozenset[str], b: frozenset[str]) -> float:
+def overlap_similarity(a: frozenset[str], b: frozenset[str]) -> float:
     """Shared words over the smaller set's words: 1 when one's words all appear in the other."""
     if not a or not b:
         return 0.0
     return len(a & b) / min(len(a), len(b))
+
+
+def jaccard_similarity(a: frozenset[str], b: frozenset[str]) -> float:
+    """Shared words over all words: punishes a long paragraph compared with a short finding."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)

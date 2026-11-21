@@ -1,0 +1,1594 @@
+{
+  "created_at": "2026-11-21T09:27:54.559779Z",
+  "cases_file": "evals/known/retrieval_cases.json",
+  "k": 3,
+  "current": {
+    "method": "overlap",
+    "threshold": 0.15,
+    "recall_at_k": 0.5454545454545454,
+    "precision_at_k": 0.8571428571428571,
+    "mrr": 0.75,
+    "false_recall": 0.0,
+    "queries": [
+      {
+        "name": "tariffs-raised-costs",
+        "kind": "easy",
+        "relevant": [
+          "acme-tariffs",
+          "cobalt-import-duties"
+        ],
+        "retrieved": [
+          "acme-tariffs"
+        ]
+      },
+      {
+        "name": "customs-duties-paraphrase",
+        "kind": "paraphrase",
+        "relevant": [
+          "acme-tariffs",
+          "cobalt-import-duties"
+        ],
+        "retrieved": [
+          "cobalt-import-duties"
+        ]
+      },
+      {
+        "name": "customers-sued-paraphrase",
+        "kind": "paraphrase",
+        "relevant": [
+          "acme-adas-lawsuit"
+        ],
+        "retrieved": []
+      },
+      {
+        "name": "ransomware-streaming",
+        "kind": "hard-negative",
+        "relevant": [
+          "acme-ransomware",
+          "birch-loyalty-breach"
+        ],
+        "retrieved": [
+          "cobalt-subscriber-growth"
+        ]
+      },
+      {
+        "name": "cereal-recall",
+        "kind": "easy",
+        "relevant": [
+          "birch-snack-recall"
+        ],
+        "retrieved": [
+          "birch-snack-recall"
+        ]
+      },
+      {
+        "name": "earthquake-nothing",
+        "kind": "nothing-relevant",
+        "relevant": [],
+        "retrieved": []
+      },
+      {
+        "name": "accounting-nothing",
+        "kind": "nothing-relevant",
+        "relevant": [],
+        "retrieved": []
+      },
+      {
+        "name": "insurance-costs-nothing",
+        "kind": "nothing-relevant",
+        "relevant": [],
+        "retrieved": []
+      },
+      {
+        "name": "ceo-comments-paraphrase",
+        "kind": "paraphrase",
+        "relevant": [
+          "acme-ceo-statements"
+        ],
+        "retrieved": [
+          "acme-ceo-statements"
+        ]
+      },
+      {
+        "name": "plant-restructuring",
+        "kind": "easy",
+        "relevant": [
+          "cobalt-studio-closures"
+        ],
+        "retrieved": [
+          "cobalt-studio-closures"
+        ]
+      },
+      {
+        "name": "fcc-licenses",
+        "kind": "easy",
+        "relevant": [
+          "cobalt-fcc-licenses"
+        ],
+        "retrieved": [
+          "cobalt-fcc-licenses"
+        ]
+      }
+    ]
+  },
+  "sweep": [
+    {
+      "method": "overlap",
+      "threshold": 0.05,
+      "recall_at_k": 0.6363636363636364,
+      "precision_at_k": 0.5833333333333334,
+      "mrr": 0.7916666666666666,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties",
+            "birch-packaging-rules"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": [
+            "acme-interest-demand"
+          ]
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth",
+            "cobalt-patent-suits",
+            "acme-ransomware"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures",
+            "acme-ransomware"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.1,
+      "recall_at_k": 0.6363636363636364,
+      "precision_at_k": 0.5833333333333334,
+      "mrr": 0.7916666666666666,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties",
+            "birch-packaging-rules"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": [
+            "acme-interest-demand"
+          ]
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth",
+            "cobalt-patent-suits",
+            "acme-ransomware"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures",
+            "acme-ransomware"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.15,
+      "recall_at_k": 0.5454545454545454,
+      "precision_at_k": 0.8571428571428571,
+      "mrr": 0.75,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.2,
+      "recall_at_k": 0.5454545454545454,
+      "precision_at_k": 0.8571428571428571,
+      "mrr": 0.75,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.25,
+      "recall_at_k": 0.5454545454545454,
+      "precision_at_k": 0.8571428571428571,
+      "mrr": 0.75,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.3,
+      "recall_at_k": 0.2727272727272727,
+      "precision_at_k": 0.75,
+      "mrr": 0.375,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "overlap",
+      "threshold": 0.4,
+      "recall_at_k": 0.18181818181818182,
+      "precision_at_k": 1.0,
+      "mrr": 0.25,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.05,
+      "recall_at_k": 0.6363636363636364,
+      "precision_at_k": 0.5833333333333334,
+      "mrr": 0.7916666666666666,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties",
+            "birch-packaging-rules"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": [
+            "acme-interest-demand"
+          ]
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth",
+            "cobalt-patent-suits",
+            "birch-loyalty-breach"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures",
+            "acme-ransomware"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.1,
+      "recall_at_k": 0.5454545454545454,
+      "precision_at_k": 0.8571428571428571,
+      "mrr": 0.75,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "cobalt-import-duties"
+          ]
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": [
+            "acme-ceo-statements"
+          ]
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": [
+            "cobalt-studio-closures"
+          ]
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.15,
+      "recall_at_k": 0.2727272727272727,
+      "precision_at_k": 0.75,
+      "mrr": 0.375,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": [
+            "cobalt-subscriber-growth"
+          ]
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": [
+            "birch-snack-recall"
+          ]
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.2,
+      "recall_at_k": 0.18181818181818182,
+      "precision_at_k": 1.0,
+      "mrr": 0.25,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.25,
+      "recall_at_k": 0.18181818181818182,
+      "precision_at_k": 1.0,
+      "mrr": 0.25,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.3,
+      "recall_at_k": 0.18181818181818182,
+      "precision_at_k": 1.0,
+      "mrr": 0.25,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": [
+            "acme-tariffs"
+          ]
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": [
+            "cobalt-fcc-licenses"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "jaccard",
+      "threshold": 0.4,
+      "recall_at_k": 0.0,
+      "precision_at_k": null,
+      "mrr": 0.0,
+      "false_recall": 0.0,
+      "queries": [
+        {
+          "name": "tariffs-raised-costs",
+          "kind": "easy",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customs-duties-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-tariffs",
+            "cobalt-import-duties"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "customers-sued-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-adas-lawsuit"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "ransomware-streaming",
+          "kind": "hard-negative",
+          "relevant": [
+            "acme-ransomware",
+            "birch-loyalty-breach"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "cereal-recall",
+          "kind": "easy",
+          "relevant": [
+            "birch-snack-recall"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "earthquake-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "accounting-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "insurance-costs-nothing",
+          "kind": "nothing-relevant",
+          "relevant": [],
+          "retrieved": []
+        },
+        {
+          "name": "ceo-comments-paraphrase",
+          "kind": "paraphrase",
+          "relevant": [
+            "acme-ceo-statements"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "plant-restructuring",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-studio-closures"
+          ],
+          "retrieved": []
+        },
+        {
+          "name": "fcc-licenses",
+          "kind": "easy",
+          "relevant": [
+            "cobalt-fcc-licenses"
+          ],
+          "retrieved": []
+        }
+      ]
+    }
+  ]
+}

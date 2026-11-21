@@ -17,6 +17,7 @@ python -m finscope eval-known [--runs 3]                score AI triage on made-
 python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent stability eval
 python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
 python -m finscope eval-known-judge [--runs 2]          score the judge's verdicts on known cases
+python -m finscope eval-retrieval                       score memory recall on known cases (no AI)
 python -m finscope eval-pairwise TSLA --item 1A --candidate FILE [--ids '~4'] [--max 5]
                                                     the agent's prompt vs a candidate, judged
                                                     side by side (--aa instead of --candidate:
@@ -147,7 +148,7 @@ from finscope.known_judge import (
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import LLMError, LLMProvider, OpenAIProvider, judge_model, judge_provider
 from finscope.mcp_server import run_server
-from finscope.memory import PastFinding
+from finscope.memory import MIN_SIMILARITY, PastFinding
 from finscope.memory_store import load_memory
 from finscope.notify import (
     NotifyError,
@@ -172,6 +173,14 @@ from finscope.pairwise import (
     usable,
 )
 from finscope.report import HighItem, SectionReport, build_section_report
+from finscope.retrieval_eval import (
+    RETRIEVAL_CASES_PATH,
+    RetrievalCasesError,
+    Scores,
+    load_retrieval_cases,
+    run_retrieval_eval,
+    save_retrieval_eval,
+)
 from finscope.sections import (
     Section,
     SectionLookupError,
@@ -345,6 +354,11 @@ def _main(argv: list[str] | None) -> int:
         "--runs", type=_positive_int, default=2, help="agent runs per case (default 2)"
     )
 
+    commands.add_parser(
+        "eval-retrieval",
+        help="score the agent memory's recall on made-up findings and queries (no AI calls)",
+    )
+
     known_judge_parser = commands.add_parser(
         "eval-known-judge",
         help="score the judge's verdicts on made-up explanations with obvious answers",
@@ -413,6 +427,8 @@ def _main(argv: list[str] | None) -> int:
         return _eval_known_agent(args.runs)
     if args.command == "eval-known-judge":
         return _eval_known_judge(args.runs)
+    if args.command == "eval-retrieval":
+        return _eval_retrieval(RETRIEVAL_CASES_PATH, RESULTS_DIR)
     # Takes its tickers from the watchlist, not the command line.
     if args.command == "check":
         return _check(
@@ -2168,6 +2184,65 @@ def _print_known_agent_eval(result: KnownAgentEvalResult) -> None:
         result.cost_usd,
         all_succeeded=result.usage_complete,
     )
+
+
+def _eval_retrieval(cases_path: Path, results_dir: Path) -> int:
+    """Score memory recall on the known cases; print per query and the sweep; save."""
+    try:
+        cases = load_retrieval_cases(cases_path)
+    except RetrievalCasesError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    result = run_retrieval_eval(
+        cases,
+        cases_file=cases_path,
+        current_threshold=MIN_SIMILARITY,
+        created_at=datetime.now(UTC),
+    )
+    current = result.current
+    print(
+        f"{len(cases.queries)} queries over {len(cases.findings)} made-up findings "
+        f"({cases_path}); top {result.k}, as recall shows them\n"
+    )
+    print(f"=== NOW: {current.method} at {current.threshold:.2f} (memory.MIN_SIMILARITY) ===")
+    width = max(len(query.name) for query in current.queries)
+    for query in current.queries:
+        mark = "ok  " if set(query.retrieved) == set(query.relevant) else "MISS"
+        print(
+            f"{mark} {query.name:<{width}}  {query.kind:<16}  got {_ids(query.retrieved)}"
+            f"  want {_ids(query.relevant)}"
+        )
+    print(f"\n{_scores_line(current)}")
+    print("\n=== SWEEP ===")
+    print("method   threshold  recall@k  precision@k  MRR   false recall")
+    for scores in result.sweep:
+        print(_scores_row(scores))
+    saved = save_retrieval_eval(result, results_dir)
+    print(f"\nsaved:  {saved}")
+    return 0
+
+
+def _ids(ids: tuple[str, ...]) -> str:
+    return ", ".join(ids) if ids else "(nothing)"
+
+
+def _scores_line(scores: Scores) -> str:
+    return (
+        f"recall@k {_pct(scores.recall_at_k)}   precision@k {_pct(scores.precision_at_k)}   "
+        f"MRR {_ratio(scores.mrr)}   false recall {_pct(scores.false_recall)}"
+    )
+
+
+def _scores_row(scores: Scores) -> str:
+    return (
+        f"{scores.method:<8} {scores.threshold:>9.2f}  {_pct(scores.recall_at_k):>8}  "
+        f"{_pct(scores.precision_at_k):>11}  {_ratio(scores.mrr):>4}  "
+        f"{_pct(scores.false_recall):>12}"
+    )
+
+
+def _ratio(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f}"
 
 
 def _eval_known_judge(runs: int) -> int:
