@@ -41,7 +41,9 @@ def agent_prompt_version(system_prompt: str = AGENT_SYSTEM_PROMPT) -> str:
 
     `system_prompt` gives the version of another agent prompt, e.g. a pairwise candidate.
     """
-    tools = {"tools": [spec.model_dump(mode="json") for spec in TOOL_SPECS]}
+    # `strict` is how a spec is sent, not what the model reads, and it is the same for all of
+    # these: leaving it out keeps the versions from before the field existed.
+    tools = {"tools": [spec.model_dump(mode="json", exclude={"strict"}) for spec in TOOL_SPECS]}
     return prompt_version(system_prompt, tools)
 
 

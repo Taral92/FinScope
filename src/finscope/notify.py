@@ -5,10 +5,12 @@ shows its fixed reason, and digest entries are only counted.
 
 The bot token is part of every Telegram URL, and httpx puts the URL in its error messages.
 So no httpx error is ever passed on: every failure becomes a NotifyError whose message we
-write ourselves. (httpx also logs request URLs at INFO level; FinScope configures no logging,
-so nothing is logged. Keep the "httpx" logger above INFO if that ever changes.)
+write ourselves. httpx also logs every request URL at INFO level, and the MCP SDK turns
+logging on when an MCP server is built in-process (found 2026-11-22), so the "httpx" logger is
+held at WARNING here: request URLs, and with them the token, are never logged.
 """
 
+import logging
 from collections.abc import Mapping, Sequence
 from types import TracebackType
 from typing import Any, Self
@@ -18,6 +20,10 @@ import httpx
 from finscope.config import Settings
 from finscope.detect import CheckResult
 from finscope.synthesis import FilingSummary
+
+# Set on import, before any client exists. A level on this logger wins over whatever level the
+# root logger is given later (MCPServer sets INFO), so URLs stay out of every log.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 TELEGRAM_API = "https://api.telegram.org"
 # Telegram's limit for one message, counted in UTF-16 code units.

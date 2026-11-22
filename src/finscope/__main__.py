@@ -8,6 +8,8 @@ python -m finscope facts TSLA [--form F]            key financial numbers from X
 python -m finscope diff TSLA [--form F] [--item 1A] [--part I]   compare with the previous filing
 python -m finscope explain TSLA --item 1A --kind added --n 4      AI explanation of one change
 python -m finscope explain TSLA --item 1A --kind added --n 4 --agent   same, model uses tools first
+python -m finscope explain TSLA --item 1A --kind added --n 4 --agent --mcp   same, tools from
+                                                    FinScope's MCP server, called over MCP
 python -m finscope triage TSLA --item 1A [--part I]     AI rates every change low/medium/high
 python -m finscope report TSLA --item 1A [--max-explain 20] [--triage-runs 1]  triage, explain,
                                                     fact-check, decide
@@ -43,7 +45,7 @@ from decimal import Decimal
 from functools import cache
 from pathlib import Path
 
-from finscope.agent import AgentError, TraceStep
+from finscope.agent import AgentError, Tool, TraceStep
 from finscope.agent_eval import (
     AgentEvalError,
     AgentEvalResult,
@@ -169,6 +171,8 @@ from finscope.llm import (
     judge_model,
     judge_provider,
 )
+from finscope.mcp_client import McpToolbox, prompt_note, server_command
+from finscope.mcp_client import Target as McpTarget
 from finscope.mcp_server import run_server
 from finscope.memory import MIN_SIMILARITY, PastFinding
 from finscope.memory_store import load_memory
@@ -274,6 +278,11 @@ def _main(argv: list[str] | None) -> int:
     explain_parser.add_argument("--n", type=int, required=True, help="change number from `diff`")
     explain_parser.add_argument(
         "--agent", action="store_true", help="let the model gather context with tools first"
+    )
+    explain_parser.add_argument(
+        "--mcp",
+        action="store_true",
+        help="with --agent: discover the tools from FinScope's MCP server and call them over MCP",
     )
 
     triage_parser = commands.add_parser("triage", help="AI rates every change in a section")
@@ -450,6 +459,9 @@ def _main(argv: list[str] | None) -> int:
     )
 
     args = parser.parse_args(argv)
+    if args.command == "explain" and args.mcp and not args.agent:  # before any network call
+        print("error: --mcp needs --agent (only the agent uses tools)", file=sys.stderr)
+        return 1
 
     # Needs no ticker and no SEC data: the cases are made up and stored in the repo.
     if args.command == "eval-known":
@@ -516,7 +528,16 @@ def _main(argv: list[str] | None) -> int:
             old, new = filings[1], filings[0]
             if args.command == "explain":
                 return _explain(
-                    sec, args.ticker, old, new, args.item, args.part, args.kind, args.n, args.agent
+                    sec,
+                    args.ticker,
+                    old,
+                    new,
+                    args.item,
+                    args.part,
+                    args.kind,
+                    args.n,
+                    args.agent,
+                    mcp=args.mcp,
                 )
             if args.command == "triage":
                 return _triage(sec, args.ticker, old, new, args.item, args.part)
@@ -687,6 +708,8 @@ def _explain(
     kind: str,
     number: int,
     agent: bool,
+    *,
+    mcp: bool = False,
 ) -> int:
     settings = get_settings()
     try:
@@ -721,6 +744,11 @@ def _explain(
             new_section=new_section,
             metrics=tuple(load_metrics(sec, new)),  # loaded now: tools never touch the network
         )
+        if mcp:
+            note = prompt_note(ticker.upper(), new.form, diff.item, diff.part, _id_of(diff, change))
+            return _explain_over_mcp(
+                context, ticker, new, _diff_label(diff), provider, server_command(Path.cwd()), note
+            )
         return _explain_with_agent(context, ticker, new, _diff_label(diff), provider)
 
     try:
@@ -751,8 +779,48 @@ def _explain(
     return 0
 
 
+def _id_of(diff: SectionDiff, change: ParagraphChange) -> str:
+    """The change's id (e.g. +4), as diff_section and get_change_context number it."""
+    return next(change_id for change_id, c in changes_by_id(diff).items() if c == change)
+
+
+def _explain_over_mcp(
+    context: ExplainContext,
+    ticker: str,
+    filing: Filing,
+    section: str,
+    provider: LLMProvider,
+    target: McpTarget,
+    note: str,
+) -> int:
+    """The agent with tools discovered from an MCP server; the server stops when this ends."""
+    try:
+        with McpToolbox(target) as toolbox:
+            names = ", ".join(spec.name for spec in toolbox.specs)
+            print(f"MCP: discovered {len(toolbox.specs)} tool(s) from the server: {names}\n")
+            return _explain_with_agent(
+                context,
+                ticker,
+                filing,
+                section,
+                provider,
+                tools=toolbox.tools(),
+                system_prompt=AGENT_SYSTEM_PROMPT + note,
+            )
+    except OSError as error:  # the server process couldn't start
+        print(f"error: can't start the MCP server: {error}", file=sys.stderr)
+        return 1
+
+
 def _explain_with_agent(
-    context: ExplainContext, ticker: str, filing: Filing, section: str, provider: OpenAIProvider
+    context: ExplainContext,
+    ticker: str,
+    filing: Filing,
+    section: str,
+    provider: LLMProvider,
+    *,
+    tools: dict[str, Tool] | None = None,
+    system_prompt: str = AGENT_SYSTEM_PROMPT,
 ) -> int:
     settings = get_settings()
     try:
@@ -763,6 +831,8 @@ def _explain_with_agent(
             section_title=section,
             provider=provider,
             settings=settings,
+            system_prompt=system_prompt,
+            tools=tools,
         )
     except AgentError as error:
         _print_trace(error.trace)

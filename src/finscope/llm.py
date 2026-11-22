@@ -52,6 +52,10 @@ class ToolSpec(BaseModel):
     name: str
     description: str
     parameters: dict[str, Any]
+    # Strict: the API makes the model's arguments match the schema, which must then list every
+    # property as required. A tool discovered from an MCP server has optional arguments, so it
+    # is sent non-strict and the server validates its arguments itself.
+    strict: bool = True
 
 
 class ToolCall(BaseModel):
@@ -247,14 +251,15 @@ def _describe(error: openai.APIError) -> str:
 
 
 def _function_tool(tool: ToolSpec) -> FunctionToolParam:
-    # Strict mode: the model's arguments are guaranteed to match the schema, which must then
-    # list every property as required and set additionalProperties to false.
+    # Strict mode (FinScope's own tools): the model's arguments are guaranteed to match the
+    # schema, which must then list every property as required and set additionalProperties to
+    # false. See ToolSpec.strict.
     return {
         "type": "function",
         "name": tool.name,
         "description": tool.description,
         "parameters": tool.parameters,
-        "strict": True,
+        "strict": tool.strict,
     }
 
 

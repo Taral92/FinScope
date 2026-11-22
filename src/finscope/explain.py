@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-from finscope.agent import AgentRun, run_agent
+from finscope.agent import AgentRun, Tool, run_agent
 from finscope.agent_tools import ExplainContext, build_tools
 from finscope.config import Settings
 from finscope.diff import ParagraphChange
@@ -115,15 +115,17 @@ def explain_change_with_agent(
     settings: Settings,
     max_steps: int = 6,
     system_prompt: str = AGENT_SYSTEM_PROMPT,
+    tools: dict[str, Tool] | None = None,
 ) -> AgentExplanation:
     """Like explain_change, but the model first gathers context with read-only tools.
 
     `system_prompt` replaces the agent's prompt, e.g. with a candidate in a pairwise eval.
+    `tools` replaces the in-process ones, e.g. with tools from an MCP server (mcp_client.py).
     """
     run = run_agent(
         system_prompt,
         build_user_message(context.change, company, form, section_title),
-        build_tools(context),
+        tools if tools is not None else build_tools(context),
         provider,
         max_steps=max_steps,
     )
