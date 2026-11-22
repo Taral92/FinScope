@@ -26,6 +26,8 @@ def test_the_script_is_executable_and_runs_check_from_the_project_folder() -> No
     assert SCRIPT.stat().st_mode & 0o111  # executable
     assert 'cd "${0:A:h}/.."' in text  # the project folder, wherever launchd starts it
     assert "data/logs/check.log" in text
+    assert "https://www.sec.gov" in text  # waits for the network after a wake
+    assert "PYTHONUNBUFFERED=1" in text  # errors stay next to their section in the log
     assert text.rstrip().endswith("run --quiet python -m finscope check")
 
 

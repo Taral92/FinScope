@@ -1,10 +1,26 @@
 [
   {"ticker": "TSLA", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "TSLA", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "TSLA", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "AAPL", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "AAPL", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "AAPL", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "SBUX", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "SBUX", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "SBUX", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "DIS", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "DIS", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "DIS", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "NVDA", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "NVDA", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "NVDA", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "WMT", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "WMT", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "WMT", "form": "10-K", "item": "7A", "part": "II"},
   {"ticker": "NKE", "form": "10-K", "item": "1A", "part": "I"},
-  {"ticker": "COST", "form": "10-K", "item": "1A", "part": "I"}
+  {"ticker": "NKE", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "NKE", "form": "10-K", "item": "7A", "part": "II"},
+  {"ticker": "COST", "form": "10-K", "item": "1A", "part": "I"},
+  {"ticker": "COST", "form": "10-K", "item": "3", "part": "I"},
+  {"ticker": "COST", "form": "10-K", "item": "7A", "part": "II"}
 ]
