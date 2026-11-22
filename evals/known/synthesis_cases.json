@@ -1,0 +1,163 @@
+[
+  {
+    "name": "tariff-risk-and-margin",
+    "findings": [
+      {
+        "ref": "I-1A +4",
+        "section_title": "Part I Item 1A. Risk Factors",
+        "what_changed": "Acme added a risk that tariffs on imported battery cells could raise its costs.",
+        "why_it_matters": "Tariffs now apply to the cells Acme imports from Asia."
+      },
+      {
+        "ref": "II-7 ~12",
+        "section_title": "Part II Item 7. MD&A",
+        "what_changed": "Acme says tariffs on imported battery cells reduced its gross margin.",
+        "why_it_matters": "The tariff risk has already hurt Acme's profitability."
+      },
+      {
+        "ref": "I-3 +1",
+        "section_title": "Part I Item 3. Legal Proceedings",
+        "what_changed": "Acme added a patent lawsuit over its charging connector design.",
+        "why_it_matters": "An adverse ruling could require Acme to redesign the connector."
+      }
+    ],
+    "together": [
+      [
+        "I-1A +4",
+        "II-7 ~12"
+      ]
+    ],
+    "apart": [
+      [
+        "I-1A +4",
+        "I-3 +1"
+      ],
+      [
+        "II-7 ~12",
+        "I-3 +1"
+      ]
+    ],
+    "why": "The tariff risk and the tariff margin hit are one matter; the patent suit is another."
+  },
+  {
+    "name": "recall-risk-and-lawsuit",
+    "findings": [
+      {
+        "ref": "I-1A +2",
+        "section_title": "Part I Item 1A. Risk Factors",
+        "what_changed": "Acme added a risk that its brake recall could lead to lawsuits.",
+        "why_it_matters": "Claims from the recall may cost Acme money."
+      },
+      {
+        "ref": "I-3 +3",
+        "section_title": "Part I Item 3. Legal Proceedings",
+        "what_changed": "Acme added a class action over the brake recall.",
+        "why_it_matters": "Customers allege the brake defect harmed them."
+      }
+    ],
+    "together": [
+      [
+        "I-1A +2",
+        "I-3 +3"
+      ]
+    ],
+    "apart": [],
+    "why": "The risk the recall brings lawsuits, and the lawsuit that was filed, are one matter."
+  },
+  {
+    "name": "three-unrelated",
+    "findings": [
+      {
+        "ref": "I-1A +7",
+        "section_title": "Part I Item 1A. Risk Factors",
+        "what_changed": "Acme added a risk of ransomware attacks on its factories.",
+        "why_it_matters": "An attack could stop production."
+      },
+      {
+        "ref": "I-3 +2",
+        "section_title": "Part I Item 3. Legal Proceedings",
+        "what_changed": "Acme added a trademark dispute over its logo in Europe.",
+        "why_it_matters": "Acme may have to rebrand in some countries."
+      },
+      {
+        "ref": "II-7A ~1",
+        "section_title": "Part II Item 7A. Market Risk",
+        "what_changed": "Acme now hedges its euro revenue with currency forwards.",
+        "why_it_matters": "Exchange-rate swings affect its results less."
+      }
+    ],
+    "together": [],
+    "apart": [
+      [
+        "I-1A +7",
+        "I-3 +2"
+      ],
+      [
+        "I-1A +7",
+        "II-7A ~1"
+      ],
+      [
+        "I-3 +2",
+        "II-7A ~1"
+      ]
+    ],
+    "why": "Three different matters: nothing should be joined."
+  },
+  {
+    "name": "shared-words-different-matters",
+    "findings": [
+      {
+        "ref": "I-1A +3",
+        "section_title": "Part I Item 1A. Risk Factors",
+        "what_changed": "Acme added a risk from new data privacy laws in California.",
+        "why_it_matters": "Complying with the law may raise Acme's costs."
+      },
+      {
+        "ref": "I-3 +4",
+        "section_title": "Part I Item 3. Legal Proceedings",
+        "what_changed": "Acme added a lawsuit claiming its battery design infringes a patent.",
+        "why_it_matters": "Acme could owe damages if it loses."
+      }
+    ],
+    "together": [],
+    "apart": [
+      [
+        "I-1A +3",
+        "I-3 +4"
+      ]
+    ],
+    "why": "Both mention the law, but privacy compliance and a patent suit are different matters."
+  },
+  {
+    "name": "recall-across-three-sections",
+    "findings": [
+      {
+        "ref": "I-1A +5",
+        "section_title": "Part I Item 1A. Risk Factors",
+        "what_changed": "Acme added a risk that its airbag recall could widen.",
+        "why_it_matters": "A larger recall would add costs."
+      },
+      {
+        "ref": "I-3 +6",
+        "section_title": "Part I Item 3. Legal Proceedings",
+        "what_changed": "Acme added lawsuits filed over the airbag recall.",
+        "why_it_matters": "Owners claim injuries from the airbags."
+      },
+      {
+        "ref": "II-7 ~3",
+        "section_title": "Part II Item 7. MD&A",
+        "what_changed": "Acme says warranty costs rose because of the airbag recall.",
+        "why_it_matters": "The recall has already raised its costs."
+      }
+    ],
+    "together": [
+      [
+        "I-1A +5",
+        "I-3 +6",
+        "II-7 ~3"
+      ]
+    ],
+    "apart": [],
+    "why": "One recall, seen in the risk factors, the lawsuits and the warranty costs."
+  }
+]

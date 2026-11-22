@@ -1,0 +1,342 @@
+{
+  "created_at": "2026-11-22T07:41:52.549444Z",
+  "cases_file": "evals/known/synthesis_cases.json",
+  "model": "gpt-6.1-terra",
+  "prompt_version": "4b3e03adc619",
+  "runs": 2,
+  "cases": [
+    {
+      "name": "tariff-risk-and-margin",
+      "runs": [
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Tariffs now apply to battery cells Acme imports from Asia and have reduced its gross margin. Acme also added a risk that the tariffs could raise its costs.",
+                "refs": [
+                  "I-1A +4",
+                  "II-7 ~12"
+                ],
+                "status": "kept",
+                "reason": "The findings link tariffs on imported battery cells to lower gross margin, confirm they apply to cells from Asia, and identify higher costs as a newly disclosed risk."
+              },
+              {
+                "text": "Acme added a patent lawsuit over its charging connector design; an adverse ruling could require a redesign.",
+                "refs": [
+                  "I-3 +1"
+                ],
+                "status": "kept",
+                "reason": "The finding reports the patent lawsuit and says an adverse ruling could require Acme to redesign the connector."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 502,
+            "output_tokens": 96,
+            "check_input_tokens": 763,
+            "check_output_tokens": 85
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        },
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Tariffs now apply to battery cells Acme imports from Asia and have reduced its gross margin. Acme also warns that the tariffs could raise its costs.",
+                "refs": [
+                  "I-1A +4",
+                  "II-7 ~12"
+                ],
+                "status": "kept",
+                "reason": "The findings say the tariffs apply to battery cells Acme imports from Asia, have reduced its gross margin, and could raise its costs."
+              },
+              {
+                "text": "Acme added a patent lawsuit over its charging connector design. An adverse ruling could require it to redesign the connector.",
+                "refs": [
+                  "I-3 +1"
+                ],
+                "status": "kept",
+                "reason": "The finding confirms the added patent lawsuit and states that an adverse ruling could require a connector redesign."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 502,
+            "output_tokens": 97,
+            "check_input_tokens": 764,
+            "check_output_tokens": 80
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        }
+      ]
+    },
+    {
+      "name": "recall-risk-and-lawsuit",
+      "runs": [
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme added a class action over its brake recall, in which customers allege the brake defect harmed them. Acme also added a risk that recall-related lawsuits may cost it money.",
+                "refs": [
+                  "I-1A +2",
+                  "I-3 +3"
+                ],
+                "status": "kept",
+                "reason": "The findings describe the class action and customers’ allegations and say recall-related claims may cost Acme money."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 432,
+            "output_tokens": 69,
+            "check_input_tokens": 417,
+            "check_output_tokens": 38
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        },
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme added a risk that its brake recall could lead to lawsuits and disclosed a class action in which customers allege the brake defect harmed them. Claims from the recall may cost Acme money.",
+                "refs": [
+                  "I-1A +2",
+                  "I-3 +3"
+                ],
+                "status": "kept",
+                "reason": "The cited findings support the lawsuit risk, the class action and customers’ allegations, and the possibility that recall claims may cost Acme money."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 432,
+            "output_tokens": 71,
+            "check_input_tokens": 419,
+            "check_output_tokens": 45
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        }
+      ]
+    },
+    {
+      "name": "three-unrelated",
+      "runs": [
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme added a risk of ransomware attacks on its factories, which could stop production.",
+                "refs": [
+                  "I-1A +7"
+                ],
+                "status": "kept",
+                "reason": "The findings state that Acme added the factory ransomware risk and that an attack could stop production."
+              },
+              {
+                "text": "Acme added a trademark dispute over its logo in Europe and may have to rebrand in some countries.",
+                "refs": [
+                  "I-3 +2"
+                ],
+                "status": "kept",
+                "reason": "The cited findings state that Acme added the European logo trademark dispute and may have to rebrand in some countries."
+              },
+              {
+                "text": "Acme now hedges its euro revenue with currency forwards, reducing the effect of exchange-rate swings on its results.",
+                "refs": [
+                  "II-7A ~1"
+                ],
+                "status": "kept",
+                "reason": "The findings explicitly link Acme’s use of currency forwards to hedge euro revenue with a reduced effect of exchange-rate swings on its results."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 488,
+            "output_tokens": 110,
+            "check_input_tokens": 1017,
+            "check_output_tokens": 120
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        },
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme added a risk of ransomware attacks on its factories, which could stop production.",
+                "refs": [
+                  "I-1A +7"
+                ],
+                "status": "kept",
+                "reason": "The findings say Acme added the factory ransomware risk and that an attack could stop production."
+              },
+              {
+                "text": "Acme now hedges its euro revenue with currency forwards, reducing the effect of exchange-rate swings on its results.",
+                "refs": [
+                  "II-7A ~1"
+                ],
+                "status": "kept",
+                "reason": "The findings state that Acme now hedges its euro revenue with currency forwards and that this reduces the effect of exchange-rate swings on its results."
+              },
+              {
+                "text": "Acme added a trademark dispute over its logo in Europe and may have to rebrand in some countries.",
+                "refs": [
+                  "I-3 +2"
+                ],
+                "status": "kept",
+                "reason": "The findings state that Acme added a European trademark dispute over its logo and may have to rebrand in some countries."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 488,
+            "output_tokens": 110,
+            "check_input_tokens": 1017,
+            "check_output_tokens": 122
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        }
+      ]
+    },
+    {
+      "name": "shared-words-different-matters",
+      "runs": [
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme disclosed a lawsuit claiming its battery design infringes a patent. It could owe damages if it loses.",
+                "refs": [
+                  "I-3 +4"
+                ],
+                "status": "kept",
+                "reason": "The findings describe the patent infringement lawsuit and say Acme could owe damages if it loses."
+              },
+              {
+                "text": "Acme added a risk related to new California data privacy laws, which may raise its compliance costs.",
+                "refs": [
+                  "I-1A +3"
+                ],
+                "status": "kept",
+                "reason": "The findings say Acme added a risk related to new California data privacy laws and that complying with them may raise costs."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 437,
+            "output_tokens": 79,
+            "check_input_tokens": 687,
+            "check_output_tokens": 76
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        },
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "Acme added a lawsuit claiming its battery design infringes a patent. It could owe damages if it loses.",
+                "refs": [
+                  "I-3 +4"
+                ],
+                "status": "kept",
+                "reason": "The findings describe the patent infringement lawsuit and say Acme could owe damages if it loses."
+              },
+              {
+                "text": "Acme added a risk from new data privacy laws in California; compliance may raise its costs.",
+                "refs": [
+                  "I-1A +3"
+                ],
+                "status": "kept",
+                "reason": "The findings state that Acme added a risk from new California data privacy laws and that compliance may raise its costs."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 437,
+            "output_tokens": 78,
+            "check_input_tokens": 686,
+            "check_output_tokens": 75
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        }
+      ]
+    },
+    {
+      "name": "recall-across-three-sections",
+      "runs": [
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "The airbag recall has already raised warranty costs, and a wider recall would add costs. Acme also disclosed lawsuits in which owners claim injuries from the airbags.",
+                "refs": [
+                  "I-1A +5",
+                  "I-3 +6",
+                  "II-7 ~3"
+                ],
+                "status": "kept",
+                "reason": "The findings confirm that the recall raised warranty costs, that a wider recall would add costs, and that Acme disclosed lawsuits alleging airbag injuries."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 484,
+            "output_tokens": 70,
+            "check_input_tokens": 464,
+            "check_output_tokens": 46
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        },
+        {
+          "summary": {
+            "points": [
+              {
+                "text": "The airbag recall has already increased warranty costs, and Acme says a wider recall would add costs. Acme also disclosed lawsuits in which owners claim injuries from the airbags.",
+                "refs": [
+                  "I-1A +5",
+                  "I-3 +6",
+                  "II-7 ~3"
+                ],
+                "status": "kept",
+                "reason": "The findings confirm higher warranty costs, additional costs if the recall widens, and lawsuits in which owners allege airbag injuries."
+              }
+            ],
+            "model": "gpt-6.1-terra",
+            "prompt_version": "4b3e03adc619",
+            "input_tokens": 484,
+            "output_tokens": 73,
+            "check_input_tokens": 467,
+            "check_output_tokens": 43
+          },
+          "error": null,
+          "missed": [],
+          "wrongly_joined": []
+        }
+      ]
+    }
+  ],
+  "passed": 5,
+  "points_kept": 18,
+  "points_dropped": 0,
+  "drop_reasons": {},
+  "failures": 0,
+  "cost_usd": "0.029653"
+}

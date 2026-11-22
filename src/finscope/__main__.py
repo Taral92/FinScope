@@ -18,6 +18,7 @@ python -m finscope eval-agent TSLA --item 1A [--runs 3] [--ids '~4,~11']  agent 
 python -m finscope eval-known-agent [--runs 2]          score the agent's importance on known cases
 python -m finscope eval-known-judge [--runs 2]          score the judge's verdicts on known cases
 python -m finscope eval-retrieval                       score memory recall on known cases (no AI)
+python -m finscope eval-known-synthesis [--runs 2]      score the filing summary on known cases
 python -m finscope eval-pairwise TSLA --item 1A --candidate FILE [--ids '~4'] [--max 5]
                                                     the agent's prompt vs a candidate, judged
                                                     side by side (--aa instead of --candidate:
@@ -148,6 +149,15 @@ from finscope.known_judge import (
     build_judge_result,
     run_judge_cases,
     save_known_judge_eval,
+)
+from finscope.known_synthesis import (
+    SYNTHESIS_CASES_PATH,
+    KnownSynthesisError,
+    SynthesisRun,
+    build_synthesis_result,
+    load_synthesis_cases,
+    run_known_synthesis,
+    save_known_synthesis,
 )
 from finscope.labels import LABELS_DIR, LabelsError, SectionLabels, label_changes, load_labels
 from finscope.llm import (
@@ -367,6 +377,14 @@ def _main(argv: list[str] | None) -> int:
         "--runs", type=_positive_int, default=2, help="agent runs per case (default 2)"
     )
 
+    known_synthesis_parser = commands.add_parser(
+        "eval-known-synthesis",
+        help="score the filing summary on made-up findings: right joins, nothing added",
+    )
+    known_synthesis_parser.add_argument(
+        "--runs", type=_positive_int, default=2, help="summaries per case (default 2)"
+    )
+
     commands.add_parser(
         "eval-retrieval",
         help="score the agent memory's recall on made-up findings and queries (no AI calls)",
@@ -442,6 +460,8 @@ def _main(argv: list[str] | None) -> int:
         return _eval_known_judge(args.runs)
     if args.command == "eval-retrieval":
         return _eval_retrieval(RETRIEVAL_CASES_PATH, RESULTS_DIR)
+    if args.command == "eval-known-synthesis":
+        return _eval_known_synthesis(args.runs)
     # Takes its tickers from the watchlist, not the command line.
     if args.command == "check":
         return _check(
@@ -2295,6 +2315,79 @@ def _print_known_agent_eval(result: KnownAgentEvalResult) -> None:
         result.cost_usd,
         all_succeeded=result.usage_complete,
     )
+
+
+def _eval_known_synthesis(runs: int) -> int:
+    settings = get_settings()
+    try:
+        writer, checker = OpenAIProvider(settings), judge_provider(settings)  # as in check
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    return _run_known_synthesis(
+        SYNTHESIS_CASES_PATH,
+        provider=writer,
+        check_provider=checker,
+        settings=settings,
+        runs=runs,
+        results_dir=RESULTS_DIR,
+    )
+
+
+def _run_known_synthesis(
+    cases_path: Path,
+    *,
+    provider: LLMProvider,
+    check_provider: LLMProvider,
+    settings: Settings,
+    runs: int,
+    results_dir: Path,
+) -> int:
+    """Summarize every known case `runs` times; print PASS/FAIL and the drops; save."""
+    try:
+        cases = load_synthesis_cases(cases_path)
+    except KnownSynthesisError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    print(f"{len(cases)} known summary case(s) from {cases_path}, {runs} run(s) each\n")
+
+    def progress(name: str, number: int, run: SynthesisRun) -> None:
+        if run.summary is None:
+            print(f"[{name}] run {number}/{runs}: {run.error}")
+            return
+        kept = ", ".join("[" + "; ".join(point.refs) + "]" for point in run.summary.kept)
+        print(f"[{name}] run {number}/{runs}: kept {kept or '(none)'}")
+        for point in run.summary.points:
+            if point.status == "dropped":
+                print(f"    dropped [{'; '.join(point.refs)}]: {point.reason}")
+
+    results = run_known_synthesis(
+        cases, provider=provider, check_provider=check_provider, runs=runs, on_run=progress
+    )
+    result = build_synthesis_result(
+        results, cases_file=cases_path, runs=runs, settings=settings, created_at=datetime.now(UTC)
+    )
+    print("\n=== CASES: PASS when every run joined each matter in one point, and nothing else ===")
+    width = max(len(case.name) for case in result.cases)
+    for case in result.cases:
+        print(f"{'PASS' if case.passed else 'FAIL'}  {case.name:<{width}}")
+        for number, run in enumerate(case.runs, start=1):
+            for group in run.missed:
+                print(f"      run {number}: not joined: {'; '.join(group)}")
+            for pair in run.wrongly_joined:
+                print(f"      run {number}: wrongly joined: {'; '.join(pair)}")
+    print(f"\npassed: {result.passed}/{len(result.cases)} case(s)")
+    print(f"points: {result.points_kept} kept, {result.points_dropped} dropped")
+    for reason, count in sorted(result.drop_reasons.items()):
+        print(f"        dropped for {reason}: {count}")
+    print(f"summary calls failed: {result.failures}")
+    cost = (
+        "unknown (no prices configured)" if result.cost_usd is None else f"${result.cost_usd:.4f}"
+    )
+    print(f"\nsummary prompt version {result.prompt_version}, cost {cost}")
+    saved = save_known_synthesis(result, results_dir)
+    print(f"saved:  {saved}")
+    return 0 if result.failures < len(cases) * runs else 1
 
 
 def _eval_retrieval(cases_path: Path, results_dir: Path) -> int:
